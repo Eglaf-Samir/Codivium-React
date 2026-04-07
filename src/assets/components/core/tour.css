@@ -1,0 +1,295 @@
+/* ============================================================
+ * tour.css
+ * Shared guided tour overlay styles.
+ * Used by: dashboard (via dashboard.modals.css), menu-page, editor.
+ * All corners are sharp (border-radius: 0) to match platform design language.
+ * ============================================================ */
+
+.ciTourBackdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9998;
+}
+
+.ciTourSpotlight{
+  position: fixed;
+  z-index: 9999;
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 0;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 20px 60px rgba(0,0,0,0.45);
+  pointer-events: none;
+}
+
+.ciTourCard{
+  position: fixed;
+  z-index: 10000;
+  width: 560px;
+  max-width: min(560px, calc(100vw - 24px));
+  border-radius: 0;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(8,11,16,0.92);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 20px 70px rgba(0,0,0,0.55);
+  overflow: hidden;
+}
+
+.ciTourCardHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+.ciTourCardTitle{ font-weight: 950; letter-spacing: 0.01em; font-size: 14px; color: var(--color-text-primary); }
+.ciTourCardMeta{ margin-top: 4px; font-size: 11px; color: var(--color-text-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.ciTourClose{ border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: var(--color-text-secondary); border-radius: 10px; width: 30px; height: 30px; cursor:pointer; }
+
+.ciTourCardBody{
+  padding: 16px 18px 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.ciTourAggWrap{ padding: 14px 18px 0; }
+.ciTourAggBtn{
+  width:100%;
+  text-align:left;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.14);
+  color: var(--color-text-secondary);
+  padding: 12px 12px;
+  font-weight: 850;
+  cursor:pointer;
+}
+.ciTourAggBody{
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.10);
+  padding: 10px 12px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-line;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.ciTourFoot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 14px 18px 18px;
+}
+.ciTourBtns{ display:flex; gap: 8px; }
+.ciTourNavBtn{
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: var(--color-text-primary);
+  padding: 10px 12px;
+  font-weight: 850;
+  cursor:pointer;
+}
+.ciTourNavBtn.primary{
+  background: var(--color-success-subtle);
+  border-color: rgba(94,200,172,0.28);
+}
+.ciTourNavBtn:disabled{ opacity: 0.45; cursor: default; }
+
+/* Tour calculation note */
+.ciTourCalcNote{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.14);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* ── Parchment / light theme — tour windows ── */
+html[data-theme="parchment"] .ciTourCard {
+  background: var(--color-bg-surface);
+  border-color: rgba(14,28,80,0.35);
+  color: var(--color-text-primary);
+  box-shadow: 0 16px 48px rgba(14,28,60,0.18);
+}
+html[data-theme="parchment"] .ciTourCard * { color: inherit; }
+html[data-theme="parchment"] .ciTourCard h2,
+html[data-theme="parchment"] .ciTourCard .tour-title { color: var(--color-text-accent); }
+html[data-theme="parchment"] .ciTourCard p,
+html[data-theme="parchment"] .ciTourCard .tour-body  { color: var(--color-text-secondary); }
+html[data-theme="parchment"] .ciTourBackdrop { background: var(--color-bg-overlay); }
+
+/* ═══════════════════════════════════════════════════════════════
+   PARCHMENT — TOUR WINDOWS (ciTourCard + editor #tourCard)
+   Same cream/midnight design as the rest of the parchment theme
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── ciTourCard window (dashboard, menu, MCQ pages) ── */
+html[data-theme="parchment"] .ciTourCard {
+  background: rgba(248,246,240,0.98);
+  border: 1px solid rgba(14,28,80,0.22);
+  color: rgba(14,28,80,0.90);
+  box-shadow:
+    0 16px 48px rgba(14,28,60,0.18),
+    0 4px 12px rgba(14,28,60,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.70);
+}
+html[data-theme="parchment"] .ciTourCard * { color: inherit; }
+html[data-theme="parchment"] .ciTourCardHead {
+  border-bottom: 1px solid rgba(14,28,80,0.12);
+}
+html[data-theme="parchment"] .ciTourCardTitle {
+  color: rgba(14,28,80,0.92);
+  font-family: "Cinzel", serif;
+}
+html[data-theme="parchment"] .ciTourCardMeta {
+  color: rgba(14,28,80,0.50);
+}
+html[data-theme="parchment"] .ciTourCardBody {
+  color: rgba(14,28,80,0.80);
+}
+html[data-theme="parchment"] .ciTourFoot {
+  border-top: 1px solid rgba(14,28,80,0.10);
+}
+html[data-theme="parchment"] .ciTourCalcNote {
+  color: rgba(14,28,80,0.55);
+  background: rgba(235,232,224,0.80);
+  border-color: rgba(14,28,80,0.14);
+}
+html[data-theme="parchment"] .ciTourBackdrop {
+  background: rgba(14,28,80,0.35);
+}
+html[data-theme="parchment"] .ciTourSpotlight {
+  border-color: rgba(14,28,80,0.40);
+  box-shadow:
+    0 0 0 2px rgba(14,28,80,0.20),
+    0 0 0 9999px rgba(14,28,80,0.30);
+}
+html[data-theme="parchment"] .ciTourAggWrap {
+  background: rgba(248,246,240,0.98);
+  border-color: rgba(14,28,80,0.20);
+}
+html[data-theme="parchment"] .ciTourAggBody {
+  color: rgba(14,28,80,0.80);
+}
+
+/* ── Tour nav, close, agg buttons — dark style ── */
+html[data-theme="parchment"] .ciTourNavBtn,
+html[data-theme="parchment"] .ciTourClose,
+html[data-theme="parchment"] .ciTourAggBtn {
+  background:
+    radial-gradient(140% 120% at 50% 0%, rgba(255,255,255,0.10), transparent 55%),
+    rgb(10,10,15);
+  border: 1px solid rgba(200,200,220,0.20);
+  color: rgba(255,255,255,0.90);
+  box-shadow:
+    0 3px 8px rgba(0,0,0,0.40),
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    inset 0 -1px 0 rgba(0,0,0,0.50);
+}
+html[data-theme="parchment"] .ciTourNavBtn:hover,
+html[data-theme="parchment"] .ciTourClose:hover,
+html[data-theme="parchment"] .ciTourAggBtn:hover {
+  filter: brightness(1.14);
+  border-color: rgba(200,200,220,0.32);
+}
+html[data-theme="parchment"] .ciTourNavBtn.primary {
+  background:
+    radial-gradient(140% 120% at 50% 0%, rgba(255,255,255,0.14), transparent 55%),
+    rgb(30,30,50);
+  border-color: rgba(200,215,255,0.50);
+  color: rgba(255,255,255,1.00);
+  box-shadow:
+    0 0 0 2px rgba(185,200,240,0.40),
+    0 0 10px 2px rgba(155,180,230,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.16);
+}
+
+/* ── Editor page #tourCard window ── */
+html[data-theme="parchment"] #tourCard {
+  background: rgba(248,246,240,0.98) !important;
+  border: 1px solid rgba(14,28,80,0.22) !important;
+  color: rgba(14,28,80,0.90) !important;
+  box-shadow:
+    0 16px 48px rgba(14,28,60,0.18),
+    0 4px 12px rgba(14,28,60,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.70) !important;
+}
+html[data-theme="parchment"] #tourCard .tour-step-label {
+  color: rgba(14,28,80,0.50) !important;
+}
+html[data-theme="parchment"] #tourCard .tour-title {
+  color: rgba(14,28,80,0.92) !important;
+  font-family: "Cinzel", serif;
+}
+html[data-theme="parchment"] #tourCard .tour-body {
+  color: rgba(14,28,80,0.78) !important;
+}
+html[data-theme="parchment"] #tourCard .tour-dot {
+  background: rgba(14,28,80,0.18) !important;
+}
+html[data-theme="parchment"] #tourCard .tour-dot.active {
+  background: rgba(14,28,80,0.65) !important;
+}
+html[data-theme="parchment"] #tourCard .tour-actions {
+  border-top: 1px solid rgba(14,28,80,0.10);
+}
+/* Close button on editor tour */
+html[data-theme="parchment"] #tourClose {
+  background:
+    radial-gradient(140% 120% at 50% 0%, rgba(255,255,255,0.10), transparent 55%),
+    rgb(10,10,15) !important;
+  border: 1px solid rgba(200,200,220,0.20) !important;
+  color: rgba(255,255,255,0.90) !important;
+  border-radius: 4px !important;
+}
+html[data-theme="parchment"] #tourClose:hover {
+  filter: brightness(1.14) !important;
+}
+/* Nav buttons on editor tour */
+html[data-theme="parchment"] .tour-nav-btn {
+  background:
+    radial-gradient(140% 120% at 50% 0%, rgba(255,255,255,0.10), transparent 55%),
+    rgb(10,10,15) !important;
+  border: 1px solid rgba(200,200,220,0.20) !important;
+  color: rgba(255,255,255,0.90) !important;
+  box-shadow:
+    0 3px 8px rgba(0,0,0,0.40),
+    inset 0 1px 0 rgba(255,255,255,0.14) !important;
+}
+html[data-theme="parchment"] .tour-nav-btn:hover {
+  filter: brightness(1.14) !important;
+  border-color: rgba(200,200,220,0.32) !important;
+}
+html[data-theme="parchment"] .tour-nav-btn.primary {
+  background:
+    radial-gradient(140% 120% at 50% 0%, rgba(255,255,255,0.14), transparent 55%),
+    rgb(30,30,50) !important;
+  border-color: rgba(200,215,255,0.50) !important;
+  color: rgba(255,255,255,1.00) !important;
+  box-shadow:
+    0 0 0 2px rgba(185,200,240,0.40),
+    0 0 10px 2px rgba(155,180,230,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.16) !important;
+}
+html[data-theme="parchment"] .tour-nav-btn.primary:hover {
+  filter: brightness(1.10) !important;
+}
+/* Spotlight on editor tour */
+html[data-theme="parchment"] #tourSpotlight {
+  border-color: rgba(14,28,80,0.40) !important;
+  box-shadow:
+    0 0 0 2px rgba(14,28,80,0.20),
+    0 0 0 9999px rgba(14,28,80,0.28) !important;
+}

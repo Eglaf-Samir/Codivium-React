@@ -1,0 +1,714 @@
+@layer components {
+/*
+ * dashboard.modals.css
+ * OWNER: Help modals (FAQ + Glossary) + Tour overlay
+ *
+ * Owns:  .cvHelpModal, .cvHelpWindow, .cvHelpDoc, .cvHelpCloseBtn,
+ *         .ciTourBackdrop, .ciTourCard, .ciTourSpotlight, and all inner
+ *         document / accordion / answer content styling
+ * Does NOT own: formula math typesetting (dashboard.math.css)
+ *               panel layout or dashboard grid (dashboard.layout.css)
+ */
+
+/* ============================================================
+   Help modal overlay + window
+   ============================================================ */
+
+.cvHelpModal{
+  position: fixed !important;
+  inset: 0;
+  z-index: 99999;
+  display: grid !important;
+  place-items: center;
+  padding: 22px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0;
+  transform: none;
+  /* Dark theme override */
+  background: rgba(0,0,0,0.72);
+}
+.cvHelpModal.isHidden{
+  display: none !important;
+}
+
+.cvHelpWindow{
+  width: min(1120px, 96vw);
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+  /* Dark theme override */
+  border-radius: 24px;
+  background: radial-gradient(900px 520px at 50% 12%, var(--color-border-accent-subtle), transparent 62%),
+    var(--color-bg-page);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 28px 90px rgba(0,0,0,0.70);
+}
+
+.cvHelpCloseBtn{
+  position: sticky;
+  top: 0;
+  width: 100%;
+  display:flex;
+  justify-content:flex-end;
+  padding: 10px 14px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 900;
+  /* Dark theme override */
+  background: rgba(8,11,16,0.92);
+  border-bottom: 1px solid var(--color-border-accent-subtle);
+  color: var(--color-text-accent);
+}
+.cvHelpCloseBtn:hover{
+  background: rgba(8,11,16,0.98);
+}
+
+/* ============================================================
+   Help document styling (FAQ/Glossary paper layout)
+   ============================================================ */
+
+.cvHelpDoc{
+  /* Base tokens — overridden to dark theme below */
+  --bg: var(--color-bg-page);
+  --page-glow: rgba(201, 137, 121, 0.10);
+  --box-bg: #ffffff;
+  --box-border: rgba(201, 137, 121, 0.28);
+  --shadow: 0 24px 60px rgba(7, 18, 37, 0.55);
+  --text: #0f172a;
+  --muted: #4b5563;
+  --line: rgba(201, 137, 121, 0.22);
+  --radius: 18px;
+  --radius-sm: 14px;
+  --ease-close: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-open: ease-out;
+  --expand: 2400ms;
+  --collapse: 420ms;
+  --fade-open: 1400ms;
+  --fade-close: 260ms;
+  --accent: #c98979;
+
+  /* Dark theme — matches KaTeX scoring doc (codivium_scoring_katex.css) */
+  --box-bg: rgba(34,34,38,0.78);         /* KaTeX --surface */
+  --box-border: rgba(255,255,255,0.12);  /* KaTeX --border */
+  --text: rgba(245,245,252,0.94);        /* KaTeX --cv-text */
+  --muted: rgba(245,245,252,0.70);       /* KaTeX --cv-muted */
+  --line: rgba(255,255,255,0.10);
+  --bg: var(--color-bg-page);                         /* KaTeX --cv-bg */
+  --page-glow: rgba(246,213,138,0.10);
+  --shadow: 0 22px 70px rgba(0,0,0,0.55); /* KaTeX --shadow */
+}
+
+.cvHelpDoc *{ box-sizing: border-box; }
+
+.cvHelpDoc .wrap{
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 44px 22px 70px;
+}
+
+.cvHelpDoc header{
+  margin-bottom: 28px;
+  color: #e5e7eb;
+}
+
+.cvHelpDoc h1{
+  margin: 0 0 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-family: "Cinzel", serif;
+  font-size: clamp(2.0rem, 3.0vw, 2.6rem);
+  color: rgba(246, 242, 232, 0.96);
+}
+
+.cvHelpDoc .sub{
+  max-width: 920px;
+  color: #cbd5e1;
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+/* FAQ group accordion */
+.cvHelpDoc .faq-groups{
+  display: grid;
+  gap: 16px;
+}
+
+.cvHelpDoc .group{
+  border-radius: var(--radius);
+  background: var(--box-bg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--box-border);
+  overflow: hidden;
+}
+
+.cvHelpDoc .group > summary{
+  list-style: none;
+  cursor: pointer;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(180deg, var(--color-border-accent-subtle), rgba(0,0,0,0));
+}
+
+.cvHelpDoc .group > summary::-webkit-details-marker{ display: none; }
+
+.cvHelpDoc .group-title{
+  display: grid;
+  gap: 6px;
+}
+
+.cvHelpDoc .group-title strong{
+  font-family: "Cinzel", serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.cvHelpDoc .group-title span{
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.cvHelpDoc .group-icon{
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-accent-subtle);
+  color: var(--color-text-accent);
+  background: rgba(0,0,0,0.22);
+}
+
+.cvHelpDoc .group-icon svg{
+  width: 18px;
+  height: 18px;
+  stroke: var(--accent);
+  fill: none;
+  strokeWidth: 1.7;
+  strokeLinecap: round;
+  stroke-linejoin: round;
+}
+
+.cvHelpDoc .group-chevron{
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: rgba(0,0,0,0.22);
+  border: 1px solid var(--color-border-accent-subtle);
+}
+
+.cvHelpDoc .group-chevron::before,
+.cvHelpDoc .group-chevron::after{
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 2px;
+  background: linear-gradient(180deg, var(--color-text-accent), rgba(255,192,90,0.72));
+}
+.cvHelpDoc .group-chevron::after{
+  transform: rotate(90deg);
+  transition: opacity 250ms var(--ease-close);
+  opacity: 1;
+}
+.cvHelpDoc details.group[open] .group-chevron::after{
+  opacity: 0;
+}
+
+.cvHelpDoc .faq{
+  border-top: 1px solid var(--color-border-accent-subtle);
+  padding: 2px 0;
+}
+
+.cvHelpDoc .faq details{
+  border-top: 1px solid var(--line);
+  background: transparent;
+}
+
+.cvHelpDoc .faq details:first-child{ border-top: none; }
+
+.cvHelpDoc .faq summary{
+  cursor: pointer;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  list-style: none;
+}
+
+.cvHelpDoc .faq summary::-webkit-details-marker{ display: none; }
+
+.cvHelpDoc .q{
+  font-family: "Cinzel", serif;
+  font-size: 1.02rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.cvHelpDoc .chev{
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: rgba(0,0,0,0.22);
+  border: 1px solid var(--color-border-accent-subtle);
+}
+
+.cvHelpDoc .chev::before,
+.cvHelpDoc .chev::after{
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 2px;
+  background: linear-gradient(180deg, var(--color-text-accent), rgba(255,192,90,0.72));
+}
+.cvHelpDoc .chev::after{
+  transform: rotate(90deg);
+  transition: opacity 220ms var(--ease-close);
+  opacity: 1;
+}
+.cvHelpDoc .faq details[open] .chev::after{
+  opacity: 0;
+}
+
+/* Answer expand/collapse animation */
+.cvHelpDoc .answer{
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    max-height var(--collapse) var(--ease-close),
+    opacity var(--fade-close) var(--ease-close),
+    transform var(--fade-close) var(--ease-close);
+  will-change: max-height, opacity, transform;
+}
+
+.cvHelpDoc details[open] > .answer{
+  opacity: 1;
+  transform: translateY(0);
+  max-height: var(--target-h, 1200px);
+  transition:
+    max-height var(--expand) var(--ease-open),
+    opacity var(--fade-open) var(--ease-open),
+    transform var(--fade-open) var(--ease-open);
+}
+
+/* Answer content */
+.cvHelpDoc .a{
+  padding: 0 20px 20px;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  font-size: 1.04rem;
+  color: var(--text);
+  max-width: 960px;
+  line-height: 1.62;
+}
+
+.cvHelpDoc .a p,
+.cvHelpDoc .a li,
+.cvHelpDoc .a div,
+.cvHelpDoc .a span{
+  color: inherit;
+}
+
+.cvHelpDoc .a p{ margin: 0 0 16px; }
+.cvHelpDoc .a p + ul{ margin-top: 6px; }
+.cvHelpDoc .a p:last-child{ margin-bottom: 0; }
+.cvHelpDoc .a ul{ margin: 10px 0 0; padding-left: 18px; }
+.cvHelpDoc .a li{ margin: 6px 0; }
+
+.cvHelpDoc .a pre{
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,0.28);
+  border: 1px solid var(--color-border-accent-subtle);
+  overflow: auto;
+}
+
+.cvHelpDoc .a code{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.94rem;
+}
+
+/* Mini spec tables inside answers */
+.cvHelpDoc .cvMiniTable{
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 16px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(201,137,121,0.22);
+  overflow: hidden;
+  border-radius: 12px;
+}
+.cvHelpDoc .cvMiniTable th,
+.cvHelpDoc .cvMiniTable td{
+  border-bottom: 1px solid rgba(15,23,42,0.10);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+.cvHelpDoc .cvMiniTable thead th{
+  font-weight: 700;
+  background: rgba(15,23,42,0.04);
+}
+.cvHelpDoc .cvMiniTable tbody tr:last-child td{
+  border-bottom: none;
+}
+.cvHelpDoc .cvMiniTable.cvMiniTableDarkText th,
+.cvHelpDoc .cvMiniTable.cvMiniTableDarkText td{
+  color: rgba(15,23,42,0.94);
+  text-shadow: none;
+}
+
+.cvHelpDoc .footer-bar{
+  margin-top: 36px;
+  padding: 18px 22px;
+  background: linear-gradient(90deg, rgba(201,137,121,0.12), rgba(201,137,121,0.04));
+  border: 1px solid rgba(201,137,121,0.28);
+  border-radius: var(--radius-sm);
+  font-family: "Times New Roman", Times, serif;
+  color: #ffffff;
+}
+
+.cvHelpDoc summary:focus-visible{
+  outline: 2px solid rgba(201,137,121,0.55);
+  outline-offset: 4px;
+  border-radius: 14px;
+}
+
+/* FAQ note */
+.cvHelpDoc .cvFaqNote{
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--color-text-accent-soft);
+  background: rgba(0,0,0,0.18);
+  border-radius: 14px;
+  color: rgba(255,248,235,0.88);
+}
+
+/* Inline help link */
+.cvHelpLink{
+  color: var(--color-text-accent);
+  text-decoration: none;
+  font-weight: 800;
+}
+.cvHelpLink:hover{ text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce){
+  .cvHelpDoc .answer,
+  .cvHelpDoc details[open] > .answer,
+  .cvHelpDoc .group-chevron::after,
+  .cvHelpDoc .chev::after{
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Tour overlay
+   ============================================================ */
+
+.ciTourBackdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9998;
+}
+
+.ciTourSpotlight{
+  position: fixed;
+  z-index: 9999;
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 0;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 20px 60px rgba(0,0,0,0.45);
+  pointer-events: none;
+}
+
+.ciTourCard{
+  position: fixed;
+  z-index: 10000;
+  width: 560px;
+  max-width: min(560px, calc(100vw - 24px));
+  border-radius: 0;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(8,11,16,0.92);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 20px 70px rgba(0,0,0,0.55);
+  overflow: hidden;
+}
+
+.ciTourCardHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+.ciTourCardTitle{ font-weight: 950; letter-spacing: 0.01em; font-size: 14px; color: var(--color-text-primary); }
+.ciTourCardMeta{ margin-top: 4px; font-size: 11px; color: var(--color-text-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.ciTourClose{ border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: var(--color-text-secondary); border-radius: 10px; width: 30px; height: 30px; cursor:pointer; }
+
+.ciTourCardBody{
+  padding: 16px 18px 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.ciTourFoot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 14px 18px 18px;
+}
+.ciTourBtns{ display:flex; gap: 8px; }
+.ciTourNavBtn{
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: var(--color-text-primary);
+  padding: 10px 12px;
+  font-weight: 850;
+  cursor:pointer;
+}
+.ciTourNavBtn.primary{
+  background: var(--color-success-subtle);
+  border-color: rgba(94,200,172,0.28);
+}
+.ciTourNavBtn:disabled{ opacity: 0.45; cursor: default; }
+
+/* Tour calculation note */
+.ciTourCalcNote{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.14);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* Utility spacing for help header links */
+#ciMount .form-head-right{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#ciMount .headHelpLinks{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  margin-right: 6px;
+}
+
+#ciMount .dashHelpSep{
+  color: var(--color-text-accent-mid);
+  font-weight: 900;
+}
+
+#ciMount .dashHelpLink{
+  color: rgba(255, 215, 140, 0.98);
+  text-decoration: none;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  font-size: 12px;
+}
+#ciMount .dashHelpLink:hover{
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+#ciMount .dashHelpLink:focus-visible{
+  outline: 2px solid var(--color-text-accent-mid);
+  outline-offset: 4px;
+}
+#ciMount .dashHelpLink.inline{ font-size: 12px; }
+
+}/* end @layer components */
+
+/* ── Parchment / light theme overrides ── */
+html[data-theme="parchment"] .cv-modal, html[data-theme="parchment"] .cvModal, html[data-theme="parchment"] [class*="modal"] {
+  background: var(--color-bg-surface) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-default) !important;
+}
+html[data-theme="parchment"] [class*="modal"] h1,
+html[data-theme="parchment"] [class*="modal"] h2,
+html[data-theme="parchment"] [class*="modal"] h3,
+html[data-theme="parchment"] [class*="modal"] .modal-title,
+html[data-theme="parchment"] [class*="modal"] .cvm-title {
+  color: var(--color-text-accent) !important;
+}
+html[data-theme="parchment"] [class*="modal-backdrop"],
+html[data-theme="parchment"] [class*="overlay"],
+html[data-theme="parchment"] .cv-scrim {
+  background: var(--color-bg-overlay) !important;
+}
+
+/* ── Parchment theme overrides ── */
+html[data-theme="parchment"] .cvHelpModal,
+html[data-theme="parchment"] .ciTourBackdrop { background: var(--color-bg-overlay); }
+html[data-theme="parchment"] .cvHelpWindow,
+html[data-theme="parchment"] .ciTourCard {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-default);
+  color: var(--color-text-primary);
+}
+html[data-theme="parchment"] .cvHelpWindow *,
+html[data-theme="parchment"] .ciTourCard * { color: inherit; }
+html[data-theme="parchment"] .cv-scrim { background: var(--color-bg-overlay); }
+
+/* ═══════════════════════════════════════════════════════════════
+   PARCHMENT — FAQ & GLOSSARY: transparent bg + midnight blue border
+   per question/answer pair and per glossary entry row
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── FAQ: each top-level group (category accordion) ── */
+html[data-theme="parchment"] .cvHelpDoc .group {
+  background: transparent !important;
+  border: 1.5px solid rgba(14,28,80,0.50) !important;
+  box-shadow: 0 2px 8px rgba(14,28,80,0.08) !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .group > summary {
+  background: rgba(14,28,80,0.05) !important;
+}
+
+/* ── FAQ: each individual Q&A pair (details > summary + answer) ── */
+html[data-theme="parchment"] .cvHelpDoc .faq details {
+  background: transparent !important;
+  border: 1px solid rgba(14,28,80,0.38) !important;
+  border-radius: 6px !important;
+  margin: 4px 0 !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .faq details:first-child {
+  border-top: 1px solid rgba(14,28,80,0.38) !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .faq summary {
+  background: transparent !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .answer {
+  background: transparent !important;
+}
+
+/* ── FAQ text colours ── */
+html[data-theme="parchment"] .cvHelpDoc .q {
+  color: rgba(14,28,80,0.88) !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .group-title strong {
+  color: rgba(14,28,80,0.90) !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .group-title span {
+  color: rgba(14,28,80,0.65) !important;
+}
+
+/* ── FAQ: chevron / expand icons ── */
+html[data-theme="parchment"] .cvHelpDoc .chev,
+html[data-theme="parchment"] .cvHelpDoc .group-chevron {
+  background: rgba(14,28,80,0.08) !important;
+  border-color: rgba(14,28,80,0.25) !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .chev::before,
+html[data-theme="parchment"] .cvHelpDoc .chev::after,
+html[data-theme="parchment"] .cvHelpDoc .group-chevron::before,
+html[data-theme="parchment"] .cvHelpDoc .group-chevron::after {
+  background: rgba(14,28,80,0.75) !important;
+}
+
+/* ── Glossary: cvMiniTable — each row gets a midnight blue border ── */
+html[data-theme="parchment"] .cvHelpDoc .cvMiniTable {
+  background: transparent !important;
+  border: 1.5px solid rgba(14,28,80,0.45) !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .cvMiniTable tr {
+  border-bottom: 1px solid rgba(14,28,80,0.25) !important;
+  background: transparent !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .cvMiniTable th,
+html[data-theme="parchment"] .cvHelpDoc .cvMiniTable td {
+  border-bottom: 1px solid rgba(14,28,80,0.22) !important;
+  color: rgba(14,28,80,0.88) !important;
+  background: transparent !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .cvMiniTable thead th {
+  background: rgba(14,28,80,0.06) !important;
+  color: rgba(14,28,80,0.92) !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .cvMiniTable tbody tr:last-child td {
+  border-bottom: none !important;
+}
+html[data-theme="parchment"] .cvHelpDoc .cvFaqNote {
+  background: rgba(14,28,80,0.05) !important;
+  border-color: rgba(14,28,80,0.25) !important;
+  color: rgba(14,28,80,0.80) !important;
+}
+
+/* ── Parchment theme overrides ── */
+html[data-theme="parchment"] .cvHelpModal,
+html[data-theme="parchment"] .ciTourBackdrop { background: var(--color-bg-overlay); }
+
+html[data-theme="parchment"] .cvHelpWindow {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-default);
+  color: var(--color-text-primary);
+  box-shadow: 0 16px 48px rgba(14,28,60,0.18);
+}
+
+/* Close button: dark near-black bg, white font (matches dashboard button design) */
+html[data-theme="parchment"] .cvHelpCloseBtn {
+  background: rgb(10,10,15) !important;
+  border-bottom: 1px solid rgba(200,200,220,0.18) !important;
+  color: rgba(255,255,255,0.92) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    inset 0 -1px 0 rgba(0,0,0,0.50) !important;
+}
+html[data-theme="parchment"] .cvHelpCloseBtn:hover {
+  background: rgb(18,18,28) !important;
+  color: rgba(255,255,255,1.00) !important;
+  filter: brightness(1.12) !important;
+}
+
+html[data-theme="parchment"] .cvHelpWindow *,
+html[data-theme="parchment"] .cvHelpDoc { color: var(--color-text-primary); }
+
+html[data-theme="parchment"] .cv-scrim { background: var(--color-bg-overlay); }
+
+html[data-theme="parchment"] .cvMiniTable { border-color: var(--color-border-default); }
+html[data-theme="parchment"] .cvFaqNote {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-border-accent-subtle);
+  color: var(--color-text-primary);
+}
+
+/* Tour card close button — same white font treatment */
+html[data-theme="parchment"] .ciTourClose {
+  background: rgb(10,10,15) !important;
+  border-color: rgba(200,200,220,0.22) !important;
+  color: rgba(255,255,255,0.92) !important;
+}
+html[data-theme="parchment"] .ciTourClose:hover {
+  background: rgb(20,20,32) !important;
+  color: rgba(255,255,255,1.00) !important;
+}

@@ -1,0 +1,259 @@
+@layer components {
+/*
+ * dashboard.math.css
+ * OWNER: Formula / KaTeX rendering (FAQ + Glossary modals)
+ *
+ * Owns:  .cvFormula, .cvEq, .cvSum, .cvSqrt, .cvFrac, .cvOp, .cvPow,
+ *         and all mathematical typesetting helpers
+ * Does NOT own: modal chrome (dashboard.modals.css)
+ *               panel layout (dashboard.layout.css)
+ */
+
+/* ------------------------------------------------------------
+   Formula typography: three size groupings
+   - variables/constants (base)
+   - symbols/operators (slightly larger)
+   - superscripts/subscripts (smaller)
+   ------------------------------------------------------------ */
+.cvHelpDoc .cvFormula{
+  --cv-var-size: 20px;
+  --cv-op-size: 22px;
+  --cv-ss-size: 14px;
+}
+
+/* Paper-style formula block */
+.cvHelpDoc .cvFormula{
+  margin: 16px 0 22px;
+  padding: 16px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--color-border-accent-subtle);
+  border-left: 3px solid var(--color-text-accent-mid);
+  border-radius: 0px;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 20px;
+  line-height: 1.55;
+  letter-spacing: 0.2px;
+  text-align: left;
+  padding-left: 26px;
+  overflow-x: auto;
+}
+
+.cvHelpDoc .cvFormulaLine{
+  margin: 14px 0;
+  word-break: break-word;
+}
+
+.cvHelpDoc .cvFormula sub{
+  font-size: 0.72em;
+  vertical-align: baseline;
+  position: relative;
+  top: 0.30em;
+}
+
+.cvHelpDoc .cvFormula sup{
+  font-size: 0.72em;
+  vertical-align: baseline;
+  position: relative;
+  top: -0.62em;
+  margin-left: 0.02em;
+}
+
+/* Operators and symbols */
+.cvHelpDoc .cvFormula .cvOp,
+.cvHelpDoc .cvFormula .cvSym{
+  font-size: var(--cv-op-size);
+}
+
+.cvHelpDoc .cvFormula sub,
+.cvHelpDoc .cvFormula sup{
+  font-size: var(--cv-ss-size);
+}
+
+/* Operator spacing */
+.cvHelpDoc .cvOp{
+  padding: 0 0.20em;
+}
+
+/* Aligned equation lines (paper-style) */
+.cvHelpDoc .cvEq{
+  display: grid;
+  grid-template-columns: var(--lhs-w, 16ch) 2.4ch 1fr;
+  column-gap: 10px;
+  align-items: baseline;
+}
+.cvHelpDoc .cvEq .cvLHS{
+  display: block;
+}
+.cvHelpDoc .cvEq .cvLHS.isBlank{
+  visibility: hidden;
+}
+.cvHelpDoc .cvEq .cvRHS{
+  display: block;
+}
+
+.cvHelpDoc .cvRHS.cvIndentParen{
+  padding-left: var(--paren-indent, 5ch);
+}
+
+/* Controlled spacing variants */
+.cvHelpDoc .cvFormula.cvFormulaLoose .cvFormulaLine{
+  margin: 20px 0;
+}
+
+/* Research-paper-like spacing for multi-line blocks */
+.cvHelpDoc .cvFormulaLine + .cvFormulaLine{
+  margin-top: 18px;
+}
+
+/* Summation with stable index positioning */
+.cvHelpDoc .cvSum{
+  display: inline-block;
+  position: relative;
+  padding: 0 0.10em;
+  vertical-align: middle;
+}
+.cvHelpDoc .cvSum .cvSumSym{
+  font-size: 3.6em;
+  line-height: 0.90;
+  display: inline-block;
+  vertical-align: -0.08em;
+  position: relative;
+  top: 0.01em;
+}
+.cvHelpDoc .cvSum .cvSumSub,
+.cvHelpDoc .cvSum .cvSumSup{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--cv-ss-size);
+  line-height: 1;
+  white-space: nowrap;
+  color: inherit;
+}
+.cvHelpDoc .cvSum .cvSumSub{ bottom: -1.24em; }
+.cvHelpDoc .cvSum .cvSumSup{ top: -0.72em; }
+
+/* Per-formula adjustments */
+.cvHelpDoc .cvSum.cvSumSubLow40 .cvSumSub{ bottom: -1.64em; }
+.cvHelpDoc .cvSum.cvSumNumRaised{
+  top: calc(0px - (var(--cv-ss-size) + var(--cv-ss-size)));
+}
+
+/* Big summation symbol */
+.cvHelpDoc .cvSumSym{
+  font-size: 3.6em;
+  line-height: 0.90;
+  display: inline-block;
+  vertical-align: -0.08em;
+  position: relative;
+  top: 0.01em;
+  margin: 0 0.12em;
+}
+
+/* Attach indices to Σ when written as: <span class="cvSumSym">Σ</span><sub>...</sub> */
+.cvHelpDoc .cvSumSym + sub{
+  font-size: 0.60em;
+  vertical-align: baseline;
+  position: relative;
+  left: -0.98em;
+  top: 1.08em;
+  margin-right: -0.72em;
+}
+.cvHelpDoc .cvSumSym + sup{
+  font-size: 0.60em;
+  vertical-align: baseline;
+  position: relative;
+  left: -0.98em;
+  top: -1.18em;
+  margin-right: -0.72em;
+}
+
+/* Square-root rendering */
+.cvHelpDoc .cvSqrt{
+  display: inline-flex;
+  align-items: flex-start;
+  vertical-align: middle;
+}
+.cvHelpDoc .cvSqrt .cvSqrtSym{
+  font-size: 2.1em;
+  line-height: 0.92;
+  position: relative;
+  top: 0.08em;
+}
+.cvHelpDoc .cvSqrt .cvSqrtBody{
+  border-top: 3px solid currentColor;
+  padding: 0.08em 0.12em 0 0.18em;
+  margin-left: -0.12em;
+  white-space: nowrap;
+}
+
+/* Exponent rendering */
+.cvHelpDoc .cvPow{
+  display: inline-block;
+  position: relative;
+}
+.cvHelpDoc .cvPow sup{
+  position: relative;
+  top: -0.78em;
+  margin-left: 0.04em;
+}
+
+/* Fraction rendering */
+.cvHelpDoc .cvFrac{
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  font-size: 1.10em;
+  line-height: 1.1;
+  margin: 0 0.14em;
+}
+.cvHelpDoc .cvFrac .cvNum,
+.cvHelpDoc .cvFrac .cvDen{
+  padding: 0 0.35em;
+  white-space: nowrap;
+}
+.cvHelpDoc .cvFrac .cvBar{
+  align-self: stretch;
+  border-top: 4px solid var(--color-text-accent);
+  margin: 0.16em 0;
+}
+
+/* Rationale section */
+.cvHelpDoc .cvRationale{
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border-accent-subtle);
+}
+.cvHelpDoc .cvRationale .cvMiniHead{
+  margin: 0 0 8px;
+  font-size: 0.92em;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.cvHelpDoc .cvRationale ul{
+  margin: 8px 0 0 22px;
+}
+.cvHelpDoc .cvRationale li{
+  margin: 6px 0;
+}
+
+/* Inline note block */
+.cvHelpDoc .note{
+  margin: 12px 0 18px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--color-text-accent-soft);
+  background: var(--color-accent-subtle);
+  border-radius: 0px;
+  color: var(--color-bg-page);
+}
+
+/* KaTeX inside modals — dark theme override */
+.cvHelpDoc .katex,
+.cvHelpDoc .katex-display{
+  color: var(--color-text-primary) !important;
+}
+
+} /* end @layer components */

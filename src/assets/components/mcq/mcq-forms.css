@@ -1,0 +1,489 @@
+/* mcq-forms.css — form and component styles for MCQ pages */
+/* Originally assets/css/forms.css — remapped to assets/components/mcq/mcq-forms.css */
+
+/* ===== Window card + form controls (inspired by second uploaded page) ===== */
+
+/* Cursor-follow hover effects (ported from the uploaded "mini windows" page) */
+.glow-follow{
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-follow::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius: inherit;
+  padding: 1px; /* border ring thickness */
+  background: radial-gradient(140px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(246, 213, 138, 0.90),
+    rgba(246, 213, 138, 0.22) 28%,
+    transparent 55%);
+  opacity: 0;
+  transition: opacity 140ms ease;
+
+  /* show only the border ring */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+.glow-follow:hover::before,
+.glow-follow:focus-within::before{
+  opacity: 1;
+}
+
+.glow-follow::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius: inherit;
+  pointer-events:none;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.00) 55%),
+    radial-gradient(180px 120px at var(--mx, 14%) var(--my, 18%), rgba(246, 213, 138, 0.05), transparent 60%);
+  /* Subtle body highlight (border ring is handled in ::before) */
+  opacity: 0.06;
+  transition: opacity 200ms ease;
+}
+
+.glow-follow:hover::after,
+.glow-follow:focus-within::after{
+  opacity: 0.10;
+}
+
+.glow-follow > *{ position: relative; z-index: 1; }
+
+.window{
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255,255,255,0.12);
+  /* Premium layered surface (color layering; no patterned texture) */
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,0.070), transparent 52%),
+    radial-gradient(circle at 78% 68%, var(--color-accent-subtle), transparent 66%),
+    linear-gradient(180deg, rgba(255,255,255,0.045), rgba(0,0,0,0.26)),
+    linear-gradient(90deg, rgba(255,255,255,0.020), rgba(0,0,0,0.24)),
+    var(--surface);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.55),
+    var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.window-pad{ padding: clamp(18px, 2.2vw, 28px); position: relative; z-index: 1; }
+
+.h1{
+  margin: 0;
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: clamp(20px, 2.2vw, 26px);
+  text-shadow:
+    -1px -1px 0 rgba(255,255,255,0.06),
+    0 1px 0 rgba(0,0,0,0.88),
+    0 10px 16px rgba(0,0,0,0.45);
+}
+
+.lede{
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 80ch;
+  font-size: 13px;
+}
+
+.divider{
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  margin: 18px 0;
+  opacity: 0.85;
+}
+
+.form{
+  display: grid;
+  gap: 18px;
+}
+
+.label{
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--color-text-accent-mid);
+  user-select: none;
+}
+
+.help{
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* Generic input surface (dark) */
+.control{
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,0.04), transparent 56%),
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.26)),
+    linear-gradient(90deg, rgba(255,255,255,0.02), rgba(0,0,0,0.24)),
+    var(--color-bg-page);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 18px 44px rgba(0,0,0,0.26);
+}
+
+.input, select.input{
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-ui, 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif);
+  font-size: 14px;
+  padding: 14px 14px;
+  outline: none;
+}
+
+.control:focus-within{
+  border-color: rgba(246, 213, 138, 0.46);
+  box-shadow:
+    0 0 0 4px rgba(246, 213, 138, 0.14),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 22px 48px rgba(0,0,0,0.36);
+  transform: translateY(-1px);
+}
+
+/* Buttons */
+.btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid rgba(246, 213, 138, 0.42);
+  background: rgba(246, 213, 138, 0.92);
+  color: var(--color-bg-page);
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  font-size: 12px;
+  padding: 13px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 18px 44px rgba(0,0,0,0.34);
+  transition: transform var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease), filter var(--t-med) var(--ease);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn:hover{ transform: translateY(-1px); box-shadow: 0 22px 58px rgba(0,0,0,0.44); filter: drop-shadow(0 0 18px rgba(246,213,138,0.12)); }
+.btn:active{ transform: translateY(2px); box-shadow: 0 10px 26px rgba(0,0,0,0.34) inset; filter: none; }
+.btn[disabled]{ opacity: 0.62; cursor: not-allowed; transform: none !important; filter: none !important; }
+
+.ghost{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.18);
+  color: var(--color-text-secondary);
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform var(--t-med) var(--ease), border-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ghost:hover{ transform: translateY(-1px); border-color: var(--color-border-accent-subtle); box-shadow: 0 18px 44px rgba(0,0,0,0.28); }
+.ghost:active{ transform: translateY(1px); }
+
+/* Checkbox line */
+.checkline{
+  display:flex;
+  align-items:flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 18px 44px rgba(0,0,0,0.18);
+}
+
+.checkline input{
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--color-text-accent);
+}
+
+.checkline label{
+  font-family: var(--font-ui, 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+/* Segmented radios */
+.segment{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.seg-item input{ position:absolute; opacity: 0; pointer-events:none; }
+.seg-item{ position: relative; }
+
+.seg-item label{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.18);
+  color: var(--color-text-secondary);
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  cursor: pointer;
+  user-select:none;
+  transition: transform var(--t-med) var(--ease), border-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease), background var(--t-med) var(--ease);
+}
+
+.seg-item label:hover{ transform: translateY(-1px); border-color: var(--color-border-accent-subtle); box-shadow: 0 18px 44px rgba(0,0,0,0.28); }
+
+.seg-item input:checked + label{
+  background: var(--color-text-accent);
+  border-color: var(--color-border-accent);
+  color: var(--color-bg-page);
+}
+
+/* Range */
+.range-wrap{
+  display:grid;
+  gap: 10px;
+}
+
+.range-meta{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.range-value{
+  font-family: var(--font-mono, 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', monospace);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+input[type="range"]{
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  margin: 0;
+}
+
+input[type="range"]:focus{ outline: none; }
+
+input[type="range"]::-webkit-slider-runnable-track{
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 12px;
+  background: var(--color-text-accent);
+  border: 1px solid var(--color-border-accent);
+  margin-top: -7px;
+  box-shadow: 0 14px 28px rgba(0,0,0,0.42);
+}
+
+input[type="range"]::-moz-range-track{
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+input[type="range"]::-moz-range-thumb{
+  width: 18px;
+  height: 18px;
+  border-radius: 12px;
+  background: var(--color-text-accent);
+  border: 1px solid var(--color-border-accent);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.42);
+}
+
+/* ── Science FAQ section ─────────────────────────────────────────────── */
+.mcq-science-faq {
+  max-width: 860px;
+  margin: 48px auto 0;
+  padding: 0 24px 48px;
+}
+.mcq-science-faq-inner {
+  border-top: 1px solid rgba(255,255,255,0.10);
+  padding-top: 36px;
+}
+.mcq-science-faq-heading {
+  font-family: var(--font-brand);
+  font-size: clamp(16px, 1.6vw, 20px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-text-accent-mid);
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+.mcq-science-faq-intro {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 28px;
+  line-height: 1.6;
+}
+.sfaq-item {
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sfaq-item + .sfaq-item {
+  margin-top: 0;
+}
+.sfaq-q {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 4px;
+  font-family: var(--font-brand);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.sfaq-q::-webkit-details-marker { display: none; }
+.sfaq-q::after {
+  content: '+';
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--color-text-accent-soft);
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+}
+.sfaq-item[open] > .sfaq-q::after {
+  transform: rotate(45deg);
+}
+.sfaq-a {
+  padding: 0 4px 20px;
+}
+.sfaq-a p {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+.sfaq-a p:last-child { margin-bottom: 0; }
+.sfaq-a strong { color: var(--color-text-accent-mid); font-weight: 600; }
+.sfaq-a em { color: var(--color-text-muted); font-style: italic; }
+
+/* ── Parchment: MCQ form elements ── */
+html[data-theme="parchment"] .ghost {
+  background: transparent;
+  border-color: rgba(14,28,80,0.28);
+  color: rgba(14,28,80,0.75);
+}
+html[data-theme="parchment"] .ghost:hover {
+  background: rgba(14,28,80,0.06);
+  border-color: rgba(14,28,80,0.42);
+  color: rgba(14,28,80,0.90);
+}
+html[data-theme="parchment"] .checkline {
+  background: rgba(14,28,80,0.10);
+}
+html[data-theme="parchment"] .checkline.checked {
+  background: rgba(14,28,80,0.40);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PARCHMENT THEME — MCQ FORMS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Ghost buttons ── */
+html[data-theme="parchment"] .ghost {
+  background: rgba(248,246,240,0.88) !important;
+  color: rgba(8,10,20,0.75) !important;
+  border: 1px solid rgba(8,10,20,0.20) !important;
+}
+html[data-theme="parchment"] .ghost:hover {
+  background: rgba(248,246,240,1.0) !important;
+  color: rgba(8,10,20,0.90) !important;
+  border-color: rgba(8,10,20,0.35) !important;
+}
+html[data-theme="parchment"] .ghost:active {
+  background: rgba(8,10,20,0.08) !important;
+}
+
+/* ── Checkline rows ── */
+html[data-theme="parchment"] .checkline {
+  background: rgba(248,246,240,0.88) !important;
+  border: 1px solid rgba(8,10,20,0.14) !important;
+  color: rgba(8,10,20,0.80) !important;
+}
+html[data-theme="parchment"] .checkline input {
+  accent-color: rgba(8,10,20,0.80) !important;
+}
+html[data-theme="parchment"] .checkline label {
+  color: rgba(8,10,20,0.80) !important;
+}
+
+/* ── Primary submit / action buttons ── */
+html[data-theme="parchment"] .btn {
+  background: rgba(8,10,20,0.88) !important;
+  color: rgba(248,246,240,0.95) !important;
+  border: 1px solid rgba(8,10,20,0.55) !important;
+}
+html[data-theme="parchment"] .btn:hover {
+  background: rgba(8,10,20,1.0) !important;
+}
+
+/* ── Section/row labels inside MCQ forms ── */
+html[data-theme="parchment"] .form-label,
+html[data-theme="parchment"] .field-label,
+html[data-theme="parchment"] .row-label {
+  color: rgba(8,10,20,0.80) !important;
+}
+
+/* ── Any select inside mcq forms ── */
+html[data-theme="parchment"] .mcq-wrap select,
+html[data-theme="parchment"] .quiz-config select {
+  background: rgba(248,246,240,0.96) !important;
+  color: rgba(8,10,20,0.88) !important;
+  border: 1px solid rgba(8,10,20,0.22) !important;
+}

@@ -1,0 +1,378 @@
+/* mcq-setup-overrides.css
+ * Layout overrides for mcq-parent.html.
+ * Extracted from inline <style id="mcq-setup-overrides"> (CAT-A, fix A3).
+ *
+ * Also defines utility classes introduced by A4 (inline style= removal):
+ *   .help--flush        margin: 0
+ *   .help--spaced       margin: 0 0 10px
+ *   .control--padded    padding: 10px 14px
+ *   .actions-right      display: flex layout for the form actions row
+ */
+
+/* 1) Keep toggle buttons on the window, but align the leftmost toggle with the window edge */
+  #catPanel{ --catpanel-inset: clamp(14px, 1.8vw, 18px); }
+  #catPanel .panel-window-tabs{
+    display:flex !important;
+    justify-content:flex-start !important;
+    align-items:stretch !important;
+    gap:10px !important;
+    /* stretch the tab bar to the panel's inner edges */
+    margin-left: calc(-1 * var(--catpanel-inset)) !important;
+    margin-right: calc(-1 * var(--catpanel-inset)) !important;
+    padding-left: var(--catpanel-inset) !important;
+    padding-right: var(--catpanel-inset) !important;
+  }
+  /* Tab buttons: 3D raised/depressed effect.
+   Merged from 5 conflicting rule blocks → 2 canonical blocks (B3). */
+
+  /* Rest state */
+  #catPanel .panel-window-tabs .wtab {
+    margin-left: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    border-style: solid !important;
+    border-width: 1px !important;
+    outline: none !important;
+    box-shadow:
+      0 6px 10px rgba(0,0,0,.35),
+      inset 0 2px 0 rgba(255,255,255,.12),
+      inset 0 -2px 0 rgba(0,0,0,.35) !important;
+    transform: translateY(-1px);
+  }
+
+  /* Active / pressed state */
+  #catPanel .panel-window-tabs .wtab.is-active,
+  #catPanel .panel-window-tabs .wtab[aria-selected="true"],
+  #catPanel .panel-window-tabs .wtab:active {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    box-shadow:
+      inset 0 5px 10px rgba(0,0,0,.55),
+      inset 0 -2px 0 rgba(255,255,255,.10) !important;
+    transform: translateY(1px);
+  }
+
+  /* 2) Move the *larger* "Filter Categories" label to the right (not the smaller meta text) */
+  #catPanel .panel-head .label-row .label{
+    padding-left: 14px !important;
+  }
+
+  /* 3) Sharp corners for all subwindows inside the filter main window */
+    .filters-grid .glow-follow,
+    .filters-grid .panel,
+  .filters-grid .panel-group,
+  .filters-grid .control,
+  .filters-grid .category-box,
+  .filters-grid .palette-dropdown,
+  .filters-grid .simple-search-wrap,
+  .filters-grid .togglebar,
+  .filters-grid .range-wrap,
+  .filters-grid .quick-set,
+  .filters-grid .panel-window-tabs,
+  .filters-grid .wtab,
+  .filters-grid .mini-tabs,
+  .filters-grid .mini-tab{
+    border-radius: 0 !important;
+  }
+
+  /* 4) Reduce Selected Settings window height (remove excess bottom gap) while allowing growth */
+  .mcq-rail .window-palette{
+    height: auto !important;
+    align-self: stretch;
+  }
+  .mcq-rail .window-palette .rail-pad{
+    padding-bottom: 14px !important;
+  }
+  .mcq-rail .window-palette .summary{
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    max-height: 38vh;     /* grows naturally until this point */
+    overflow: auto;       /* then scroll if needed as categories expand */
+  }
+  .mcq-rail .window-palette .summary-block:last-child{
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* 5) Increase Info window height + font size */
+  .mcq-rail{
+    display:flex !important;
+    flex-direction:column !important;
+  }
+  .mcq-rail > .window-rail[aria-label="Explanations"]{
+    flex: 1 1 420px !important;
+    min-height: 360px !important;
+  }
+  .mcq-rail > .window-palette{
+    flex: 0 0 auto !important;
+  }
+  #infoRailTitle{
+    font-size: 18px !important;
+  }
+  #infoRailBody{
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+  }
+  #infoRailBody .rail-muted{
+    font-size: 15px !important;
+  }
+
+
+/* ─── A4 utility classes (extracted from inline style= attributes) ─────── */
+
+/* .help--flush: replaces style="margin:0;" on .help elements */
+.help--flush {
+  margin: 0;
+}
+
+/* .help--spaced: replaces style="margin:0 0 10px;" on .help elements */
+.help--spaced {
+  margin: 0 0 10px;
+}
+
+/* .control--padded: replaces style="padding:10px 14px;" on .control elements */
+.control--padded {
+  padding: 10px 14px;
+}
+
+/* .actions-right: replaces inline display/gap/flex-wrap/margin on the form actions row */
+.actions-right {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+/* .pdrop-empty: replaces inline styles on empty dropdown state (extracted from mcq-parent.js) */
+.pdrop-empty {
+  padding: 14px 12px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* ── Tab button visibility fix ─────────────────────────────────────────────
+ * .window (from mcq-forms.css) sets overflow:hidden for the glow border effect.
+ * .panel-window-tabs uses transform:translateY(-100%) to float above .panel-left.
+ * Without this override, the tab buttons are clipped by .window-large and
+ * are invisible and unclickable.
+ */
+.window-large {
+  overflow: visible;
+}
+/* The glow ::before/::after borders are on .panel itself, not .window-large,
+   so visible overflow here doesn't break the glow ring. */
+
+/* ── ghost-mini: compact variant of .ghost ───────────────────────────────── */
+.ghost-mini {
+  padding: 8px 10px;
+  font-size: 10px;
+  border-radius: 10px;
+}
+
+/* Ensure panel-left overflow:visible beats glow-follow overflow:hidden
+   (both have equal specificity; this ensures it's last in cascade) */
+.panel-left {
+  overflow: visible !important;
+}
+
+/* ── Cat-tab panel visibility (specificity fix) ─────────────────────────────
+ * mcq-parent.css has #catTabPower{display:flex} and #catTabSimple{display:block}.
+ * ID specificity (1,0,0) beats .cat-tab{display:none} (0,1,0), so both panels
+ * are always visible unless overridden here.
+ * Fix: reset both to display:none at ID level, then use !important on is-active
+ * so it wins regardless of source order.
+ */
+#catTabPower  { display: none; }
+#catTabSimple { display: none; }
+#catTabPower.is-active  { display: flex !important; }
+#catTabSimple.is-active { display: block !important; }
+
+/* ── Sharp corners on all MCQ windows ──────────────────────────────────── */
+.window,
+.window-large,
+.window-rail,
+.window-palette,
+.mcq-rail .window-rail,
+.mcq-rail .window-palette {
+  border-radius: 0 !important;
+}
+
+/* ── Width stability: prevent layout shift when switching filter tabs ──────
+ *
+ * When .cat-tab switches display:none→block, the newly visible panel's
+ * intrinsic content width can cause the grid's 1fr column to resize, which
+ * shifts the whole window width. Fix: fully contain all cat-tab content
+ * within its allocated space so it never drives the column wider.
+ */
+
+/* Lock the filter grid's left column to exactly fill — never expand */
+.filters-grid {
+  grid-template-columns: minmax(0, 1fr) 460px;
+  contain: layout size style; /* prevent content from escaping the container */
+}
+
+/* Each panel must fill its container exactly, never wider */
+.cat-tabs {
+  min-width: 0;
+  width: 100%;
+  overflow: hidden; /* content cannot bleed width out */
+}
+
+.cat-tab {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden; /* active panel cannot drive parent wider */
+}
+
+/* Active panel gets overflow:auto for scrolling content, not hidden */
+.cat-tab.is-active {
+  overflow: auto;
+}
+
+.panel-left {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Anchor the whole window to a fixed width — never driven by content */
+.window-large {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 0;
+  box-sizing: border-box;
+}
+
+/* Anchor mcq-layout so the window-large + rail never reflow */
+.mcq-layout {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Simple filter pill grid: constrain to column width */
+.simple-pillgrid {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Palette input: prevent intrinsic size from expanding the grid */
+.palette-input {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Category scroll list: same */
+.category-scroll,
+#categoryList {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ── Tour button: sharp corners ─────────────────────────────────────────── */
+#mcqTourBtn {
+  border-radius: 0 !important;
+}
+
+/* ── Tour card buttons: sharp corners ───────────────────────────────────── */
+.ciTourNavBtn,
+.ciTourClose,
+.ciTourAggBtn {
+  border-radius: 0 !important;
+}
+
+/* ── MCQ parent: all buttons sharp corners ───────────────────────────────── */
+.mcq-parent .btn,
+.mcq-parent .ghost,
+.mcq-parent .ghost-mini,
+.mcq-parent button {
+  border-radius: 0 !important;
+}
+
+/* ── Adaptive source banner (P-INF-01) ─────────────────────────────────────
+ * Shown when mcq-parent.html is launched from adaptive-practice.html
+ * via ?source=adaptive. Explains the pre-filled settings.
+ */
+.ap-source-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--color-accent-subtle);
+  border: 1px solid var(--color-border-accent-subtle);
+  border-left: 3px solid var(--color-text-accent-soft);
+  font-size: 12.5px;
+  color: var(--color-text-accent-mid);
+  line-height: 1.50;
+  margin-bottom: 4px;
+}
+.ap-source-banner[hidden] { display: none !important; }
+.ap-source-icon { flex-shrink: 0; font-size: 13px; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PARCHMENT THEME — MCQ SETUP OVERRIDES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Setup panel container ── */
+html[data-theme="parchment"] .quiz-setup,
+html[data-theme="parchment"] .setup-panel {
+  background: rgba(248,246,240,0.97) !important;
+  color: rgba(8,10,20,0.88) !important;
+  border-color: rgba(8,10,20,0.15) !important;
+}
+
+/* ── Section headings ── */
+html[data-theme="parchment"] .setup-section-title,
+html[data-theme="parchment"] .config-section-head {
+  color: rgba(8,10,20,0.70) !important;
+  border-bottom-color: rgba(8,10,20,0.12) !important;
+}
+
+/* ── Mode tabs (Simple / Power): unselected = visible off-white ── */
+html[data-theme="parchment"] #catPanel .panel-window-tabs .wtab {
+  background: rgba(248,246,240,0.80) !important;
+  background-color: rgba(248,246,240,0.80) !important;
+  border-color: rgba(8,10,20,0.20) !important;
+  color: rgba(8,10,20,0.65) !important;
+  box-shadow: none !important;
+}
+
+/* ── Ghost-mini inside setup ── */
+html[data-theme="parchment"] .ghost-mini {
+  background: rgba(248,246,240,0.88) !important;
+  color: rgba(8,10,20,0.75) !important;
+  border: 1px solid rgba(8,10,20,0.18) !important;
+}
+html[data-theme="parchment"] .ghost-mini:hover {
+  border-color: rgba(8,10,20,0.35) !important;
+  color: rgba(8,10,20,0.90) !important;
+}
+
+/* ── Palette input inside setup ── */
+html[data-theme="parchment"] .palette-input {
+  background: rgba(248,246,240,0.96) !important;
+  color: rgba(8,10,20,0.88) !important;
+  border: 1px solid rgba(8,10,20,0.22) !important;
+}
+
+/* ── Filters grid ── */
+html[data-theme="parchment"] .filters-grid {
+  background: rgba(248,246,240,0.92) !important;
+}
+html[data-theme="parchment"] .filters-grid .mini-tab {
+  color: rgba(8,10,20,0.55) !important;
+}
+html[data-theme="parchment"] .filters-grid .mini-tab.is-active {
+  background: rgba(8,10,20,0.88) !important;
+  color: rgba(248,246,240,0.95) !important;
+}
+
+/* ── Count badge / tag ── */
+html[data-theme="parchment"] .count-badge,
+html[data-theme="parchment"] .q-count {
+  background: rgba(8,10,20,0.88) !important;
+  color: rgba(248,246,240,0.92) !important;
+}

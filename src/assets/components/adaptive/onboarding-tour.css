@@ -1,0 +1,913 @@
+/* ============================================================
+ * onboarding-tour.css
+ * Premium 3D onboarding tour for first-time Codivium users.
+ * Follows the active CSS theme via CV token variables.
+ * ============================================================ */
+
+/* ── Backdrop ──────────────────────────────────────────────── */
+#cvOnboardingTour {
+  position: fixed;
+  inset: 0;
+  z-index: 10500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  /* clip-path is set dynamically by JS to cut a hole at the spotlight target */
+}
+
+/* When a spotlight target is active, the backdrop has a hole punched through it.
+   The hole exposes the live page element below — no blur, no overlay, full fidelity.
+   A separate unblurred layer sits between the raw page and the blurred backdrop. */
+#cvOnboardingTour.has-spotlight {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Unblurred passthrough layer — sits between page and blurred backdrop.
+   Covers the HOLE so the element shows through without the backdrop's blur. */
+#cvTourClearLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 10498;
+  pointer-events: none;
+  /* clip-path set to match hole exactly — only this region is rendered */
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* The dimming layer behind the clear hole — everything OUTSIDE the hole dims */
+#cvTourDimLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 10497;
+  background: rgba(0, 0, 0, 0.68);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  /* clip-path cuts a hole matching the spotlight so the dimming doesn't cover it */
+}
+
+#cvTourDimLayer.active {
+  opacity: 1;
+}
+
+/* Spotlight ring — drawn above the clear layer */
+.cvt-spotlight {
+  position: fixed;
+  z-index: 10499;
+  border-radius: 0;
+  box-shadow:
+    0 0 0 2px var(--color-accent, rgba(246,213,138,0.9)),
+    0 0 20px var(--color-accent, rgba(246,213,138,0.35)),
+    0 0 40px var(--color-accent, rgba(246,213,138,0.15));
+  pointer-events: none;
+  transition: all 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  opacity: 0;
+}
+
+.cvt-spotlight.visible { opacity: 1; }
+
+#cvOnboardingTour.cvt-visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Scene / 3D stage ──────────────────────────────────────── */
+.cvt-scene {
+  perspective: 1200px;
+  perspective-origin: 50% 46%;
+  width: 100%;
+  max-width: 800px;
+  padding: 20px;
+  position: relative;
+}
+
+/* ── Main card ─────────────────────────────────────────────── */
+.cvt-card {
+  background: var(--color-bg-surface, rgb(20, 22, 50));
+  border: 1px solid var(--color-border-strong, rgba(255,255,255,0.22));
+  border-radius: 0;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(2deg) translateZ(0);
+  box-shadow:
+    0 0 0 1px var(--color-border-accent-subtle, rgba(246,213,138,0.15)),
+    0 40px 100px rgba(0, 0, 0, 0.65),
+    0 0 80px rgba(246, 213, 138, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: cvt-float 6s ease-in-out infinite;
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes cvt-float {
+  0%, 100% { transform: rotateX(2deg) translateY(0px) translateZ(0); }
+  50%       { transform: rotateX(1.5deg) translateY(-6px) translateZ(0); }
+}
+
+/* ── Card top accent bar ───────────────────────────────────── */
+.cvt-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-accent, rgba(246,213,138,0.92)) 35%,
+    var(--color-accent-2, rgba(255,192,90,0.78)) 65%,
+    transparent 100%
+  );
+  z-index: 2;
+}
+
+/* ── Ambient glow behind card ──────────────────────────────── */
+.cvt-card::after {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  background: radial-gradient(
+    ellipse 70% 50% at 50% 0%,
+    var(--cv-glow, rgba(255,200,110,0.12)) 0%,
+    transparent 70%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ── Card header ───────────────────────────────────────────── */
+.cvt-header {
+  padding: 32px 36px 24px;
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    var(--color-accent-faint, rgba(246,213,138,0.04)) 0%,
+    transparent 100%
+  );
+  border-bottom: 1px solid var(--color-border-default, rgba(255,255,255,0.08));
+}
+
+/* ── Wordmark ──────────────────────────────────────────────── */
+.cvt-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  margin-bottom: 20px;
+}
+
+.cvt-wordmark-cube {
+  width: 52px;
+  height: 52px;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(-18deg) rotateY(32deg);
+  /* rotation driven by WAAPI in JS */
+  flex-shrink: 0;
+}
+
+/* cvt-cube-spin removed — WAAPI rotation in onboarding-tour.js */
+
+.cvt-cube-face {
+  position: absolute;
+  width: 52px; height: 52px;
+  border: 1px solid var(--color-accent, rgba(246,213,138,0.7));
+  background: var(--color-accent-subtle, rgba(246,213,138,0.06));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-accent, rgba(246,213,138,0.92));
+  letter-spacing: 0.05em;
+  font-family: 'Courier New', monospace;
+}
+.cvt-cube-face.front  { transform: translateZ(26px); }
+.cvt-cube-face.back   { transform: rotateY(180deg) translateZ(26px); }
+.cvt-cube-face.right  { transform: rotateY(90deg) translateZ(26px); }
+.cvt-cube-face.left   { transform: rotateY(-90deg) translateZ(26px); }
+.cvt-cube-face.top    { transform: rotateX(90deg) translateZ(26px); }
+.cvt-cube-face.bottom { transform: rotateX(-90deg) translateZ(26px); }
+
+.cvt-wordmark-text {
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: rgb(20, 20, 30);
+  font-family: 'DM Serif Display', Georgia, serif;
+  line-height: 1;
+  /* 3D rising text effect */
+  text-shadow:
+    0 1px 0 rgba(0,0,0,0.6),
+    0 2px 0 rgba(0,0,0,0.5),
+    0 3px 0 rgba(0,0,0,0.4),
+    0 4px 0 rgba(0,0,0,0.3),
+    0 5px 0 rgba(0,0,0,0.2),
+    0 6px 0 rgba(0,0,0,0.1),
+    0 8px 24px rgba(0,0,0,0.5),
+    0 0 40px var(--cv-glow, rgba(255,200,110,0.15));
+  transform: perspective(400px) translateZ(12px);
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.5));
+}
+
+.cvt-wordmark-text span {
+  color: inherit;
+  text-shadow: inherit;
+}
+
+/* ── Step indicator ────────────────────────────────────────── */
+.cvt-step-track {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.cvt-step-pip {
+  width: 28px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-border-default, rgba(255,255,255,0.1));
+  transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+  flex-shrink: 0;
+}
+
+.cvt-step-pip.done {
+  background: var(--color-accent, rgba(246,213,138,0.7));
+  width: 18px;
+}
+
+.cvt-step-pip.active {
+  background: var(--color-accent, rgba(246,213,138,0.92));
+  width: 36px;
+  box-shadow: 0 0 8px var(--color-accent, rgba(246,213,138,0.5));
+}
+
+/* ── Step label ────────────────────────────────────────────── */
+.cvt-step-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-accent-soft, rgba(246,213,138,0.55));
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+/* ── Card title ────────────────────────────────────────────── */
+.cvt-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-text-primary, rgba(245,245,252,0.92));
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin-bottom: 10px;
+  font-family: 'DM Serif Display', Georgia, serif;
+}
+
+.cvt-title em {
+  font-style: normal;
+  color: var(--color-accent, rgba(246,213,138,0.92));
+}
+
+/* ── Body ──────────────────────────────────────────────────── */
+.cvt-body {
+  padding: 24px 36px;
+}
+
+.cvt-desc {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--color-text-secondary, rgba(245,245,252,0.80));
+  margin-bottom: 20px;
+}
+
+/* ── Feature pills ─────────────────────────────────────────── */
+.cvt-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.cvt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary, rgba(245,245,252,0.92));
+  background: var(--color-bg-surface-2, rgb(34,34,38));
+  border: 1px solid var(--color-border-default, rgba(255,255,255,0.10));
+  transition: all 0.2s;
+}
+
+.cvt-pill:hover {
+  border-color: var(--color-border-accent-subtle, rgba(246,213,138,0.28));
+  background: var(--color-accent-subtle, rgba(246,213,138,0.06));
+}
+
+.cvt-pill-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ── Page screenshot preview ───────────────────────────────────────── */
+.cvt-screenshot {
+  background: var(--color-bg-surface-2, rgb(8,10,26));
+  border: 1px solid var(--color-border-default, rgba(255,255,255,0.08));
+  border-radius: 0;
+  overflow: hidden;
+  margin-bottom: 20px;
+  position: relative;
+  line-height: 0;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.cvt-screenshot::after {
+  content: 'Page preview';
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 9px;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, rgba(245,245,252,0.28));
+  pointer-events: none;
+}
+
+/* ── Illustration area ─────────────────────────────────────── */
+.cvt-illustration {
+  background: var(--color-bg-surface-2, rgb(8,10,26));
+  border-radius: 0;
+  border: 1px solid var(--color-border-default, rgba(255,255,255,0.08));
+  padding: 20px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cvt-illustration::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 60% 40% at 50% 0%,
+    var(--color-accent-subtle, rgba(246,213,138,0.05)) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.cvt-illus-inner {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.cvt-illus-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px var(--cv-glow, rgba(255,200,110,0.3)));
+  animation: cvt-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes cvt-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.06); opacity: 0.85; }
+}
+
+.cvt-illus-caption {
+  font-size: 12px;
+  color: var(--color-text-muted, rgba(245,245,252,0.55));
+  font-style: italic;
+}
+
+/* ── Mini video cards ──────────────────────────────────────── */
+.cvt-videos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.cvt-video-card {
+  background: var(--color-bg-surface-2, rgb(8,10,26));
+  border: 1px solid var(--color-border-default, rgba(255,255,255,0.08));
+  border-radius: 0;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.cvt-video-card:hover {
+  border-color: var(--color-border-accent-subtle, rgba(246,213,138,0.28));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.cvt-video-thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-surface, rgb(20,22,50)) 0%,
+    var(--color-bg-surface-2, rgb(8,10,26)) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cvt-video-thumb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--color-accent-subtle, rgba(246,213,138,0.08)) 0%,
+    transparent 65%
+  );
+}
+
+.cvt-play-btn {
+  width: 36px; height: 36px;
+  background: var(--color-accent, rgba(246,213,138,0.92));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 1;
+  transition: transform 0.2s;
+}
+
+.cvt-video-card:hover .cvt-play-btn {
+  transform: scale(1.12);
+}
+
+.cvt-play-btn svg {
+  width: 14px; height: 14px;
+  fill: #0a0a0c;
+  margin-left: 2px;
+}
+
+.cvt-video-meta {
+  padding: 10px 10px 12px;
+}
+
+.cvt-video-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary, rgba(245,245,252,0.80));
+  line-height: 1.3;
+}
+
+.cvt-video-dur {
+  font-size: 10px;
+  color: var(--color-text-muted, rgba(245,245,252,0.55));
+  margin-top: 3px;
+}
+
+/* ── Video modal ───────────────────────────────────────────── */
+.cvt-video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10600;
+  background: rgba(0,0,0,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.cvt-video-modal.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.cvt-video-player {
+  width: 100%;
+  max-width: 700px;
+  background: var(--color-bg-surface, rgb(20,22,50));
+  border-radius: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-strong, rgba(255,255,255,0.18));
+  box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+}
+
+.cvt-video-player iframe,
+.cvt-video-player video {
+  width: 100%;
+  aspect-ratio: 16/9;
+  display: block;
+}
+
+.cvt-video-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 18px;
+  transition: background 0.2s;
+}
+
+.cvt-video-close:hover { background: rgba(255,255,255,0.18); }
+
+
+
+/* ── Tooltip for spotlight steps ───────────────────────────── */
+.cvt-tooltip {
+  position: fixed;
+  z-index: 10495;
+  background: var(--color-bg-surface, rgb(20,22,50));
+  border: 1px solid var(--color-border-accent-subtle, rgba(246,213,138,0.28));
+  border-radius: 0;
+  padding: 16px 18px;
+  max-width: 340px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.cvt-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cvt-tooltip-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary, rgba(245,245,252,0.92));
+  margin-bottom: 5px;
+}
+
+.cvt-tooltip-body {
+  font-size: 12px;
+  color: var(--color-text-secondary, rgba(245,245,252,0.80));
+  line-height: 1.55;
+}
+
+/* ── Navigation footer ─────────────────────────────────────── */
+.cvt-footer {
+  padding: 20px 36px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-border-default, rgba(255,255,255,0.08));
+  gap: 12px;
+}
+
+.cvt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  font-family: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.cvt-btn-primary {
+  background: var(--color-accent, rgba(246,213,138,0.92));
+  color: #0a0a0c;
+  box-shadow: 0 4px 16px var(--cv-glow, rgba(255,200,110,0.25));
+}
+
+.cvt-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px var(--cv-glow, rgba(255,200,110,0.35));
+  background: rgba(255, 215, 100, 0.98);
+}
+
+.cvt-btn-primary:active { transform: translateY(0); }
+
+.cvt-btn-secondary {
+  background: var(--color-bg-surface-2, rgb(34,34,38));
+  color: var(--color-text-secondary, rgba(245,245,252,0.80));
+  border: 1px solid var(--color-border-default, rgba(255,255,255,0.10));
+}
+
+.cvt-btn-secondary:hover {
+  background: var(--color-border-default, rgba(255,255,255,0.08));
+  color: var(--color-text-primary, rgba(245,245,252,0.92));
+}
+
+.cvt-btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted, rgba(245,245,252,0.55));
+  padding: 11px 8px;
+}
+
+.cvt-btn-ghost:hover {
+  color: var(--color-text-secondary, rgba(245,245,252,0.80));
+}
+
+.cvt-btn-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* ── Trigger button (always visible in sidebar) ────────────── */
+#cvTourTriggerBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted, rgba(245,245,252,0.55));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+  font-family: inherit;
+  margin-top: 4px;
+}
+
+#cvTourTriggerBtn:hover {
+  color: var(--color-text-primary, rgba(245,245,252,0.92));
+  background: var(--color-accent-subtle, rgba(246,213,138,0.06));
+}
+
+#cvTourTriggerBtn .cvt-trigger-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent, rgba(246,213,138,0.92));
+  flex-shrink: 0;
+  box-shadow: 0 0 6px var(--color-accent, rgba(246,213,138,0.5));
+  animation: cvt-dot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes cvt-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* ── Slide transitions ─────────────────────────────────────── */
+.cvt-slide {
+  display: none;
+}
+
+.cvt-slide.active {
+  display: block;
+  animation: cvt-slide-in 0.4s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.cvt-slide.out {
+  animation: cvt-slide-out 0.25s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@keyframes cvt-slide-in {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cvt-slide-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-30px); }
+}
+
+/* ── Orientation form (final push) ────────────────────────── */
+.cvt-orient-block {
+  background: var(--color-bg-surface-2, rgb(8,10,26));
+  border: 1px solid var(--color-border-default, rgba(255,255,255,0.08));
+  border-radius: 0;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.cvt-orient-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-accent-soft, rgba(246,213,138,0.55));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.cvt-orient-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cvt-orient-opt {
+  padding: 9px 16px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--color-border-default, rgba(255,255,255,0.10));
+  background: var(--color-bg-surface, rgb(20,22,50));
+  color: var(--color-text-secondary, rgba(245,245,252,0.80));
+  transition: all 0.18s;
+  font-family: inherit;
+}
+
+.cvt-orient-opt:hover {
+  border-color: var(--color-border-accent-subtle, rgba(246,213,138,0.28));
+  color: var(--color-text-primary, rgba(245,245,252,0.92));
+}
+
+.cvt-orient-opt.selected {
+  background: var(--color-accent-subtle, rgba(246,213,138,0.10));
+  border-color: var(--color-accent, rgba(246,213,138,0.7));
+  color: var(--color-accent, rgba(246,213,138,0.92));
+  box-shadow: 0 0 8px var(--color-accent-subtle, rgba(246,213,138,0.12));
+}
+
+/* ── Audio indicator ───────────────────────────────────────── */
+.cvt-audio-toggle {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 30px; height: 30px;
+  background: var(--color-bg-surface-2, rgba(8,10,26,0.8));
+  border: 1px solid var(--color-border-default, rgba(255,255,255,0.10));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  z-index: 3;
+}
+
+.cvt-audio-toggle:hover {
+  background: var(--color-accent-subtle, rgba(246,213,138,0.08));
+  border-color: var(--color-border-accent-subtle, rgba(246,213,138,0.28));
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 660px) {
+  .cvt-scene { max-width: 100%; padding: 12px; }
+  .cvt-header, .cvt-body, .cvt-footer { padding-left: 20px; padding-right: 20px; }
+  .cvt-title { font-size: 22px; }
+  .cvt-videos { grid-template-columns: 1fr; }
+  .cvt-footer { flex-wrap: wrap; }
+  .cvt-btn-primary { width: 100%; justify-content: center; order: -1; }
+}
+
+/* ── No-data badge ─────────────────────────────────────────── */
+.cvt-badge-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--color-accent-subtle, rgba(246,213,138,0.10));
+  color: var(--color-accent, rgba(246,213,138,0.92));
+  border: 1px solid var(--color-border-accent-subtle, rgba(246,213,138,0.25));
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ── Topbar tour trigger ──────────────────────────────────────────── */
+@keyframes cvt-border-flash {
+  0%   { border-color: var(--color-border-accent-subtle, rgba(246,213,138,0.25));
+          box-shadow: 0 0 0 0 rgba(246,213,138,0); }
+  25%  { border-color: var(--color-accent, rgba(246,213,138,0.9));
+          box-shadow: 0 0 0 3px rgba(246,213,138,0.2); }
+  50%  { border-color: var(--color-border-accent-subtle, rgba(246,213,138,0.25));
+          box-shadow: 0 0 0 0 rgba(246,213,138,0); }
+  75%  { border-color: var(--color-accent, rgba(246,213,138,0.8));
+          box-shadow: 0 0 0 2px rgba(246,213,138,0.15); }
+  100% { border-color: var(--color-border-accent-subtle, rgba(246,213,138,0.25));
+          box-shadow: 0 0 0 0 rgba(246,213,138,0); }
+}
+
+#cvTourTriggerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-accent-soft, rgba(246,213,138,0.7));
+  background: var(--color-accent-faint, rgba(246,213,138,0.04));
+  /* Always-visible border */
+  border: 1px solid var(--color-border-accent-subtle, rgba(246,213,138,0.25));
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  width: auto;
+  margin-top: 0;
+  /* Above tour backdrop */
+  position: relative;
+  z-index: 10501;
+}
+
+/* Flash animation plays once on page load (class added by JS) */
+#cvTourTriggerBtn.cvt-flash {
+  animation: cvt-border-flash 1.6s ease-in-out 1;
+}
+
+#cvTourTriggerBtn:hover {
+  color: var(--color-accent, rgba(246,213,138,0.92));
+  border-color: var(--color-accent, rgba(246,213,138,0.7));
+  background: var(--color-accent-subtle, rgba(246,213,138,0.08));
+  box-shadow: 0 0 0 2px rgba(246,213,138,0.12);
+}
+
+/* Respect prefers-reduced-motion for flash only */
+@media (prefers-reduced-motion: reduce) {
+  #cvTourTriggerBtn.cvt-flash {
+    animation: none;
+  }
+  @keyframes cvt-border-flash { /* noop */ }
+}
+
+#cvTourTriggerBtn .cvt-trigger-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent, rgba(246,213,138,0.92));
+  flex-shrink: 0;
+  box-shadow: 0 0 6px var(--color-accent, rgba(246,213,138,0.5));
+  animation: cvt-dot-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #cvTourTriggerBtn .cvt-trigger-dot {
+    animation: none;
+  }
+}
+
+/* 3. Background page preview for full-page steps */
+
+
+/* Single sharp iframe — no blur on it at all */
+
+
+/* Four blur-overlay panels that surround the spotlight hole.
+   Each covers one side of the screen; the gap between them
+   exposes the iframe crisp and clear in the spotlight region. */
+.cvt-blur-panel {
+  position: fixed;
+  z-index: 10481;
+  pointer-events: none;
+  background: rgba(5, 5, 12, 0.55);
+  backdrop-filter: blur(5px) saturate(0.45) brightness(0.55);
+  -webkit-backdrop-filter: blur(5px) saturate(0.45) brightness(0.55);
+  transition: all 0.42s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Wider card on tablet/desktop */
+@media (min-width: 860px) {
+  .cvt-scene { max-width: 800px; }
+}
+
+/* Tour button has its own z-index:10501 — topbar stays at its normal z level */
+
+/* ── Orientation form handoff pulse ────────────────────────────────── */
+@keyframes cvt-orient-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--color-accent, rgba(246,213,138,0.6)); }
+  40%  { box-shadow: 0 0 0 12px rgba(246,213,138,0); }
+  70%  { box-shadow: 0 0 0 6px var(--color-accent, rgba(246,213,138,0.25)); }
+  100% { box-shadow: 0 0 0 0 rgba(246,213,138,0); }
+}
+
+.cvt-orient-pulse {
+  animation: cvt-orient-pulse 0.9s ease-out 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cvt-orient-pulse { animation: none; }
+}

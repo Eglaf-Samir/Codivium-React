@@ -1,0 +1,179 @@
+@layer layout {
+/* NOTE: This file is intentionally layered for predictable overrides. */
+/* ===== Logo component (brand + cube) ===== */
+.brand{
+  display:flex;
+  align-items:center;
+  gap:22px;
+  text-decoration:none;
+  color:inherit;
+  user-select:none;
+  position: relative;
+  z-index: 80;
+  pointer-events: auto;
+}
+
+/* ===== Cube styles (from provided cube.css) ===== */
+/* Landing cube3d logo — shared across pages (scoped to .brand-mark.cv-cube) */
+.brand-mark.cv-cube{
+  width: 52px;
+  height: 52px;
+  perspective: 1100px;
+  display: grid;
+  place-items: center;
+}
+.brand-mark.cv-cube .cube-wrap{
+  width: 46px;
+  height: 46px;
+  transform-style: preserve-3d;
+  will-change: transform;
+  filter: drop-shadow(0 14px 30px rgba(0,0,0,0.55));
+}
+.brand-mark.cv-cube .cube3d{
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  /* Mirror the landing-page cube defaults (WAAPI controls transform). */
+  --cubeX: -18deg;
+  --cubeY:  28deg;
+  transform: rotateX(-18deg) rotateY(32deg);
+  transition: transform 2000ms ease;
+}
+
+/* Landing-page fallback hover animation (kept for parity), but disabled below
+   because WAAPI controls transform deterministically. */
+.brand:hover .brand-mark.cv-cube .cube3d{
+  animation: cubeSpin 3s linear infinite;
+  animation-fill-mode: none;
+}
+
+@keyframes cubeSpin{
+  0%   { transform: rotateX(-18deg) rotateY(32deg); }
+  50%  { transform: rotateX(200deg) rotateY(210deg); }
+  100% { transform: rotateX(380deg) rotateY(392deg); }
+}
+
+/* Disable CSS hover animation for cube (WAAPI spin/return controls transform) */
+.brand:hover .brand-mark.cv-cube .cube3d{ animation: none !important; }
+
+/* Reduced-motion users and low-effects mode should never be forced into motion.
+   (JS respects this too.) */
+@media (prefers-reduced-motion: reduce){
+  .brand-mark.cv-cube .cube3d{ transition: none !important; }
+}
+html[data-cv-effects="low"] .brand-mark.cv-cube .cube3d{ transition: none !important; }
+
+.brand-mark.cv-cube .cube-face{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.12), transparent 45%),
+    radial-gradient(circle at 72% 68%, rgba(246, 213, 138, 0.08), transparent 55%),
+    linear-gradient(180deg, rgba(9, 10, 18, 1.00), rgba(12, 14, 24, 1.00));
+  border: 1px solid rgba(246, 213, 138, 0.88);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,0.25),
+    inset 0 0 12px rgba(246, 213, 138, 0.08);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: flat;
+}
+/* depth based on cube size: 46px => 23px */
+.brand-mark.cv-cube .cube-front  { transform: rotateY(  0deg) translateZ(23px); }
+.brand-mark.cv-cube .cube-back   { transform: rotateY(180deg) translateZ(23px); }
+.brand-mark.cv-cube .cube-right  { transform: rotateY( 90deg) translateZ(23px); }
+.brand-mark.cv-cube .cube-left   { transform: rotateY(-90deg) translateZ(23px); }
+.brand-mark.cv-cube .cube-top    { transform: rotateX( 90deg) translateZ(23px); }
+.brand-mark.cv-cube .cube-bottom { transform: rotateX(-90deg) translateZ(23px); }
+
+.brand-mark.cv-cube .cube-wire{
+  position:absolute;
+  inset:-2px;
+  pointer-events:none;
+  transform: translateZ(0.1px);
+  opacity: 0.95;
+}
+.brand-mark.cv-cube .cube-wire::before{
+  content:"";
+  position:absolute;
+  inset: 6px;
+  border-radius: 0;
+  border: 1px solid rgba(246, 213, 138, 0.86);
+  box-shadow:
+    0 0 12px rgba(246, 213, 138, 0.16),
+    inset 0 0 12px rgba(246, 213, 138, 0.08);
+}
+.brand-mark.cv-cube .cube-wire::after{
+  content:"";
+  position:absolute;
+  inset: 11px;
+  border-radius: 0;
+  border: 1px solid rgba(246, 213, 138, 0.56);
+  opacity: 0.90;
+}
+
+/* keep existing brand text untouched; cube only */
+
+
+.brand-mark.cv-cube .cube-symbol{
+  font-family: "Times New Roman", Times, serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-size: 21px;
+  line-height: 1;
+  color: rgba(246, 213, 138, 0.95);
+  text-shadow:
+    0 0 10px rgba(246, 213, 138, 0.22),
+    0 0 18px rgba(246, 213, 138, 0.10);
+  position: relative;
+  user-select: none;
+}
+
+.brand-mark.cv-cube .cube-symbol .cube-symbol-small{
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  display: inline-block;
+}
+
+/* ===== End cube styles ===== */
+
+.brand-text{ display:flex; flex-direction: column; gap: 2px; line-height: 1.05; }
+
+.brand-name{
+  font-family: var(--font-brand);
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  font-size: 34px;
+  color: rgba(233, 244, 255, 0.96);
+  text-transform: uppercase;
+}
+
+
+@media (max-width: 1080px){
+  .brand-name{ font-size: 28px; }
+}
+}
+
+/* ── Parchment / light theme — logo in midnight blue ── */
+html[data-theme="parchment"] .brand-name {
+  color: rgba(14, 28, 80, 0.92);
+}
+html[data-theme="parchment"] .brand-mark.cv-cube .cube-face {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(14,28,80,0.10), transparent 55%),
+    rgba(20, 32, 90, 0.92);
+}
+html[data-theme="parchment"] .brand-mark.cv-cube .cube-wire::before {
+  border-color: rgba(14, 28, 160, 0.60);
+}
+html[data-theme="parchment"] .brand-mark.cv-cube .cube-wire::after {
+  border-color: rgba(14, 28, 160, 0.35);
+}
+html[data-theme="parchment"] .brand-mark.cv-cube .cube-symbol {
+  color: rgba(220, 230, 255, 0.92);
+  text-shadow: 0 1px 4px rgba(0,0,60,0.40);
+}

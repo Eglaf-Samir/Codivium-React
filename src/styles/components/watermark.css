@@ -1,0 +1,57 @@
+@layer components {
+body[data-page="articles"] .watermark,
+body[data-page="join"] .watermark,
+body[data-page="pricing"] .watermark,
+body[data-page="faq"] .watermark{
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0.85;
+  mix-blend-mode: lighten;
+  filter: blur(0.1px);
+}
+
+body[data-page="articles"] .watermark .word,
+body[data-page="join"] .watermark .word,
+body[data-page="pricing"] .watermark .word,
+body[data-page="faq"] .watermark .word{
+  font-weight: 950;
+  letter-spacing: 14px;
+  text-transform: uppercase;
+  font-size: clamp(44px, 8vw, 130px);
+  line-height: 1;
+  color: rgb(9,9,12);
+  position: relative;
+  transform: translateY(-4px);
+}
+
+body[data-page="articles"] .watermark .word::before,
+body[data-page="join"] .watermark .word::before,
+body[data-page="pricing"] .watermark .word::before,
+body[data-page="faq"] .watermark .word::before{
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.13) 0 1px, transparent 2px) 0 0/10px 10px,
+    radial-gradient(circle, rgba(255,255,255,0.10) 0 1.2px, transparent 2.4px) 3px 4px/14px 14px,
+    radial-gradient(circle, rgba(255,255,255,0.08) 0 0.8px, transparent 2.2px) 7px 1px/18px 18px;
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.05))
+          drop-shadow(0 10px 26px rgba(0,0,0,0.55));
+  opacity: 0.55;
+}
+
+@media (max-width: 760px){
+  body[data-page="articles"] .watermark .word,
+  body[data-page="join"] .watermark .word,
+  body[data-page="pricing"] .watermark .word,
+  body[data-page="faq"] .watermark .word{
+    letter-spacing: 10px;
+  }
+}
+}

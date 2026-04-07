@@ -1,0 +1,155 @@
+@layer reset, tokens, base, components, pages, utilities;
+
+@layer tokens {
+  :root {
+    --cv-bg: rgb(9, 9, 12);
+    --cv-text: rgba(245, 245, 252, 0.92);
+    --cv-muted: rgba(245, 245, 252, 0.68);
+    --cv-faint: rgba(245, 245, 252, 0.45);
+    --cv-accent: rgba(246, 213, 138, 0.98);
+    --cv-accent-2: rgba(255, 192, 90, 0.8);
+    --cv-glow: rgba(255, 200, 110, 0.18);
+    --cv-radius: 18px;
+    --cv-radius-sm: 14px;
+    --cv-shadow: 0 22px 70px rgba(0, 0, 0, 0.55);
+    --cv-shadow-soft: 0 18px 60px rgba(0, 0, 0, 0.45);
+    --cv-topbar-h: 82px;
+
+    --cv-card-bg: rgb(250, 245, 245);
+    --shadow: var(--cv-shadow);
+    --shadow-soft: var(--cv-shadow-soft);
+    --radius: var(--cv-radius);
+    --radius-sm: var(--cv-radius-sm);
+    --topbar-h: var(--cv-topbar-h);
+    --gold-2: var(--cv-accent-2);
+    --glow: var(--cv-glow);
+
+    /* Typography aliases (used by shared components) */
+    --serif: "Cinzel", serif;
+    --body-serif: "Noto Serif", serif;
+    --mono:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+      "Courier New", monospace;
+
+    --sans:
+      ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+      Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --text-light: rgba(241, 241, 251, 0.92);
+    --muted-light: rgba(241, 241, 251, 0.72);
+    --gold: rgba(246, 213, 138, 0.95);
+    --bg: var(--cv-bg);
+    --text: var(--cv-text);
+    --muted: var(--cv-muted);
+    --faint: var(--cv-faint);
+    --accent: var(--cv-accent);
+    --accent-soft: var(--cv-glow);
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    font-family: var(--body-serif);
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Noto Serif", serif;
+  }
+  a {
+    color: var(--accent);
+  }
+  a:hover {
+    color: rgba(255, 192, 90, 0.92);
+  }
+  ::selection {
+    background: rgba(246, 213, 138, 0.22);
+  }
+
+  /* === CVD-WEB-0006 scrollbar stability (prevents topbar layout shift between pages) === */
+  /* Fallback: always reserve vertical scrollbar space */
+  html {
+    overflow-y: scroll;
+  }
+  /* Preferred: reserve gutter without forcing scrollbar */
+  @supports (scrollbar-gutter: stable) {
+    html {
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+  }
+}
+
+@layer utilities {
+  /* === Accessibility baseline: always-visible keyboard focus ===
+   Many page styles intentionally remove default outlines.
+   This rule restores a consistent, high-contrast focus ring for keyboard users.
+*/
+  :is(
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+    outline: 2px solid var(--cv-accent) !important;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px var(--cv-glow) !important;
+  }
+
+  /* Accessibility helpers (no visual impact) */
+  .sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+}
+
+/* Placeholder-route shared note styles */
+body[data-placeholder-route="true"] .cv-preview-note,
+body[data-placeholder-route="true"] .cv-noscript-note {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(246, 213, 138, 0.34);
+  background: linear-gradient(
+    180deg,
+    rgba(246, 213, 138, 0.14),
+    rgba(246, 213, 138, 0.07)
+  );
+  color: rgba(245, 245, 252, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  font-family: var(--body-serif, var(--font-body, inherit));
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+body[data-placeholder-route="true"] .cv-preview-note strong,
+body[data-placeholder-route="true"] .cv-noscript-note strong {
+  color: rgba(255, 225, 155, 0.98);
+}
+
+body[data-placeholder-route="true"] .cv-preview-note--compact,
+body[data-placeholder-route="true"] .cv-noscript-note--compact {
+  font-size: 12px;
+  padding: 10px 12px;
+}
+
+body[data-placeholder-route="true"] .cv-preview-note a,
+body[data-placeholder-route="true"] .cv-noscript-note a {
+  color: inherit;
+  text-decoration-color: rgba(255, 225, 155, 0.68);
+}
