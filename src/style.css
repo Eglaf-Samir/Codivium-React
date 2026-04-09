@@ -59,6 +59,7 @@ h2 {
   font-family: var(--heading);
   font-weight: 500;
   color: var(--text-h);
+  overflow: scroll;
 }
 
 h1 {

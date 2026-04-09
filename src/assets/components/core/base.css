@@ -1202,7 +1202,7 @@ body{
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui, 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif);
-  overflow: hidden;
+  /* overflow: hidden; */
   padding-top: var(--topbar-h, 82px);
 }
 

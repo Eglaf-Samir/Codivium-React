@@ -4,7 +4,7 @@ import usePageMeta from "../../hooks/usePageMeta";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar.jsx";
 import Header from "../../components/Header.jsx";
-import "../../assets/components/core/base.css";
+// import "../../assets/components/core/base.css";
 import "../../assets/components/dashboard/dashboard.base.css";
 import "../../assets/components/dashboard/dashboard.shell.css";
 import "../../assets/components/dashboard/dashboard.resizers.css";
