@@ -11,12 +11,27 @@ import React, {
 import { createPortal } from 'react-dom';
 
 // ── Reusable multiselect checkbox group ─────────────────────────────────────
+// Option formats supported:
+//   - string: "Arrays"                           → value = normalized string
+//   - { value, label }                           → value used directly
+//   - { id, name }                               → value = id, label = name
+function normalizeOption(opt) {
+  if (typeof opt === 'string') {
+    return { value: opt.toLowerCase().replace(/[_-]+/g, ' '), label: opt };
+  }
+  if (opt && 'id' in opt) {
+    return { value: opt.id, label: opt.name };
+  }
+  return { value: opt.value, label: opt.label };
+}
+
 function FilterGroup({ name, label, tooltip, options, selected, onToggle }) {
   const allSelected = selected.includes('all') || selected.length === 0;
-  const allOptions  = options.map(o => (typeof o === 'string' ? o.toLowerCase().replace(/[_-]+/g, ' ') : o.value));
+  const normalized  = options.map(normalizeOption);
+  const allValues   = normalized.map(o => o.value);
 
   function handleChange(value) {
-    onToggle(value, allOptions);
+    onToggle(value, allValues);
   }
 
   return (
@@ -48,16 +63,14 @@ function FilterGroup({ name, label, tooltip, options, selected, onToggle }) {
           <span>All</span>
         </label>
         {/* Individual options */}
-        {options.map(opt => {
-          const value = typeof opt === 'string' ? opt.toLowerCase().replace(/[_-]+/g, ' ') : opt.value;
-          const label_ = typeof opt === 'string' ? opt : opt.label;
+        {normalized.map(({ value, label: label_ }) => {
           const checked = !allSelected && selected.includes(value);
           return (
-            <label key={value} className="chk">
+            <label key={String(value)} className="chk">
               <input
                 type="checkbox"
                 name={name}
-                value={value}
+                value={String(value)}
                 checked={checked}
                 onChange={() => handleChange(value)}
               />
@@ -80,6 +93,7 @@ export default function FilterDrawer({
   difficultyLevels,
   exerciseTypes,   // present only on micro track
   mentalModels,    // present only on micro track
+  completionOptions,
   isMicro,
   // Current selections
   selectedCategories,
@@ -250,9 +264,9 @@ export default function FilterDrawer({
     open ? onClose() : onOpen();
   }, [open, onOpen, onClose]);
 
-  // ── Levels and completeness options (static) ────────────────────────────────
-  const levelOptions       = difficultyLevels || ['beginner', 'intermediate', 'advanced'];
-  const completenessOptions = ['Completed', 'Attempted', 'Not started'];
+  // ── Levels and completeness options ─────────────────────────────────────────
+  const levelOptions        = difficultyLevels || ['beginner', 'intermediate', 'advanced'];
+  const completenessOptions = completionOptions || ['Completed', 'Attempted', 'Not started'];
 
   // ── Render ──────────────────────────────────────────────────────────────────
   const drawerContent = (

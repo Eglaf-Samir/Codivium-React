@@ -1,41 +1,300 @@
 // MenuPage — Exercise menu page
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
-import { useMenuData }    from '../../hooks/useMenuData.js';
-import { useMenuFilters } from '../../hooks/useMenuFilters.js';
+import { useMenuData } from '../../hooks/useMenuData.js';
+import { toggleFilter } from '../../hooks/useMenuFilters.js';
+import { ActivePackagebyuserid } from '../../api/pricepackage/apipackage';
+import { GetInterviewPreparationSession } from '../../api/interviewprepration/apiinterviewprepration';
+import { GetDeliberatePracticeSession } from '../../api/deliberatePractice/apideliberatepractice';
 
-import MenuHeader   from './MenuHeader.jsx';
+import MenuHeader from './MenuHeader.jsx';
 import FilterDrawer from './FilterDrawer.jsx';
 import ExerciseGrid from './ExerciseGrid.jsx';
-import MenuTour     from './MenuTour.jsx';
-import HelpPanel    from '../../components/HelpPanel.jsx';
+import MenuTour from './MenuTour.jsx';
+import HelpPanel from '../../components/HelpPanel.jsx';
+
+const PREF_KEY = 'cv_menu_filters_v3';
+
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(PREF_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function savePrefs(prefs) {
+  try {
+    localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+  } catch (_) {}
+}
+
+function toBackendIds(selected, options) {
+  const allIds = (options || []).map((o) => o.id);
+  if (!selected || selected.includes('all') || selected.length === 0) {
+    return allIds;
+  }
+  return selected.filter((v) => v !== 'all');
+}
 
 export default function MenuPage() {
   const location = useLocation();
-  const { data, loading, error, reload } = useMenuData();
+  const navigate = useNavigate();
+  const urlTrack = (new URLSearchParams(location.search).get('track') || 'micro').toLowerCase();
+  const track = urlTrack;
+  const isMicro = track === 'micro';
+  const returnUrl = `/menu?track=${encodeURIComponent(track)}`;
+  const codingRoute = track === 'interview' ? '/interview/CodingQue' : '/DeliberatePractice/CodingQue';
 
-  // Derive key info from payload.
-  // IMPORTANT: read track from URL first, not from data.track.
-  const urlTrack   = (new URLSearchParams(location.search).get('track') || 'micro').toLowerCase();
-  const track      = urlTrack;
-  const trackLabel = data?.trackLabel  || (track === 'interview' ? 'Interview Questions Menu' : 'Micro Challenge Menu');
-  const isMicro    = track === 'micro';
-  const exercises  = data?.exercises   || [];
-  const returnUrl  = `/menu?track=${encodeURIComponent(track)}`;
+  const [activePackage, setActivePackage] = useState(null);
+  const [oldcodeinfo, setOldcodeinfo] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [conformShow, setConformShow] = useState(false);
 
-  // ── Update body data-page for sidebar active-link indicator ────────────────
+  const saved = loadPrefs();
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState(() => saved.categoryIds || ['all']);
+  const [selectedDifficultyIds, setSelectedDifficultyIds] = useState(() => saved.difficultyIds || ['all']);
+  const [selectedCompletionIds, setSelectedCompletionIds] = useState(() => saved.completionIds || ['all']);
+  const [sortOrder, setSortOrder] = useState(() => saved.sortOrder || 'ASC');
+  const [sortField, setSortField] = useState(() => saved.sortField || 'title');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
+
+  const {
+    data,
+    loading,
+    error,
+    reload,
+    categoryOptions,
+    difficultyOptions,
+    completionOptions,
+    runFilter,
+  } = useMenuData();
+
+  const filterBody = useMemo(
+    () => ({
+      DifficultyLabels: toBackendIds(selectedDifficultyIds, difficultyOptions),
+      CategoryIds: toBackendIds(selectedCategoryIds, categoryOptions),
+      SubCategoryIds: [],
+      CompletionIds: toBackendIds(selectedCompletionIds, completionOptions),
+      SortOrder: sortOrder,
+    }),
+    [
+      selectedCategoryIds,
+      selectedDifficultyIds,
+      selectedCompletionIds,
+      sortOrder,
+      categoryOptions,
+      difficultyOptions,
+      completionOptions,
+    ],
+  );
+
+  useEffect(() => {
+    runFilter(filterBody);
+  }, [filterBody, runFilter]);
+
+  const trackLabel =
+    data?.trackLabel || (track === 'interview' ? 'Interview Questions Menu' : 'Micro Challenge Menu');
+  const exercises = data?.exercises || [];
+
+  const persist = useCallback(
+    (next) => {
+      savePrefs({
+        categoryIds: selectedCategoryIds,
+        difficultyIds: selectedDifficultyIds,
+        completionIds: selectedCompletionIds,
+        sortOrder,
+        sortField,
+        ...next,
+      });
+    },
+    [selectedCategoryIds, selectedDifficultyIds, selectedCompletionIds, sortOrder, sortField],
+  );
+
+  const toggleCategories = useCallback(
+    (value, allOptions) => {
+      setSelectedCategoryIds((prev) => {
+        const next = toggleFilter(prev, value, allOptions);
+        persist({ categoryIds: next });
+        return next;
+      });
+    },
+    [persist],
+  );
+
+  const toggleLevels = useCallback(
+    (value, allOptions) => {
+      setSelectedDifficultyIds((prev) => {
+        const next = toggleFilter(prev, value, allOptions);
+        persist({ difficultyIds: next });
+        return next;
+      });
+    },
+    [persist],
+  );
+
+  const toggleCompleteness = useCallback(
+    (value, allOptions) => {
+      setSelectedCompletionIds((prev) => {
+        const next = toggleFilter(prev, value, allOptions);
+        persist({ completionIds: next });
+        return next;
+      });
+    },
+    [persist],
+  );
+
+  const updateSortField = useCallback(
+    (v) => {
+      setSortField(v);
+      persist({ sortField: v });
+    },
+    [persist],
+  );
+
+  const updateSortDir = useCallback(
+    (v) => {
+      const next = v === 'desc' ? 'DESC' : 'ASC';
+      setSortOrder(next);
+      persist({ sortOrder: next });
+    },
+    [persist],
+  );
+
+  const resetFilters = useCallback(() => {
+    setSelectedCategoryIds(['all']);
+    setSelectedDifficultyIds(['all']);
+    setSelectedCompletionIds(['all']);
+    setSortOrder('ASC');
+    setSortField('title');
+    savePrefs({});
+  }, []);
+
+  useEffect(() => {
+    const Userid = localStorage.getItem('Userid');
+    if (!Userid) {
+      setActivePackage(null);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await ActivePackagebyuserid(Userid);
+        if (res && res.status === 200) setActivePackage(res.data);
+        else if (res && res.status === 401) {
+          localStorage.clear();
+          navigate('/login');
+        } else setActivePackage(null);
+      } catch (err) {
+        console.error('Failed to get active package', err);
+        setActivePackage(null);
+      }
+    })();
+  }, [navigate]);
+
+  const navigateFresh = useCallback(
+    (item) => {
+      navigate(codingRoute, {
+        state: {
+          item,
+          oldcode: null,
+          isStartFresh: true,
+          initialTimeInSeconds: 0,
+        },
+      });
+    },
+    [navigate, codingRoute],
+  );
+
+  const checkAlreadyCodeAdd = useCallback(
+    async (item) => {
+      const Userid = localStorage.getItem('Userid');
+      setOldcodeinfo(null);
+      if (!item?.isSubmitted) {
+        navigateFresh(item);
+        return;
+      }
+      try {
+        const sessionApi =
+          track === 'interview'
+            ? GetInterviewPreparationSession
+            : GetDeliberatePracticeSession;
+        const result = await sessionApi(Userid, item.id);
+        if (result && result.data && result.status === 200) {
+          setOldcodeinfo(result.data);
+          setSelectedItem(item);
+          setConformShow(true);
+        } else {
+          navigateFresh(item);
+        }
+      } catch (err) {
+        console.error('checkAlreadyCodeAdd failed', err);
+        navigateFresh(item);
+      }
+    },
+    [navigateFresh, track],
+  );
+
+  const handleCardClick = useCallback(
+    async (exercise) => {
+      const item = exercise.raw || exercise;
+      if (!activePackage) {
+        const result = await Swal.fire({
+          title: 'Purchase Package?',
+          text: 'Please purchase package',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'OK !',
+          cancelButtonText: 'No, cancel!',
+          reverseButtons: true,
+        });
+        if (result.isConfirmed) {
+          localStorage.setItem('gotopage', location.pathname + location.search);
+          navigate('/price');
+        }
+        return;
+      }
+      if (item.isCoding === false) {
+        navigate('/NonCoding', { state: { item } });
+      } else {
+        await checkAlreadyCodeAdd(item);
+      }
+    },
+    [activePackage, checkAlreadyCodeAdd, location.pathname, location.search, navigate],
+  );
+
+  const handleCloseRunningCode = useCallback(() => {
+    setConformShow(false);
+    setSelectedItem(null);
+    setOldcodeinfo(null);
+  }, []);
+
+  const filteredExercises = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return exercises;
+    return exercises.filter((ex) => {
+      const n = (ex.name || '').toLowerCase();
+      const d = (ex.shortDescription || '').toLowerCase();
+      return n.includes(q) || d.includes(q);
+    });
+  }, [exercises, searchTerm]);
+
   useEffect(() => {
     if (trackLabel) document.body.dataset.page = trackLabel;
   }, [trackLabel]);
 
-  // ── Remove loading placeholder on mount ────────────────────────────────────
   useEffect(() => {
     const placeholder = document.getElementById('menu-react-root-loading');
     if (placeholder) placeholder.remove();
   }, []);
 
-  // ── Hash-link prevention ────────────────────────────────────────────────────
   useEffect(() => {
     function preventHash(e) {
       const a = e.target.closest?.('a[href="#"]');
@@ -45,48 +304,35 @@ export default function MenuPage() {
     return () => document.removeEventListener('click', preventHash);
   }, []);
 
-  // ── Filter state ────────────────────────────────────────────────────────────
-  const filters = useMenuFilters(exercises);
-
-  // ── Drawer open/close ────────────────────────────────────────────────────────
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
-  // ── Tour ─────────────────────────────────────────────────────────────────────
-  const [tourActive, setTourActive] = useState(false);
-
   return (
     <main id="main-content" className="main stage" role="main">
-      {/* Filter drawer — portaled to document.body */}
       <FilterDrawer
         open={drawerOpen}
         onOpen={() => setDrawerOpen(true)}
         onClose={() => setDrawerOpen(false)}
-        // Available options
-        categories={data?.categories     || []}
-        difficultyLevels={data?.difficultyLevels || ['beginner', 'intermediate', 'advanced']}
-        exerciseTypes={data?.exerciseTypes || []}
-        mentalModels={data?.mentalModels  || []}
+        categories={categoryOptions}
+        difficultyLevels={difficultyOptions}
+        exerciseTypes={[]}
+        mentalModels={[]}
+        completionOptions={completionOptions}
         isMicro={isMicro}
-        // Current filter selections
-        selectedCategories={filters.selectedCategories}
-        selectedLevels={filters.selectedLevels}
-        selectedCompleteness={filters.selectedCompleteness}
-        selectedExerciseTypes={filters.selectedExerciseTypes}
-        selectedMentalModels={filters.selectedMentalModels}
-        sortField={filters.sortField}
-        sortDir={filters.sortDir}
-        // Setters
-        toggleCategories={filters.toggleCategories}
-        toggleLevels={filters.toggleLevels}
-        toggleCompleteness={filters.toggleCompleteness}
-        toggleExerciseTypes={filters.toggleExerciseTypes}
-        toggleMentalModels={filters.toggleMentalModels}
-        updateSortField={filters.updateSortField}
-        updateSortDir={filters.updateSortDir}
-        onReset={filters.resetFilters}
+        selectedCategories={selectedCategoryIds}
+        selectedLevels={selectedDifficultyIds}
+        selectedCompleteness={selectedCompletionIds}
+        selectedExerciseTypes={['all']}
+        selectedMentalModels={['all']}
+        sortField={sortField}
+        sortDir={sortOrder === 'DESC' ? 'desc' : 'asc'}
+        toggleCategories={toggleCategories}
+        toggleLevels={toggleLevels}
+        toggleCompleteness={toggleCompleteness}
+        toggleExerciseTypes={() => {}}
+        toggleMentalModels={() => {}}
+        updateSortField={updateSortField}
+        updateSortDir={updateSortDir}
+        onReset={resetFilters}
       />
 
-      {/* Main content */}
       <div className="stage-shell">
         <div className="watermarks" aria-hidden="true">
           <div className="word watermark-word wm1" data-text="CODIVIUM">CODIVIUM</div>
@@ -94,30 +340,79 @@ export default function MenuPage() {
 
         <MenuHeader
           trackLabel={trackLabel}
-          searchTerm={filters.searchTerm}
-          onSearchChange={filters.setSearchTerm}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
           onTourStart={() => setTourActive(true)}
         />
 
         <div className="grid-scroll" id="gridScroll" aria-label="Scrollable exercise grid">
           <section className="exercise-grid" aria-label="Exercise menu grid">
             <ExerciseGrid
-              exercises={filters.filteredExercises}
+              exercises={filteredExercises}
               totalCount={exercises.length}
               loading={loading}
               error={error}
               onRetry={reload}
               returnUrl={returnUrl}
+              onCardClick={handleCardClick}
             />
           </section>
         </div>
       </div>
 
-      {/* Guided tour */}
       <MenuTour active={tourActive} onStop={() => setTourActive(false)} />
 
-      {/* Help panel — React replacement for cv-help-panel.js */}
       <HelpPanel />
+
+      <Modal show={conformShow} onHide={handleCloseRunningCode} centered>
+        <Modal.Header closeButton className="text-light" style={{ position: 'relative' }}>
+          <Modal.Title style={{ color: 'black' }}>
+            <h1>Welcome Back!</h1>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-light">
+          <h3 style={{ color: 'black' }}>
+            It looks like you have some unfinished work. Would you like to continue where you left off, or start fresh?
+          </h3>
+        </Modal.Body>
+        <Modal.Footer className="text-light">
+          <Button
+            variant="info"
+            onClick={() => {
+              setConformShow(false);
+              navigate(codingRoute, {
+                state: {
+                  item: selectedItem,
+                  isStartFresh: true,
+                  initialTimeInSeconds: 0,
+                  useroldcode: '',
+                },
+              });
+            }}
+            style={{ height: 42, fontSize: 16 }}
+          >
+            Start fresh
+          </Button>
+          <Button
+            variant="success"
+            onClick={() => {
+              setConformShow(false);
+              navigate(codingRoute, {
+                state: {
+                  item: selectedItem,
+                  initialTimeInSeconds: oldcodeinfo?.totalSeconds || 0,
+                  isStartFresh: false,
+                  useroldcode: oldcodeinfo?.lastUserCode || '',
+                  totalRunCount: oldcodeinfo?.runCount || 0,
+                },
+              });
+            }}
+            style={{ height: 42, fontSize: 16 }}
+          >
+            Continue where I left off
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </main>
   );
 }

@@ -3,7 +3,7 @@
 import React from 'react';
 import ExerciseCard from './ExerciseCard.jsx';
 
-export default function ExerciseGrid({ exercises, totalCount, loading, error, onRetry, returnUrl }) {
+export default function ExerciseGrid({ exercises, totalCount, loading, error, onRetry, returnUrl, onCardClick }) {
   if (loading) {
     return (
       <div className="cv-menu-loading" id="cvMenuLoading" aria-live="polite" aria-label="Loading exercises">
@@ -33,7 +33,7 @@ export default function ExerciseGrid({ exercises, totalCount, loading, error, on
         </div>
       )}
       {exercises.map(ex => (
-        <ExerciseCard key={ex.id} exercise={ex} returnUrl={returnUrl} />
+        <ExerciseCard key={ex.id} exercise={ex} returnUrl={returnUrl} onClick={onCardClick} />
       ))}
     </>
   );

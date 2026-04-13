@@ -16,7 +16,7 @@ function truncate(s, max) {
   return s.length > max ? s.slice(0, max - 1) + '\u2026' : s;
 }
 
-export default function ExerciseCard({ exercise: ex, returnUrl }) {
+export default function ExerciseCard({ exercise: ex, returnUrl, onClick }) {
   const cardRef = useRef(null);
   const rafRef  = useRef(null);
 
@@ -26,6 +26,16 @@ export default function ExerciseCard({ exercise: ex, returnUrl }) {
   const diffCls     = norm(ex.difficulty);
   const diffLabel   = cap(ex.difficulty);
   const href = `/editor?id=${encodeURIComponent(ex.id)}&from=${encodeURIComponent(returnUrl)}`;
+
+  const handleClick = useCallback(
+    (e) => {
+      if (onClick) {
+        e.preventDefault();
+        onClick(ex);
+      }
+    },
+    [onClick, ex],
+  );
 
   const handleMouseMove = useCallback((e) => {
     if (rafRef.current) return;
@@ -64,6 +74,7 @@ export default function ExerciseCard({ exercise: ex, returnUrl }) {
       data-desc={norm(ex.shortDescription || '')}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
       <div className="card-icon" aria-hidden="true">
         <svg fill="none" viewBox="0 0 24 24" aria-hidden="true"
