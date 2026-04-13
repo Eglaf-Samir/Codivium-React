@@ -14,6 +14,8 @@ import ForgetPassword from "./pages/ForgetPassword";
 import AdaptivePractice from "./pages/AfterLogin/AdaptivePractice";
 import CodiviumInsightsEmbedded from "./pages/AfterLogin/CodiviumInsightsEmbedded";
 import MCQ from "./pages/AfterLogin/Mcq";
+import Interview from "./pages/AfterLogin/Interview";
+import EditorPage from "./pages/AfterLogin/EditorPage";
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
         <Route path="/adaptive_practice" element={<AdaptivePractice />} />
         <Route path="/insights" element={<CodiviumInsightsEmbedded />} />
         <Route path="/mcq" element={<MCQ />} />
+        <Route path="/interview" element={<Interview />} />
+        <Route path="/editor" element={<EditorPage />} />
       </Routes>
     </BrowserRouter>
   );
