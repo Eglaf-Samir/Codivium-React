@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { ResetPasswordApi } from "../api/auth/apiauth";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 
 function ResetPassword() {
@@ -276,7 +276,7 @@ function ResetPassword() {
                 </button>
               </form>
               <div className="login-links">
-                <a href="/login">Back to login</a>
+                <Link to="/login">Back to login</Link>
               </div>
             </div>
           </section>

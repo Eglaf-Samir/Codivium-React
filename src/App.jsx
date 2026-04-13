@@ -93,7 +93,7 @@ export default function App() {
       <Route path="/articles"        element={<PubRoute component={Articles}       page="articles"        title="Articles" />} />
       <Route path="/article"         element={<PubRoute component={Article}        page="article"         title="Article" />} />
       <Route path="/password_reset"  element={<PubRoute component={ResetPassword}  page="password_reset"  title="Reset Password" />} />
-      <Route path="/forget_password" element={<PubRoute component={ForgetPassword} page="forget_password" title="Reset Password" />} />
+      <Route path="/forget_password" element={<PubRoute component={ForgetPassword} page="password_reset"  title="Reset Password" />} />
 
       {/* ── APP PAGES ── */}
       <Route path="/adaptive-practice" element={<AppRoute component={AdaptivePage} bodyClass="drawer-collapsed" />} />

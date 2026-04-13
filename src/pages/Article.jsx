@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 
@@ -27,7 +28,10 @@ function Article() {
                                     <div aria-level="2" className="bm-title" role="heading">Article</div>
                                 </div>
                                 <div className="bm-right">
-                                    <a className="bm-read bm-read-plain" href="/articles">Back to Articles</a>
+                                    {/* <a className="bm-read bm-read-plain" href="/articles">Back to Articles</a> */}
+                                    <Link className="bm-read bm-read-plain" to="/articles">
+                                        Back to Articles
+                                    </Link>
                                 </div>
                             </header>
                             <section aria-label="Article layout" className="bm-layout">

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { role } from "../config";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CreateUserNew } from "../api/auth/apiauth";
 import { toast, ToastContainer } from "react-toastify";
 
@@ -132,9 +132,9 @@ function Join() {
                   </svg>
                   Redirects to secure checkout
                 </span>
-                <a className="inline-login-link" href="/login">
+                <Link className="inline-login-link" to="/login">
                   Already have an account? Log in
-                </a>
+                </Link>
               </div>
               <form
                 action=""
@@ -269,9 +269,9 @@ function Join() {
                     </label>
                     <p className="hint hint-gap-xs">
                       I agree to the{" "}
-                      <a href="/legal#terms_conditions" target="_blank">
+                      <Link to="/legal#terms_conditions" target="_blank">
                         Terms &amp; Privacy
-                      </a>
+                      </Link>
                       .
                     </p>
                   </div>

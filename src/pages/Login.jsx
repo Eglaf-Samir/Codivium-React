@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Loginuser } from "../api/auth/apiauth";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
@@ -222,12 +222,13 @@ function Login() {
                   id="loginMsg"
                 ></div>
                 <div className="login-links">
-                  <a className="login-link-forgot" href="/forget_password">
+                  <Link className="login-link-forgot" to="/forget_password">
                     Forgotten your password?
-                  </a>
-                  <a className="login-link-join" href="/join">
+                  </Link>
+
+                  <Link className="login-link-join" to="/join">
                     Not a member, want to join?
-                  </a>
+                  </Link>
                 </div>
               </div>
             </section>

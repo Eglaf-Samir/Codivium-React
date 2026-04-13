@@ -4,8 +4,12 @@
 // export const baseURL = "https://code-adept-api.eagletechsolutions.uk/";
 // export const imageurl = "https://code-adept-api.eagletechsolutions.uk/Emoji";
 
-export const baseURL = "https://codeadept-api.eagletechsolutions.co.uk/";
-export const imageurl = "https://codeadept-api.eagletechsolutions.co.uk/Emoji";
+// export const baseURL = "https://codeadept-api.eagletechsolutions.co.uk/";
+// export const imageurl = "https://codeadept-api.eagletechsolutions.co.uk/Emoji";
+
+export const baseURL = "https://codeadept-stage-api.eagletechsolutions.co.uk/";
+export const imageurl =
+  "https://codeadept-stage-api.eagletechsolutions.co.uk/Emoji";
 
 export const role = {
   User: "admin",

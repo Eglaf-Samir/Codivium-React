@@ -3,7 +3,7 @@ import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { ForgetPasswordApi } from "../api/auth/apiauth";
 import { ToastContainer, toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function ForgetPassword() {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ function ForgetPassword() {
           navigate("/");
         }, 2000);
       } else {
-        toast.error("Email address not found", {
+        toast.error(response?.data ? response?.data : "Email address not found", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -121,7 +121,10 @@ function ForgetPassword() {
                 </button>
               </form>
               <div className="login-links">
-                <a href="/login">Back to login</a>
+                {/* <a href="/login">Back to login</a> */}
+                <Link className="s5-cta" to="/login">
+                  Back to login
+                </Link>
               </div>
             </div>
           </section>

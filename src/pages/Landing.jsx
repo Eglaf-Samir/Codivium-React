@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import Topbar from "../components/Topbar";
+import { Link } from "react-router-dom";
 function Landing() {
     useEffect(() => {
         document.body.setAttribute("data-page", "landing");
@@ -39,7 +40,10 @@ function Landing() {
                                 <div className="hero-kicker">Neuroscience-informed practice. Precision algorithmic coaching.<br />Structured for elite Python performance.</div>
                                 <h1 className="hero-title hero-title-offset">Achieve Elite<br />Python Mastery</h1>
                                 <div className="hero-cta-row">
-                                    <a className="cta" href="/join">Begin Elite Training</a>
+                                    {/* <a className="cta" href="/join">Begin Elite Training</a> */}
+                                    <Link className="cta" to="/join">
+                                        Begin Elite Training
+                                    </Link>
                                 </div>
                             </div>
                             <div>
@@ -480,7 +484,10 @@ function Landing() {
                                     <div className="s5-metric-label">What you get</div>
                                     <div className="s5-metric-value">Measurable Mastery</div>
                                 </div>
-                                <a className="s5-cta" href="/join">Join Codivium</a>
+                                {/* <a className="s5-cta" href="/join">Join Codivium</a> */}
+                                <Link className="s5-cta" to="/join">
+                                    Join Codivium
+                                </Link>
                                 <div className="s5-sub">Early access. High signal. Built for mastery.</div>
                             </div>
                         </div>
@@ -492,12 +499,12 @@ function Landing() {
                             © Codivium <span id="footerYear">2026</span>. All rights reserved.
                         </div>
                         <div aria-label="Footer links" className="footer-links">
-                            <a href="/articles">Articles</a>
-                            <a href="/contact">Contact</a>
-                            <a href="/pricing">Prices</a>
-                            <a href="/faq">FAQ</a>
-                            <a href="/legal#terms_conditions">Terms &amp; Conditions</a>
-                            <a href="/legal#privacy_policy">Privacy Policy</a>
+                            <Link to="/articles">Articles</Link>
+                            <Link to="/contact">Contact</Link>
+                            <Link to="/pricing">Prices</Link>
+                            <Link to="/faq">FAQ</Link>
+                            <Link to="/legal#terms_conditions">Terms &amp; Conditions</Link>
+                            <Link to="/legal#privacy_policy">Privacy Policy</Link>
                         </div>
                         <a aria-label="Back to top" className="to-top" href="#section1" id="toTopBtn">↑</a>
                     </div>
