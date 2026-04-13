@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Header from "../components/Header";
+import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 
 function Faq() {
@@ -7,7 +7,7 @@ function Faq() {
 
     return (
         <>
-            <Header />
+            <Topbar />
             <div aria-hidden="true" className="cv-underbar"></div>
             <div aria-hidden="true" className="watermark">
                 <div className="word" data-text="CODIVIUM">CODIVIUM</div>
@@ -734,8 +734,8 @@ function Faq() {
                 <div className="footer-bar">
                     Codivium is not a content library. It is an environment for training Python deliberately — with feedback, structure, and intent.
                 </div>
-                <script defer="" src="assets/js/pages/faq-01.fad07c96.js"></script>
-                <script defer="" src="assets/js/cv-cube.08d05a23.js"></script>
+                <script defer="" src="/assets/js/pages/faq-01.fad07c96.js"></script>
+                <script defer="" src="/assets/js/cv-cube.08d05a23.js"></script>
             </main>
         </>
     );

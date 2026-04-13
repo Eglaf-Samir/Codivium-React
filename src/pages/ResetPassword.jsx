@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Header from "../components/Header";
+import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { ResetPasswordApi } from "../api/auth/apiauth";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -87,7 +87,7 @@ function ResetPassword() {
   };
   return (
     <>
-      <Header />
+      <Topbar />
       <ToastContainer />
       <div className="stage-shell">
         <div aria-hidden="true" className="watermark">

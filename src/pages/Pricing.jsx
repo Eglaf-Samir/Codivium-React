@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Header from "../components/Header";
+import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 
 function Pricing() {
@@ -43,7 +43,7 @@ function Pricing() {
 
   return (
     <>
-      <Header />
+      <Topbar />
 
       <main className="wrap" id="mainContent">
         <section className="container">

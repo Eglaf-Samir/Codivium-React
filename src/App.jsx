@@ -1,45 +1,118 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import Layout    from './components/Layout.jsx';
+import PublicWrapper from './components/PublicWrapper.jsx';
 
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Join from "./pages/Join";
-import Legal from "./pages/Legal";
-import Faq from "./pages/Faq";
-import Pricing from "./pages/Pricing";
-import Contact from "./pages/Contact";
-import Articles from "./pages/Articles";
-import Article from "./pages/Article";
-import ResetPassword from "./pages/ResetPassword";
-import ForgetPassword from "./pages/ForgetPassword";
-import AdaptivePractice from "./pages/AfterLogin/AdaptivePractice";
-import CodiviumInsightsEmbedded from "./pages/AfterLogin/CodiviumInsightsEmbedded";
-import MCQ from "./pages/AfterLogin/Mcq";
-import Interview from "./pages/AfterLogin/Interview";
-import EditorPage from "./pages/AfterLogin/EditorPage";
+// App pages
+import AdaptivePage  from './pages/AdaptivePage/index.jsx';
+import MenuPage      from './pages/MenuPage/index.jsx';
+import EditorPage    from './pages/EditorPage/index.jsx';
+import McqSetupPage  from './pages/McqSetupPage.jsx';
+import McqQuizPage   from './pages/McqQuizPage.jsx';
+import SettingsPage  from './pages/SettingsPage.jsx';
+import InsightsPage  from './pages/InsightsPage.jsx';
 
-function App() {
+// Public pages
+import Landing       from './pages/Landing.jsx';
+import Login         from './pages/Login.jsx';
+import Join          from './pages/Join.jsx';
+import Legal         from './pages/Legal.jsx';
+import Faq           from './pages/Faq.jsx';
+import Pricing       from './pages/Pricing.jsx';
+import Contact       from './pages/Contact.jsx';
+import Articles      from './pages/Articles.jsx';
+import Article       from './pages/Article.jsx';
+import ResetPassword  from './pages/ResetPassword.jsx';
+import ForgetPassword from './pages/ForgetPassword.jsx';
+
+const PAGE_TITLES = {
+  '/':                  'Codivium',
+  '/adaptive-practice': 'Adaptive Practice',
+  '/menu':              'Exercise Menu',
+  '/editor':            'Exercise Workspace',
+  '/mcq':               'MCQ Setup',
+  '/mcq/quiz':          'MCQ Quiz',
+  '/insights':          'Performance Insights',
+  '/settings':          'Account & Settings',
+};
+
+// ── App route wrapper ────────────────────────────────────────────
+function AppRoute({ component: Component, bodyClass = '' }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    const label = PAGE_TITLES[location.pathname] || 'Codivium';
+    document.title = `Codivium — ${label}`;
+    document.body.removeAttribute('data-page');
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+
+    // Apply app body classes
+    ['mcq-quiz','mcq-parent','cv-settings','drawer-collapsed','cv-app'].forEach(c =>
+      document.body.classList.remove(c)
+    );
+    document.body.classList.add('cv-app');
+    if (bodyClass) bodyClass.split(' ').forEach(c => c && document.body.classList.add(c));
+  }, [location.pathname, bodyClass]);
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/join" element={<Join />} />
-        <Route path="/legal" element={<Legal />} />
-        <Route path="/faq" element={<Faq />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/articles" element={<Articles />} />
-        <Route path="/article" element={<Article />} />
-        <Route path="/password_reset" element={<ResetPassword />} />
-        <Route path="/forget_Password" element={<ForgetPassword />} />
-        <Route path="/adaptive_practice" element={<AdaptivePractice />} />
-        <Route path="/insights" element={<CodiviumInsightsEmbedded />} />
-        <Route path="/mcq" element={<MCQ />} />
-        <Route path="/interview" element={<Interview />} />
-        <Route path="/editor" element={<EditorPage />} />
-      </Routes>
-    </BrowserRouter>
+    <Layout>
+      <Component />
+    </Layout>
   );
 }
 
-export default App;
+// ── Public route wrapper ─────────────────────────────────────────
+function PubRoute({ component: Component, page, title }) {
+  const location = useLocation();
+  useEffect(() => {
+    document.title = title ? `Codivium — ${title}` : 'Codivium';
+    // Remove all app classes
+    ['sidebar-collapsed','mcq-quiz','mcq-parent','cv-settings','drawer-collapsed','cv-app']
+      .forEach(c => document.body.classList.remove(c));
+  }, [location.pathname, title]);
+
+  return (
+    <PublicWrapper page={page}>
+      <Component />
+    </PublicWrapper>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      {/* ── PUBLIC PAGES ── */}
+      <Route path="/"                element={<PubRoute component={Landing}        page="landing"         title="Become Python Pro" />} />
+      <Route path="/login"           element={<PubRoute component={Login}          page="login"           title="Login" />} />
+      <Route path="/join"            element={<PubRoute component={Join}           page="join"            title="Join" />} />
+      <Route path="/legal"           element={<PubRoute component={Legal}          page="legal"           title="Terms & Privacy" />} />
+      <Route path="/faq"             element={<PubRoute component={Faq}            page="faq"             title="FAQ" />} />
+      <Route path="/pricing"         element={<PubRoute component={Pricing}        page="pricing"         title="Pricing" />} />
+      <Route path="/contact"         element={<PubRoute component={Contact}        page="contact"         title="Contact" />} />
+      <Route path="/articles"        element={<PubRoute component={Articles}       page="articles"        title="Articles" />} />
+      <Route path="/article"         element={<PubRoute component={Article}        page="article"         title="Article" />} />
+      <Route path="/password_reset"  element={<PubRoute component={ResetPassword}  page="password_reset"  title="Reset Password" />} />
+      <Route path="/forget_password" element={<PubRoute component={ForgetPassword} page="forget_password" title="Reset Password" />} />
+
+      {/* ── APP PAGES ── */}
+      <Route path="/adaptive-practice" element={<AppRoute component={AdaptivePage} bodyClass="drawer-collapsed" />} />
+      <Route path="/menu"              element={<AppRoute component={MenuPage}      bodyClass="drawer-collapsed" />} />
+      <Route path="/editor"            element={<AppRoute component={EditorPage}    bodyClass="drawer-collapsed" />} />
+      <Route path="/mcq"               element={<AppRoute component={McqSetupPage}  bodyClass="mcq-parent" />} />
+      <Route path="/mcq/quiz"          element={<AppRoute component={McqQuizPage}   bodyClass="mcq-quiz" />} />
+      <Route path="/insights"          element={<AppRoute key="insights" component={InsightsPage} bodyClass="drawer-collapsed" />} />
+      <Route path="/settings"          element={<AppRoute component={SettingsPage}  bodyClass="cv-settings" />} />
+
+      {/* ── LEGACY REDIRECTS ── */}
+      <Route path="/adaptive-practice.html"           element={<Navigate to="/adaptive-practice" replace />} />
+      <Route path="/menu-page.html"                   element={<Navigate to="/menu" replace />} />
+      <Route path="/editor.html"                      element={<Navigate to="/editor" replace />} />
+      <Route path="/mcq-parent.html"                  element={<Navigate to="/mcq" replace />} />
+      <Route path="/mcq-quiz.html"                    element={<Navigate to="/mcq/quiz" replace />} />
+      <Route path="/account-settings.html"            element={<Navigate to="/settings" replace />} />
+      <Route path="/codivium_insights_embedded.html"  element={<Navigate to="/insights" replace />} />
+      <Route path="*"                                 element={<Navigate to="/adaptive-practice" replace />} />
+    </Routes>
+  );
+}

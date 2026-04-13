@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Header from "../components/Header";
+import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { ForgetPasswordApi } from "../api/auth/apiauth";
 import { ToastContainer, toast } from "react-toastify";
@@ -61,7 +61,7 @@ function ForgetPassword() {
 
   return (
     <>
-      <Header />
+      <Topbar />
       <ToastContainer />
       <div className="stage-shell">
         <div aria-hidden="true" className="watermark">

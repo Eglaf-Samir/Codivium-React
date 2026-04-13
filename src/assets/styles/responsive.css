@@ -1,0 +1,371 @@
+/* responsive.css — Codivium SPA — Full Responsive Coverage */
+
+/* ══ APP LAYOUT SCOPE ════════════════════════════════════════════
+   All app layout rules scoped to body.cv-app to prevent
+   interfering with public pages (landing, login, join etc.)
+═══════════════════════════════════════════════════════════════ */
+
+/* Sidebar handle: show on desktop app pages */
+body.cv-app .sidebar-handle {
+  display: flex !important;
+}
+
+/* ── Desktop: sidebar collapse → content shift ────────────────── */
+@media (min-width: 921px) {
+  body.cv-app .main,
+  body.cv-app .stage,
+  body.cv-app .as-wrap {
+    transition: left var(--cv-drawer-speed, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* ── Mobile: sidebar becomes slide-in overlay (≤ 920px) ──────── */
+@media (max-width: 920px) {
+  body.cv-app .sidebar {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 200;
+    width: var(--sidebar-w, 264px) !important;
+    transform: translateX(-100%);
+    transition: transform var(--cv-drawer-speed, 220ms)
+      cubic-bezier(0.4, 0, 0.2, 1) !important;
+    overflow: hidden !important;
+  }
+  body.cv-app .sidebar.mobile-open {
+    transform: translateX(0) !important;
+    box-shadow: 6px 0 40px rgba(0, 0, 0, 0.55) !important;
+  }
+  /* Hide handle on mobile (hamburger button replaces it) */
+  body.cv-app .sidebar-handle {
+    display: none !important;
+  }
+  /* Content fills full width — no sidebar offset */
+  body.cv-app .main,
+  body.cv-app .stage,
+  body.cv-app .as-wrap {
+    left: 0 !important;
+    transition: none !important;
+    padding: 12px !important;
+  }
+  body.cv-app.sidebar-collapsed .main,
+  body.cv-app.sidebar-collapsed .stage,
+  body.cv-app.sidebar-collapsed .as-wrap {
+    left: 0 !important;
+  }
+  /* Hamburger shown */
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+  /* Sidebar overlay backdrop */
+  .sidebar-overlay {
+    display: none;
+  }
+  .sidebar-overlay.open {
+    display: block;
+  }
+}
+
+@media (min-width: 921px) {
+  .mobile-menu-btn {
+    display: none !important;
+  }
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Sidebar overlay backdrop */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.52);
+  z-index: 199;
+  display: none;
+}
+
+/* App topbar on mobile */
+@media (max-width: 768px) {
+  body.cv-app .topbar .navlinks {
+    display: none !important;
+  }
+}
+
+/* ── Fix: topbar is height-locked at 82px (CVD-WEB-0017) but base.css sets
+   --topbar-h:122px at ≤1080px for public page wrapping. App pages (which
+   have a sidebar) need --topbar-h to match the actual topbar height so the
+   sidebar padding-top and .main top don't leave a 40px gap. ── */
+@media (max-width: 1080px) {
+  body.cv-app {
+    --topbar-h: 82px;
+  }
+}
+
+/* Mobile hamburger button */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  color: var(--cv-text, #f5f5fc);
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+}
+.mobile-menu-btn span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  transition: transform 0.2s;
+}
+
+/* ══ PUBLIC PAGES ════════════════════════════════════════════════
+   Public pages (landing, login, join...) use body scroll.
+   Make sure no app CSS interferes.
+═══════════════════════════════════════════════════════════════ */
+body:not(.cv-app) {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-top: 0;
+}
+
+/* Public page topbar height */
+body:not(.cv-app) .topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+/* Public page main content pushes below topbar */
+body[data-page="landing"] #mainContent,
+body[data-page="join"] #mainContent,
+body[data-page="login"] #mainContent,
+body[data-page="pricing"] #mainContent,
+body[data-page="faq"] #mainContent,
+body[data-page="contact"] #mainContent,
+body[data-page="articles"] #mainContent,
+body[data-page="article"] #mainContent,
+body[data-page="legal"] #mainContent,
+body[data-page="password_reset"] #mainContent,
+body[data-page="forget_password"] #mainContent {
+  padding-top: var(--cv-topbar-h, 82px);
+  left: 0px !important;
+}
+
+/* Public pages responsive topbar nav */
+@media (max-width: 768px) {
+  body:not(.cv-app) .topbar {
+    padding: 0 12px;
+    height: 52px;
+  }
+  body:not(.cv-app) .topbar .navlinks {
+    display: none !important;
+  }
+  body:not(.cv-app) .brand-name {
+    font-size: 16px;
+  }
+  body[data-page="landing"] #mainContent,
+  body[data-page="join"] #mainContent,
+  body[data-page="login"] #mainContent,
+  body[data-page="pricing"] #mainContent,
+  body[data-page="faq"] #mainContent,
+  body[data-page="contact"] #mainContent,
+  body[data-page="articles"] #mainContent,
+  body[data-page="article"] #mainContent,
+  body[data-page="legal"] #mainContent,
+  body[data-page="password_reset"] #mainContent,
+  body[data-page="forget_password"] #mainContent {
+    padding-top: 52px;
+  }
+}
+
+/* ══ EXERCISE MENU ═══════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .exercise-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  }
+}
+@media (max-width: 600px) {
+  .exercise-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .cv-menu-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .cv-search-wrap {
+    width: 100% !important;
+  }
+}
+
+/* ══ MCQ SETUP ═══════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .mcq-layout {
+    flex-direction: column !important;
+  }
+  .mcq-rail {
+    width: 100% !important;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .window-rail {
+    flex: 1;
+    min-width: 260px;
+  }
+}
+@media (max-width: 768px) {
+  .filters-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .right-stack {
+    width: 100% !important;
+  }
+  .mcq-rail {
+    flex-direction: column !important;
+  }
+}
+
+/* ══ MCQ QUIZ ════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .quiz-stage {
+    padding: 12px !important;
+  }
+  .window.glow-follow {
+    width: 100% !important;
+  }
+  .option {
+    padding: 12px 14px !important;
+    font-size: 14px !important;
+  }
+  .quiz-actions {
+    flex-direction: column !important;
+    gap: 8px;
+  }
+  .quiz-btn-row {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ══ ACCOUNT SETTINGS ════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .as-window {
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  .as-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+  }
+  .as-tab {
+    white-space: nowrap;
+  }
+}
+@media (max-width: 600px) {
+  .as-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+  .as-row .as-btn {
+    width: 100%;
+  }
+  .as-theme-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .as-modal {
+    width: calc(100vw - 32px) !important;
+    margin: 0 16px;
+  }
+}
+
+/* ══ ADAPTIVE PRACTICE ═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .ap-full-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ap-sidebar {
+    display: none !important;
+  }
+}
+@media (max-width: 600px) {
+  .ap-header {
+    padding: 20px 16px !important;
+  }
+  .ap-title {
+    font-size: 22px !important;
+  }
+  .ap-orientation-options {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ══ PERFORMANCE INSIGHTS ════════════════════════════════════════ */
+@media (max-width: 1200px) {
+  .form-body {
+    flex-wrap: wrap !important;
+  }
+  .colLeft,
+  .colRight {
+    width: 100% !important;
+  }
+  .heatmapPanel {
+    width: 100% !important;
+  }
+}
+@media (max-width: 900px) {
+  .insights-layout {
+    flex-direction: column !important;
+  }
+  .infoPane {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+@media (max-width: 600px) {
+  .scoresGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ══ EDITOR PAGE ═════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .stage-shell.editor-shell {
+    flex-direction: column !important;
+  }
+  .ws-controls {
+    display: none !important;
+  }
+}
+
+/* ══ UTILITIES ═══════════════════════════════════════════════════ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.hidden {
+  display: none !important;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}

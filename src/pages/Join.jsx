@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Header from "../components/Header";
+import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { role } from "../config";
 import { useNavigate } from "react-router-dom";
@@ -89,7 +89,7 @@ function Join() {
 
   return (
     <>
-      <Header />
+      <Topbar />
       <ToastContainer />
       <div aria-hidden="true" className="cv-underbar"></div>
       <div aria-hidden="true" className="watermark">

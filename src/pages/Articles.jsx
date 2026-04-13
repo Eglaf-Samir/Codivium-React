@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Header from "../components/Header";
+import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 
 function Articles() {
@@ -7,14 +7,14 @@ function Articles() {
 
     return (
         <>
-            <Header />
+            <Topbar />
             <div aria-hidden="true" className="cv-underbar"></div>
             <div aria-hidden="true" className="watermark"><div className="word" data-text="CODIVIUM">CODIVIUM</div></div>
             <div className="stage-shell">
-                <main className="stage" role="main" id="mainContent">
+                <main className="stage login-stage" role="main" id="mainContent" >
                     <div className="blog-scroll" id="blogScroll">
                         <div aria-label="Codivium Articles" className="blog-min">
-                            <header className="bm-header">
+                            <header ClassName="bm-header">
                                 <div className="bm-left">
                                     <div className="bm-kicker">CODIVIUM • JOURNAL</div>
                                     <h1 className="bm-title">Articles</h1>

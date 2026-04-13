@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import Header from "../components/Header";
+import React, { useEffect } from "react";
+import Topbar from "../components/Topbar";
 function Landing() {
     useEffect(() => {
         document.body.setAttribute("data-page", "landing");
@@ -17,7 +17,7 @@ function Landing() {
         let isMounted = true;
 
         (async () => {
-            await loadScript("/assets/js/landing/landing.js");
+            await loadScript("/assets/js/landing/landing.bundle.1b3e87c7.js");
             await loadScript("/assets/js/landing/section4-init.js");
             await loadScript("/assets/js/cv-cube.08d05a23.js");
         })();
@@ -30,7 +30,7 @@ function Landing() {
     }, []);
     return (
         <>
-            <Header />
+            <Topbar />
             <main role="main" id="mainContent">
                 <section id="section1">
                     <div className="section-inner">
@@ -45,8 +45,8 @@ function Landing() {
                             <div>
                                 <div aria-label="Section 1 image" className="hero-image">
                                     <picture>
-                                        <source srcset="assets/img/section1Image.webp" type="image/webp" />
-                                        <img alt="Laptop screen with code (Codivium hero image)" decoding="async" draggable="false" fetchpriority="high" height="2160" loading="eager" src="assets/img/section1Image.jpg" width="3840" />
+                                        <source srcSet="/assets/img/section1Image.webp" type="image/webp" />
+                                        <img alt="Laptop screen with code (Codivium hero image)" decoding="async" draggable="false" fetchpriority="high" height="2160" loading="eager" src="/assets/img/section1Image.jpg" width="3840" />
                                     </picture>
                                 </div>
                             </div>
@@ -318,7 +318,7 @@ function Landing() {
                     <div className="section-inner">
                         <h2>Codivium Content Mindmap</h2>
                         <p className="panel-copy panel-copy-muted panel-copy-wide">Explore the skill graph: topics cluster by category, and links show how techniques connect across your training — so deliberate practice stays structured, not random.</p>
-                        <iframe className="constellation-frame" src="/assets/constellation-embed.html" title="Codivium constellation"></iframe>
+                        <iframe className="constellation-frame" src="/assets/components/codivium-constellation/constellation-embed.html" title="Codivium constellation"></iframe>
                     </div>
                 </section>
                 <section className="cfx-s4 cfx-s4--interactive" id="showcaseCoverflow">
@@ -350,8 +350,8 @@ function Landing() {
                                                 <div className="cfx-s4-media">
                                                     <div className="cfx-s4-image">
                                                         <picture>
-                                                            <source srcset="assets/img/panel1_editor.webp" type="image/webp" />
-                                                            <img alt="Codivium editor" decoding="async" height="1139" loading="lazy" src="assets/img/panel1_editor.jpg" width="2887" />
+                                                            <source srcSet="/assets/img/panel1_editor.webp" type="image/webp" />
+                                                            <img alt="Codivium editor" decoding="async" height="1139" loading="lazy" src="/assets/img/panel1_editor.jpg" width="2887" />
                                                         </picture>
                                                     </div>
                                                 </div>
@@ -374,8 +374,8 @@ function Landing() {
                                                 <div className="cfx-s4-media">
                                                     <div className="cfx-s4-image">
                                                         <picture>
-                                                            <source srcset="assets/img/panel2_feedback.webp" type="image/webp" />
-                                                            <img alt="Codivium review feedback" decoding="async" height="781" loading="lazy" src="assets/img/panel2_feedback.jpg" width="1050" />
+                                                            <source srcSet="/assets/img/panel2_feedback.webp" type="image/webp" />
+                                                            <img alt="Codivium review feedback" decoding="async" height="781" loading="lazy" src="/assets/img/panel2_feedback.jpg" width="1050" />
                                                         </picture>
                                                     </div>
                                                 </div>
@@ -398,8 +398,8 @@ function Landing() {
                                                 <div className="cfx-s4-media">
                                                     <div className="cfx-s4-image">
                                                         <picture>
-                                                            <source srcset="assets/img/panel3_mcq.webp" type="image/webp" />
-                                                            <img alt="Codivium MCQ diagnosis" decoding="async" height="1200" loading="lazy" src="assets/img/panel3_mcq.jpg" width="1563" />
+                                                            <source srcSet="/assets/img/panel3_mcq.webp" type="image/webp" />
+                                                            <img alt="Codivium MCQ diagnosis" decoding="async" height="1200" loading="lazy" src="/assets/img/panel3_mcq.jpg" width="1563" />
                                                         </picture>
                                                     </div>
                                                 </div>
@@ -422,8 +422,8 @@ function Landing() {
                                                 <div className="cfx-s4-media">
                                                     <div className="cfx-s4-image">
                                                         <picture>
-                                                            <source srcset="assets/img/panel4_dashboard.webp" type="image/webp" />
-                                                            <img alt="Codivium dashboard analytics" decoding="async" height="1150" loading="lazy" src="assets/img/panel4_dashboard.jpg" width="2694" />
+                                                            <source srcSet="/assets/img/panel4_dashboard.webp" type="image/webp" />
+                                                            <img alt="Codivium dashboard analytics" decoding="async" height="1150" loading="lazy" src="/assets/img/panel4_dashboard.jpg" width="2694" />
                                                         </picture>
                                                     </div>
                                                 </div>
@@ -446,8 +446,8 @@ function Landing() {
                                                 <div className="cfx-s4-media">
                                                     <div className="cfx-s4-image cfx-s4-image--final">
                                                         <picture>
-                                                            <source srcset="assets/img/panel5_minitutorial.webp" type="image/webp" />
-                                                            <img alt="Codivium tutorial guidance" decoding="async" height="1132" loading="lazy" src="assets/img/panel5_minitutorial.jpg" width="1320" />
+                                                            <source srcSet="/assets/img/panel5_minitutorial.webp" type="image/webp" />
+                                                            <img alt="Codivium tutorial guidance" decoding="async" height="1132" loading="lazy" src="/assets/img/panel5_minitutorial.jpg" width="1320" />
                                                         </picture>
                                                     </div>
                                                 </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Header from "../components/Header";
+import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 
 function Contact() {
@@ -141,7 +141,7 @@ function Contact() {
 
   return (
     <>
-      <Header />
+      <Topbar />
       <div aria-hidden="true" className="watermarks">
         <div className="wm w1" data-text="Codivium">
           CODIVIUM

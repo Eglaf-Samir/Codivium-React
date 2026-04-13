@@ -1,5 +1,4 @@
-import { useState } from "react";
-import Header from "../components/Header";
+import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 
 function Article() {
@@ -7,90 +6,8 @@ function Article() {
     // usePageMeta("article");
     return (
         <>
-            <Header />
+            <Topbar />
             <div aria-hidden="true" className="cv-underbar"></div>
-            <aside aria-label="Side menu" className="sidebar" id="sidebar">
-                <div className="side-top">
-                    <div aria-hidden="true" className="side-title"></div>
-                    <button aria-expanded="true" aria-label="Collapse menu" className="collapse-toggle" id="sidebarToggle"
-                        type="button">
-                        <svg aria-hidden="true" className="toggle-icon" fill="none" viewBox="0 0 24 24">
-                            <path d="M14.5 5.5L8.5 12l6 6.5" stroke="currentColor" strokeLinecap="round"
-                                stroke-linejoin="round" strokeWidth="2.4"></path>
-                        </svg>
-                    </button>
-                </div>
-                <nav aria-label="Menu items" className="side-nav">
-                    <a className="side-link" data-tip="Feedback Diagnostics" href="/landing">
-                        <span aria-hidden="true" className="side-ico">
-                            <svg fill="none" viewBox="0 0 24 24">
-                                <path d="M4 19V5" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M8 19V11" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M12 19V8" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M16 19V14" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M20 19V6" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                            </svg>
-                        </span>
-                        <span className="side-label">Dashboard</span>
-                    </a>
-                    <a className="side-link" data-tip="Technical Interview Exercises" href="/landing#section2">
-                        <span aria-hidden="true" className="side-ico">
-                            <svg fill="none" viewBox="0 0 24 24">
-                                <path d="M7 7h10" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M7 12h6" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M7 17h10" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M6 4h12a2 2 0 0 1 2 2v14l-4-2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="currentColor"
-                                    stroke-linejoin="round" strokeWidth="2.0"></path>
-                            </svg>
-                        </span>
-                        <span className="side-label">Interview Preparation</span>
-                    </a>
-                    <a className="side-link" data-tip="Atomic Exercises for Deliberate Practice" href="/faq#micro-challenges">
-                        <span aria-hidden="true" className="side-ico">
-                            <svg fill="none" viewBox="0 0 24 24">
-                                <path d="M12 2v4" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M12 18v4" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M4.9 4.9l2.8 2.8" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2">
-                                </path>
-                                <path d="M16.3 16.3l2.8 2.8" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2">
-                                </path>
-                                <path d="M2 12h4" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M18 12h4" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2"></path>
-                                <path d="M4.9 19.1l2.8-2.8" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2">
-                                </path>
-                                <path d="M16.3 7.7l2.8-2.8" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2">
-                                </path>
-                                <path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z" stroke="currentColor"
-                                    strokeWidth="2.0"></path>
-                            </svg>
-                        </span>
-                        <span className="side-label">Micro Challenges</span>
-                    </a>
-                    <a className="side-link" data-tip="Multiple Choice Quizzes" href="/faq#mcq">
-                        <span aria-hidden="true" className="side-ico">
-                            <svg fill="none" viewBox="0 0 24 24">
-                                <path d="M9 11l2 2 4-4" stroke="currentColor" strokeLinecap="round" stroke-linejoin="round"
-                                    strokeWidth="2.2"></path>
-                                <path d="M7 4h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"
-                                    stroke="currentColor" stroke-linejoin="round" strokeWidth="2.0"></path>
-                            </svg>
-                        </span>
-                        <span className="side-label">MCQ</span>
-                    </a>
-                    <div aria-hidden="true" className="side-sep side-sep-bottom"></div>
-                    <a className="side-link side-account" data-tip="Your Account Details" href="/join">
-                        <span aria-hidden="true" className="side-ico">
-                            <svg fill="none" viewBox="0 0 24 24">
-                                <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" strokeLinecap="round" strokeWidth="2.0">
-                                </path>
-                                <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" strokeLinecap="round"
-                                    stroke-linejoin="round" strokeWidth="2.0"></path>
-                            </svg>
-                        </span>
-                        <span className="side-label">My Account</span>
-                    </a>
-                </nav>
-            </aside>
             <div className="stage-shell">
                 <div aria-hidden="true" className="watermarks">
                     <div className="word watermark-word wm-pos-1" data-text="CODIVIUM">CODIVIUM</div>
@@ -101,10 +18,10 @@ function Article() {
                     <div className="word watermark-word wm-pos-6" data-text="CODIVIUM">CODIVIUM</div>
                     <div className="word watermark-word wm-pos-7" data-text="CODIVIUM">CODIVIUM</div>
                 </div>
-                <main className="stage" role="main" id="mainContent">
+                <main className="stage login-stage" role="main" id="mainContent">
                     <div className="blog-scroll" id="blogScroll">
                         <div aria-label="Codivium Article" className="blog-min">
-                            <header className="bm-header">
+                            <header ClassName="bm-header">
                                 <div className="bm-left">
                                     <div className="bm-kicker">CODIVIUM • JOURNAL</div>
                                     <div aria-level="2" className="bm-title" role="heading">Article</div>

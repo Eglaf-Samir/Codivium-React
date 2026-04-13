@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /login.html
+Disallow: /join.html
+Disallow: /password_reset.html
+
+Sitemap: https://www.codivium.com/sitemap.xml

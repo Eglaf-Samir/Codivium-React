@@ -1,59 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <link href="/assets/favicons/favicon.ico?v=0014" rel="icon" type="image/x-icon" />
-  <link href="/assets/favicons/favicon-32x32.png?v=0014" rel="icon" sizes="32x32" type="image/png" />
-  <link href="/assets/favicons/favicon-16x16.png?v=0014" rel="icon" sizes="16x16" type="image/png" />
-  <link href="/assets/favicons/favicon.svg?v=0014" rel="icon" type="image/svg+xml" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta content="Codivium" property="og:site_name" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>Codivium</title>
-
-  <link rel="stylesheet" href="/src/styles/core.css" />
-  <link rel="stylesheet" href="/src/styles/fonts.css" />
-  <link rel="stylesheet" href="/src/styles/landing.css" />
-  <link rel="stylesheet" href="/src/styles/codivium-constellation.css" />
-  <link rel="stylesheet" href="/src/styles/components/content-pages-normalization.css" />
-  <link rel="stylesheet" href="/src/styles/components/cube.css" />
-  <link rel="stylesheet" href="/src/styles/components/forms-theme.unified.css" />
-  <link rel="stylesheet" href="/src/styles/components/landing-stability.css" />
-  <link rel="stylesheet" href="/src/styles/components/section4-coverflow.css" />
-  <link rel="stylesheet" href="/src/styles/components/site-settings.css" />
-  <link rel="stylesheet" href="/src/styles/components/topbar.css" />
-  <link rel="stylesheet" href="/src/styles/components/topbarNormalization.css" />
-  <link rel="stylesheet" href="/src/styles/components/watermark.css" />
-  <link rel="stylesheet" href="/src/styles/pages/article.css" />
-  <link rel="stylesheet" href="/src/styles/pages/articles.css" />
-  <link rel="stylesheet" href="/src/styles/pages/contact.css" />
-  <link rel="stylesheet" href="/src/styles/pages/faq.css" />
-  <link rel="stylesheet" href="/src/styles/pages/join.css" />
-  <link rel="stylesheet" href="/src/styles/pages/legal.css" />
-  <link rel="stylesheet" href="/src/styles/pages/login.css" />
-  <link rel="stylesheet" href="/src/styles/pages/password_reset.css" />
-  <link rel="stylesheet" href="/src/styles/pages/pricing.css" />
-
-  <script defer src="/assets/js/ccv-cube.js"></script>
-  <script defer src="/assets/js/core/placeholder-flow.js"></script>
-  <script defer src="/assets/js/landing/landing.js"></script>
-  <script defer src="/assets/js/landing/section4-init.js"></script>
-  <script defer src="/assets/js/pages/article.js"></script>
-  <script defer src="/assets/js/pages/article1.js"></script>
-  <script defer src="/assets/js/pages/articles.js"></script>
-  <script defer src="/assets/js/pages/contact.js"></script>
-  <script defer src="/assets/js/pages/faq.js"></script>
-  <script defer src="/assets/js/pages/join.js"></script>
-  <script defer src="/assets/js/pages/legal.js"></script>
-  <script defer src="/assets/js/pages/login.js"></script>
-  <script defer src="/assets/js/pages/password_reset.js"></script>
-  <script defer src="/assets/js/pages/pricing.js"></script>
-  <script defer src="/assets/js/codivium-constellation.js"></script>
+  <link rel="icon" href="/src/assets/favicons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/src/assets/favicons/favicon.ico" sizes="any" />
+  <!-- Theme flash prevention -->
+  <script>
+    try {
+      var t = localStorage.getItem('cv_theme') || 'obsidian';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  </script>
 </head>
-
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
-
 </html>

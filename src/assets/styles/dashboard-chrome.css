@@ -1,0 +1,647 @@
+@layer components {
+/*
+ * dashboard.chrome.css
+ * OWNER: Toolbar chrome — layout preset dock + buttons, header controls
+ *
+ * Owns:  .cvLayoutPresetDock, .cvLayoutBtn, .cvLayoutIco/.cvLayoutPane/.cvLayoutFrame,
+ *         dock position rules (isInHeader / isInInfoPane),
+ *         body-level dock anchor for info_only mode
+ * Does NOT own: which mode is active (dashboard.layout.css)
+ *               panel visibility (dashboard.layout.css)
+ *               modal chrome (dashboard.modals.css)
+ *
+ * NOTE: Dock position is body-scoped (.cv-body-info-only) because the dock
+ *       lives on document.body, outside #ciMount. This is intentional.
+ */
+
+/* ============================================================
+   Dock container
+   ============================================================ */
+
+/* Dock lives on document.body — no #ciMount scope needed */
+.cvLayoutPresetDock{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Always viewport-fixed — NEVER moves regardless of layout mode */
+.cvLayoutPresetDock.isInHeader{
+  position: fixed;
+  right: 60px;
+  top: 50vh;
+  transform: translateY(-50%);
+  left: auto;
+  bottom: auto;
+  z-index: 9000;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+/* info_only (Summary View): dock stays at the same right position */
+.cv-body-info-only .cvLayoutPresetDock.isInHeader{
+  right: 60px;
+  left: auto;
+}
+
+/* When docked inside the info pane — hide it */
+.cvLayoutPresetDock.isInInfoPane{
+  display: none;
+}
+
+/* ============================================================
+   Layout preset buttons
+   ============================================================ */
+
+.cvLayoutBtn{
+  width: 100px;
+  height: 102px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 7px 0 6px;
+  gap: 3px;
+  border: 1px solid rgba(246, 213, 138, 0.20);
+  border-radius: 0;
+  background:
+    radial-gradient(140% 120% at 50% 0%, rgba(255,255,255,0.10), rgba(0,0,0,0.46) 70%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.44));
+  color: var(--color-text-primary);
+  cursor: pointer;
+  box-shadow:
+    0 12px 26px rgba(0,0,0,0.46),
+    inset 0 1px 0 rgba(255,255,255,0.20),
+    inset 1px 0 0 rgba(255,255,255,0.10),
+    inset -1px 0 0 rgba(0,0,0,0.60),
+    inset 0 -1px 0 rgba(0,0,0,0.72),
+    inset 0 -10px 16px rgba(0,0,0,0.55);
+  transform: translateY(0);
+  transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  position: relative;
+}
+
+
+/* Label text at top of each layout button */
+.cvLayoutBtnLabel{
+  display: block;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  line-height: 1.25;
+  text-align: center;
+  width: 100%;
+  padding: 0 4px;
+  white-space: normal;
+  word-break: break-word;
+  z-index: 1;
+  position: relative;
+}
+
+.cvLayoutBtn.isOn .cvLayoutBtnLabel{
+  color: var(--color-text-accent);
+}
+
+.cvLayoutBtnIcon{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 0;
+  z-index: 1;
+  position: relative;
+}
+
+/* Flush vertical stack */
+.cvLayoutBtn + .cvLayoutBtn{ margin-left: 0; margin-top: -1px; }
+
+/* Raised border ring */
+.cvLayoutBtn::before{
+  content:"";
+  position:absolute;
+  inset: 0;
+  border-radius: 0;
+  pointer-events:none;
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,0.08),
+    inset 2px 0 0 rgba(255,255,255,0.06),
+    inset -2px 0 0 rgba(0,0,0,0.58),
+    inset 0 -2px 0 rgba(0,0,0,0.68);
+  opacity: 0.85;
+}
+
+/* Inner cavity */
+.cvLayoutBtn::after{
+  content:"";
+  position:absolute;
+  inset: 6px;
+  border-radius: 0;
+  background: radial-gradient(140% 160% at 50% 30%, rgba(0,0,0,0.30), rgba(0,0,0,0.75));
+  box-shadow:
+    inset 0 10px 14px rgba(0,0,0,0.55),
+    inset 0 -8px 12px rgba(255,255,255,0.04);
+  opacity: 0.32;
+  pointer-events:none;
+}
+
+.cvLayoutBtn:hover{ filter: brightness(1.06); }
+
+.cvLayoutBtn:active{
+  transform: translateY(2px);
+  box-shadow:
+    0 6px 14px rgba(0,0,0,0.46),
+    inset 0 14px 18px rgba(0,0,0,0.62),
+    inset 0 -6px 10px rgba(255,255,255,0.03);
+}
+
+/* Active preset — gold glow ring */
+.cvLayoutBtn.isOn{
+  /* Deep concave pressed state — same effect as editor wsc-btn.active */
+  transform: translateY(2px);
+  border-color: rgba(246, 213, 138, 0.70);
+  background:
+    radial-gradient(ellipse 110% 50% at 50% 110%,
+      rgba(255,255,255,0.44) 0%,
+      rgba(255,255,255,0.16) 45%,
+      transparent 70%),
+    radial-gradient(ellipse 100% 70% at 50% -10%,
+      rgba(0,0,0,1.00) 0%,
+      rgba(0,0,0,1.00) 50%,
+      transparent 80%),
+    linear-gradient(180deg,
+      rgba(0,0,0,1.00) 0%,
+      rgba(0,0,0,1.00) 55%,
+      rgba(255,255,255,0.16) 100%),
+    #080B10;
+  box-shadow:
+    inset 0 14px 28px rgba(0,0,0,1.00),
+    inset 0 6px  14px rgba(0,0,0,1.00),
+    inset 0 -2px 0 rgba(255,255,255,0.44),
+    inset 2px  0 6px rgba(0,0,0,1.00),
+    inset -2px 0 6px rgba(0,0,0,1.00),
+    0 0 0 1px rgba(246,213,138,0.55),
+    0 1px 3px rgba(0,0,0,1.00);
+}
+.cvLayoutBtn.isOn::after{
+  opacity: 0.50;
+  background: radial-gradient(180% 180% at 50% 0%, var(--color-accent-subtle), transparent 60%);
+}
+
+.cvLayoutBtn:focus-visible{
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(246, 213, 138, 0.35),
+    0 14px 30px rgba(0,0,0,0.52),
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    inset 0 -10px 16px rgba(0,0,0,0.62);
+}
+
+.cvLayoutBtn.isDisabled{
+  opacity: 0.46;
+  cursor: not-allowed;
+  filter: saturate(0.6);
+}
+
+/* ============================================================
+   Layout icon SVG
+   ============================================================ */
+
+.cvLayoutIco{
+  display:block;
+  width: 56px !important;
+  height: 56px !important;
+}
+
+.cvLayoutIco .cvLayoutFrame{
+  fill: rgba(255,255,255,0.03);
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+.cvLayoutIco rect{
+  fill: rgba(245,245,252,0.14);
+  stroke: var(--color-text-muted);
+  stroke-width: 1.2;
+}
+.cvLayoutBtn.isOn .cvLayoutIco rect{
+  fill: rgba(255, 200, 110, 0.14);
+  stroke: rgba(246, 213, 138, 0.40);
+}
+.cvLayoutIco .cvLayoutPane{
+  fill: rgba(245,245,252,0.10);
+  stroke: var(--color-text-muted);
+  stroke-width: 1.2;
+}
+
+/* Responsive dock button sizes */
+@media (max-width: 1200px){
+  .cvLayoutBtn{ width: 88px; height: 92px; }
+}
+@media (max-width: 900px){
+  .cvLayoutBtn{ width: 76px; height: 82px; }
+}
+
+/* Utility: CSP-friendly help header link spacing */
+#ciMount .form-head-right{ margin-top: 2px; }
+
+} /* end @layer components */
+
+/* ============================================================
+   Info pane side toggle (form-head-right)
+   ============================================================ */
+
+.cvInfoPaneToggleBtn{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px 6px 9px;
+  /* Sharp edges — no border-radius */
+  border-radius: 0;
+  border: 1px solid var(--color-border-accent-subtle);
+  /* 3D floating surface: deep ambient shadow + strong drop shadow */
+  background:
+    /* Inward-curving cavity — bright rim at edges, dark hollow at centre */
+    radial-gradient(ellipse 80% 60% at 50% 50%,
+      rgba(0,0,0,0.72) 0%,
+      rgba(0,0,0,0.48) 45%,
+      rgba(255,255,255,0.10) 100%),
+    linear-gradient(180deg,
+      rgba(255,255,255,0.13) 0%,
+      rgba(0,0,0,0.55) 100%);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  /* Floating: large outer shadow + inner bevel */
+  box-shadow:
+    /* Outer drop — the "floating in air" depth */
+    0 8px 22px rgba(0,0,0,0.70),
+    0 3px  8px rgba(0,0,0,0.55),
+    0 1px  2px rgba(0,0,0,0.90),
+    /* Top-edge bright bevel — catches imaginary light */
+    inset 0  2px 0 rgba(255,255,255,0.22),
+    /* Left-edge subtle bevel */
+    inset 2px 0  0 rgba(255,255,255,0.10),
+    /* Right-edge dark bevel */
+    inset -2px 0 0 rgba(0,0,0,0.60),
+    /* Bottom-edge deepest bevel — pushes base into shadow */
+    inset 0 -3px 0 rgba(0,0,0,0.80),
+    /* Inner cavity shadow — the concave centre */
+    inset 0 6px 14px rgba(0,0,0,0.60),
+    inset 0 -4px 8px rgba(0,0,0,0.42);
+  transform: translateY(0);
+  transition: transform 100ms ease, box-shadow 100ms ease,
+              border-color 120ms ease, color 120ms ease, background 120ms ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Raised specular rim pseudo-element */
+.cvInfoPaneToggleBtn::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0  1px 0 rgba(255,255,255,0.30),
+    inset 0 -1px 0 rgba(0,0,0,0.50);
+  opacity: 0.7;
+}
+
+.cvInfoPaneToggleBtn:hover{
+  transform: translateY(-2px);
+  border-color: var(--color-text-accent-soft);
+  color: var(--color-text-primary);
+  box-shadow:
+    0 14px 32px rgba(0,0,0,0.72),
+    0  5px 12px rgba(0,0,0,0.58),
+    0  1px  3px rgba(0,0,0,0.90),
+    inset 0  2px 0 rgba(255,255,255,0.28),
+    inset 2px 0  0 rgba(255,255,255,0.12),
+    inset -2px 0 0 rgba(0,0,0,0.62),
+    inset 0 -3px 0 rgba(0,0,0,0.82),
+    inset 0 6px 14px rgba(0,0,0,0.60),
+    inset 0 -4px 8px rgba(0,0,0,0.42);
+}
+
+.cvInfoPaneToggleBtn:active{
+  transform: translateY(2px);
+  box-shadow:
+    0 3px 8px rgba(0,0,0,0.65),
+    0 1px 2px rgba(0,0,0,0.90),
+    inset 0  3px 0 rgba(0,0,0,0.60),
+    inset 0 8px 18px rgba(0,0,0,0.72),
+    inset 0 -2px 6px rgba(0,0,0,0.38);
+}
+
+/* Pane-open state: gold tint */
+.cvInfoPaneToggleBtn.isPaneOpen{
+  border-color: var(--color-text-accent-soft);
+  color: var(--color-text-accent);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%,
+      rgba(0,0,0,0.65) 0%,
+      rgba(0,0,0,0.42) 45%,
+      var(--color-border-accent-subtle) 100%),
+    linear-gradient(180deg,
+      var(--color-border-accent-subtle) 0%,
+      rgba(0,0,0,0.52) 100%);
+  box-shadow:
+    0 8px 22px rgba(0,0,0,0.70),
+    0 3px  8px rgba(0,0,0,0.55),
+    0 1px  2px rgba(0,0,0,0.90),
+    /* Gold glow */
+    0 0 14px 2px var(--color-border-accent-subtle),
+    inset 0  2px 0 rgba(255,255,255,0.18),
+    inset 2px 0  0 rgba(255,255,255,0.08),
+    inset -2px 0 0 rgba(0,0,0,0.58),
+    inset 0 -3px 0 rgba(0,0,0,0.78),
+    inset 0 6px 14px rgba(0,0,0,0.55),
+    inset 0 -4px 8px rgba(0,0,0,0.38);
+}
+
+.cvInfoPaneToggleBtn.isPaneOpen:hover{
+  transform: translateY(-2px);
+  border-color: var(--color-text-accent-mid);
+  box-shadow:
+    0 14px 32px rgba(0,0,0,0.72),
+    0  5px 12px rgba(0,0,0,0.58),
+    0  1px  3px rgba(0,0,0,0.90),
+    0 0 20px 4px var(--color-border-accent-subtle),
+    inset 0  2px 0 rgba(255,255,255,0.22),
+    inset 2px 0  0 rgba(255,255,255,0.10),
+    inset -2px 0 0 rgba(0,0,0,0.60),
+    inset 0 -3px 0 rgba(0,0,0,0.80),
+    inset 0 6px 14px rgba(0,0,0,0.55),
+    inset 0 -4px 8px rgba(0,0,0,0.38);
+}
+
+.cvInfoPaneToggleBtn.isHidden{
+  display: none !important;
+}
+
+.cvInfoPaneToggleIco{
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.cvInfoPaneToggleBtn.isPaneOpen .cvInfoPaneToggleIco{
+  opacity: 1.0;
+}
+
+.cvInfoPaneToggleTxt{
+  line-height: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PARCHMENT THEME — DASHBOARD LAYOUT TOGGLE BUTTONS
+   Idle:    offwhite bg · midnight-black font · silver icon
+   Pressed: same colours but deep 3-D sunk shadow — NO colour change
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Kill the pseudo-element overlays that accumulate on repeat clicks ── */
+html[data-theme="parchment"] .cvLayoutBtn::before {
+  box-shadow: none !important;
+  opacity: 0 !important;
+}
+html[data-theme="parchment"] .cvLayoutBtn::after {
+  background: none !important;
+  box-shadow: none !important;
+  opacity: 0 !important;
+}
+
+/* ── Idle / unclicked: offwhite bg, midnight text, silver icon ── */
+html[data-theme="parchment"] .cvLayoutBtn {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(232,234,240,0.92) 100%) !important;
+  border: 1px solid rgba(160,165,180,0.55) !important;
+  color: rgba(10,10,20,0.90) !important;
+  box-shadow:
+    /* outer lift — 3-D raised look */
+    0 6px 14px rgba(0,0,0,0.22),
+    0 2px 4px  rgba(0,0,0,0.16),
+    /* top-edge specular highlight */
+    inset 0  1px 0 rgba(255,255,255,0.95),
+    /* left-edge light catch */
+    inset  1px 0 0 rgba(255,255,255,0.75),
+    /* right-edge shadow */
+    inset -1px 0 0 rgba(0,0,0,0.12),
+    /* bottom-edge press shadow */
+    inset 0 -2px 0 rgba(0,0,0,0.18),
+    /* subtle inner concave depth */
+    inset 0 8px 12px rgba(0,0,0,0.06) !important;
+  transform: translateY(0) !important;
+  filter: none !important;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    filter 120ms ease !important;
+}
+
+/* ── Idle label: midnight, normal weight ── */
+html[data-theme="parchment"] .cvLayoutBtnLabel {
+  color: rgba(10,10,20,0.88) !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.60) !important;
+  opacity: 1 !important;
+}
+
+/* ── Idle icon: silver ── */
+html[data-theme="parchment"] .cvLayoutIco .cvLayoutFrame {
+  fill: rgba(160,168,190,0.14) !important;
+  stroke: rgba(130,140,168,0.85) !important;
+  stroke-width: 1.8 !important;
+}
+html[data-theme="parchment"] .cvLayoutIco rect {
+  fill: rgba(160,168,190,0.18) !important;
+  stroke: rgba(130,140,168,0.80) !important;
+  stroke-width: 1.6 !important;
+}
+html[data-theme="parchment"] .cvLayoutIco .cvLayoutPane {
+  fill: rgba(160,168,190,0.12) !important;
+  stroke: rgba(130,140,168,0.75) !important;
+  stroke-width: 1.6 !important;
+}
+
+/* ── Hover: subtle lift, no colour change ── */
+html[data-theme="parchment"] .cvLayoutBtn:hover {
+  filter: brightness(1.04) !important;
+  transform: translateY(-1px) !important;
+  box-shadow:
+    0 8px 18px rgba(0,0,0,0.26),
+    0 3px 6px  rgba(0,0,0,0.18),
+    inset 0  1px 0 rgba(255,255,255,0.98),
+    inset  1px 0 0 rgba(255,255,255,0.80),
+    inset -1px 0 0 rgba(0,0,0,0.10),
+    inset 0 -2px 0 rgba(0,0,0,0.16),
+    inset 0 8px 12px rgba(0,0,0,0.04) !important;
+}
+
+/* ── isOn / active / clicked: same offwhite — deeply sunk 3-D press ── */
+html[data-theme="parchment"] .cvLayoutBtn.isOn,
+html[data-theme="parchment"] .cvLayoutBtn.active,
+html[data-theme="parchment"] .cvLayoutBtn:active {
+  background:
+    linear-gradient(180deg, rgba(215,218,228,0.95) 0%, rgba(232,234,240,0.88) 100%) !important;
+  border: 1px solid rgba(130,138,158,0.65) !important;
+  color: rgba(10,10,20,0.90) !important;
+  transform: translateY(2px) !important;
+  filter: none !important;
+  box-shadow:
+    /* collapsed outer lift — pressed in */
+    0 1px 4px rgba(0,0,0,0.20),
+    /* heavy inner top shadow — concave sunk surface */
+    inset 0 4px 10px rgba(0,0,0,0.28),
+    inset 0 2px 4px  rgba(0,0,0,0.22),
+    /* top-edge dark — catches the press */
+    inset 0  1px 0 rgba(0,0,0,0.25),
+    /* left-edge shadow (inverted from idle) */
+    inset  1px 0 0 rgba(0,0,0,0.14),
+    /* bottom-edge bright — sunk inward, light now at bottom */
+    inset 0 -1px 0 rgba(255,255,255,0.60),
+    /* right-edge light */
+    inset -1px 0 0 rgba(255,255,255,0.40) !important;
+}
+
+/* ── isOn label: same midnight, bold to signal selection ── */
+html[data-theme="parchment"] .cvLayoutBtn.isOn .cvLayoutBtnLabel {
+  color: rgba(10,10,20,0.92) !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.40) !important;
+  opacity: 1 !important;
+}
+
+/* ── isOn icon: stay silver ── */
+html[data-theme="parchment"] .cvLayoutBtn.isOn .cvLayoutIco .cvLayoutFrame {
+  fill: rgba(160,168,190,0.14) !important;
+  stroke: rgba(120,132,162,0.90) !important;
+  stroke-width: 2.0 !important;
+}
+html[data-theme="parchment"] .cvLayoutBtn.isOn .cvLayoutIco rect {
+  fill: rgba(160,168,190,0.18) !important;
+  stroke: rgba(120,132,162,0.85) !important;
+  stroke-width: 2.0 !important;
+}
+html[data-theme="parchment"] .cvLayoutBtn.isOn .cvLayoutIco .cvLayoutPane {
+  fill: rgba(160,168,190,0.12) !important;
+  stroke: rgba(120,132,162,0.80) !important;
+  stroke-width: 2.0 !important;
+}
+
+/* ── introLink ("Intro" button at top): white font in parchment ── */
+html[data-theme="parchment"] .cvLayoutPresetDock ~ * .introLink,
+html[data-theme="parchment"] #ciMount .introLink:not(.refreshDashboardBtn) {
+  color: rgba(255,255,255,0.95) !important;
+}
+
+/* ── Other dashboard buttons (info pane, focus, close, more) ── */
+html[data-theme="parchment"] .cvInfoPaneToggleBtn,
+html[data-theme="parchment"] #ciMount .infoBtn,
+html[data-theme="parchment"] #ciMount .ciMoreBtn,
+html[data-theme="parchment"] .cvFocusBtn,
+html[data-theme="parchment"] .infoPaneCloseBtn {
+  background:
+    linear-gradient(180deg, rgba(245,247,252,0.88) 0%, rgba(228,232,242,0.92) 100%) !important;
+  border-color: rgba(155,162,180,0.50) !important;
+  color: rgba(10,10,20,0.88) !important;
+  box-shadow:
+    0 3px 8px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.90),
+    inset 0 -1px 0 rgba(0,0,0,0.14) !important;
+}
+html[data-theme="parchment"] .cvInfoPaneToggleBtn:hover,
+html[data-theme="parchment"] #ciMount .infoBtn:hover,
+html[data-theme="parchment"] #ciMount .ciMoreBtn:hover,
+html[data-theme="parchment"] .cvFocusBtn:hover {
+  filter: brightness(1.04) !important;
+}
+html[data-theme="parchment"] .cvInfoPaneToggleBtn:active,
+html[data-theme="parchment"] #ciMount .infoBtn:active,
+html[data-theme="parchment"] #ciMount .ciMoreBtn:active,
+html[data-theme="parchment"] .cvFocusBtn:active {
+  transform: translateY(1px) !important;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.18),
+    inset 0 3px 8px rgba(0,0,0,0.20),
+    inset 0 1px 0 rgba(0,0,0,0.18),
+    inset 0 -1px 0 rgba(255,255,255,0.55) !important;
+}
+
+/* ── infoPaneTabBtn ── */
+html[data-theme="parchment"] #ciMount .infoPaneTabBtn {
+  background:
+    linear-gradient(180deg, rgba(245,247,252,0.85) 0%, rgba(228,232,242,0.90) 100%) !important;
+  border-color: rgba(155,162,180,0.45) !important;
+  color: rgba(10,10,20,0.85) !important;
+}
+html[data-theme="parchment"] #ciMount .infoPaneTabBtn:hover {
+  filter: brightness(1.04) !important;
+}
+html[data-theme="parchment"] #ciMount .infoPaneTabBtn.isActive {
+  background:
+    linear-gradient(180deg, rgba(215,218,228,0.95) 0%, rgba(228,232,240,0.90) 100%) !important;
+  border-color: rgba(120,130,160,0.65) !important;
+  color: rgba(10,10,20,0.92) !important;
+  transform: translateY(1px);
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.16),
+    inset 0 3px 8px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(0,0,0,0.16),
+    inset 0 -1px 0 rgba(255,255,255,0.55) !important;
+}
+
+/* ── introLink ("Intro" button at page title): dark bg + white font ── */
+/* It sits next to the dark layout buttons, not in a light panel context  */
+html[data-theme="parchment"] #ciMount .introLink {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(10,10,15,0.00) 60%),
+    rgb(18,18,28) !important;
+  border-color: rgba(200,200,220,0.25) !important;
+  color: rgba(255,255,255,0.95) !important;
+  box-shadow:
+    0 3px 10px rgba(0,0,0,0.40),
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    inset 0 -1px 0 rgba(0,0,0,0.55) !important;
+}
+html[data-theme="parchment"] #ciMount .introLink:hover {
+  filter: brightness(1.12) !important;
+  color: rgba(255,255,255,1.00) !important;
+}
+
+/* ── All <a> links in dashboard panels: midnight blue ── */
+html[data-theme="parchment"] #ciMount a:not(.introLink) {
+  color: rgba(14,28,80,0.85) !important;
+}
+html[data-theme="parchment"] #ciMount a:not(.introLink):hover {
+  color: rgba(14,28,80,1.00) !important;
+}
+
+/* ── cvLayoutBtn::after: remove dark overlay on light themes ── */
+html[data-theme="glacier-slate"] .cvLayoutBtn::after,
+html[data-theme="frost"] .cvLayoutBtn::after { background: none !important; }
+html[data-theme="glacier-slate"] .cvLayoutBtn {
+  background: linear-gradient(180deg, #D4DCE3 0%, #C8D1DA 100%) !important;
+  border: 1px solid #92A0AE !important;
+  color: #18222C !important;
+}
+html[data-theme="frost"] .cvLayoutBtn {
+  background: linear-gradient(180deg, #FBFDFF 0%, #EEF4F9 100%) !important;
+  border: 1px solid #D9E4EE !important;
+  color: #16202A !important;
+}
+html[data-theme="glacier-slate"] .cvLayoutBtn.isOn,
+html[data-theme="glacier-slate"] .cvLayoutBtn.active { background: linear-gradient(180deg, #BCC6D0 0%, #B3BDC6 100%) !important; border-color: #7E8E9E !important; }
+html[data-theme="frost"] .cvLayoutBtn.isOn,
+html[data-theme="frost"] .cvLayoutBtn.active { background: linear-gradient(180deg, #E7F0F7 0%, #DCEBF7 100%) !important; border-color: #2E6FA3 !important; }
