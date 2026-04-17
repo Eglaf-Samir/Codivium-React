@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout    from './components/Layout.jsx';
 import PublicWrapper from './components/PublicWrapper.jsx';
+import { isLoggedIn } from './utils/auth.js';
 
 // App pages
 import AdaptivePage  from './pages/AdaptivePage/index.jsx';
@@ -36,6 +37,12 @@ const PAGE_TITLES = {
   '/settings':          'Account & Settings',
 };
 
+// ── Block unauthenticated users from app pages ───────────────────
+function RequireAuth({ children }) {
+  if (!isLoggedIn()) return <Navigate to="/login" replace />;
+  return children;
+}
+
 // ── App route wrapper ────────────────────────────────────────────
 function AppRoute({ component: Component, bodyClass = '' }) {
   const location = useLocation();
@@ -62,6 +69,12 @@ function AppRoute({ component: Component, bodyClass = '' }) {
   );
 }
 
+// ── Redirect logged-in users away from guest-only pages ──────────
+function GuestOnly({ children }) {
+  if (isLoggedIn()) return <Navigate to="/adaptive-practice" replace />;
+  return children;
+}
+
 // ── Public route wrapper ─────────────────────────────────────────
 function PubRoute({ component: Component, page, title }) {
   const location = useLocation();
@@ -84,8 +97,8 @@ export default function App() {
     <Routes>
       {/* ── PUBLIC PAGES ── */}
       <Route path="/"                element={<PubRoute component={Landing}        page="landing"         title="Become Python Pro" />} />
-      <Route path="/login"           element={<PubRoute component={Login}          page="login"           title="Login" />} />
-      <Route path="/join"            element={<PubRoute component={Join}           page="join"            title="Join" />} />
+      <Route path="/login"           element={<GuestOnly><PubRoute component={Login} page="login" title="Login" /></GuestOnly>} />
+      <Route path="/join"            element={<GuestOnly><PubRoute component={Join}  page="join"  title="Join" /></GuestOnly>} />
       <Route path="/legal"           element={<PubRoute component={Legal}          page="legal"           title="Terms & Privacy" />} />
       <Route path="/faq"             element={<PubRoute component={Faq}            page="faq"             title="FAQ" />} />
       <Route path="/pricing"         element={<PubRoute component={Pricing}        page="pricing"         title="Pricing" />} />
@@ -96,13 +109,15 @@ export default function App() {
       <Route path="/forget_password" element={<PubRoute component={ForgetPassword} page="password_reset"  title="Reset Password" />} />
 
       {/* ── APP PAGES ── */}
-      <Route path="/adaptive-practice" element={<AppRoute component={AdaptivePage} bodyClass="drawer-collapsed" />} />
-      <Route path="/menu"              element={<AppRoute component={MenuPage}      bodyClass="drawer-collapsed" />} />
-      <Route path="/editor"            element={<AppRoute component={EditorPage}    bodyClass="drawer-collapsed" />} />
-      <Route path="/mcq"               element={<AppRoute component={McqSetupPage}  bodyClass="mcq-parent" />} />
-      <Route path="/mcq/quiz"          element={<AppRoute component={McqQuizPage}   bodyClass="mcq-quiz" />} />
-      <Route path="/insights"          element={<AppRoute key="insights" component={InsightsPage} bodyClass="drawer-collapsed" />} />
-      <Route path="/settings"          element={<AppRoute component={SettingsPage}  bodyClass="cv-settings" />} />
+      <Route path="/adaptive-practice" element={<RequireAuth><AppRoute component={AdaptivePage} bodyClass="drawer-collapsed" /></RequireAuth>} />
+      <Route path="/menu"              element={<RequireAuth><AppRoute component={MenuPage}      bodyClass="drawer-collapsed" /></RequireAuth>} />
+      <Route path="/editor"            element={<RequireAuth><AppRoute component={EditorPage}    bodyClass="drawer-collapsed" /></RequireAuth>} />
+      <Route path="/interview/CodingQue"          element={<RequireAuth><AppRoute component={EditorPage} bodyClass="drawer-collapsed" /></RequireAuth>} />
+      <Route path="/DeliberatePractice/CodingQue" element={<RequireAuth><AppRoute component={EditorPage} bodyClass="drawer-collapsed" /></RequireAuth>} />
+      <Route path="/mcq"               element={<RequireAuth><AppRoute component={McqSetupPage}  bodyClass="mcq-parent" /></RequireAuth>} />
+      <Route path="/mcq/quiz"          element={<RequireAuth><AppRoute component={McqQuizPage}   bodyClass="mcq-quiz" /></RequireAuth>} />
+      <Route path="/insights"          element={<RequireAuth><AppRoute key="insights" component={InsightsPage} bodyClass="drawer-collapsed" /></RequireAuth>} />
+      <Route path="/settings"          element={<RequireAuth><AppRoute component={SettingsPage}  bodyClass="cv-settings" /></RequireAuth>} />
 
       {/* ── LEGACY REDIRECTS ── */}
       <Route path="/adaptive-practice.html"           element={<Navigate to="/adaptive-practice" replace />} />

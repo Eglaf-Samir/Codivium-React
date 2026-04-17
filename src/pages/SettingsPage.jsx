@@ -9,32 +9,42 @@ function loadScript(src, onload) {
   return s;
 }
 
-// Set window.CVTheme directly — no script tag injection
+// Set window.CVTheme directly — keys match the [data-theme="..."] rules in our CSS
 function setupCVTheme() {
   if (window.CVTheme) return;
   window.CVTheme = {
-    VALID:   ['obsidian','midnight','carbon','graphite','porcelain','ivory'],
-    LABELS:  { obsidian:'Obsidian', midnight:'Midnight', carbon:'Carbon Ink',
-                graphite:'Graphite Neon', porcelain:'Porcelain', ivory:'Ivory Syntax' },
+    VALID: ['obsidian', 'vanta-black', 'ebony', 'dark-charcoal', 'slate', 'glacier-slate', 'frost', 'parchment'],
+    LABELS: {
+      'obsidian':       'Obsidian',
+      'vanta-black':    'Vanta Black',
+      'ebony':          'Ebony',
+      'dark-charcoal':  'Dark Charcoal',
+      'slate':          'Slate',
+      'glacier-slate':  'Glacier Slate',
+      'frost':          'Frost',
+      'parchment':      'Parchment',
+    },
     SWATCHES: {
-      obsidian:  { bg:'#0B1020', accent:'#A78BFA' },
-      midnight:  { bg:'#070812', accent:'#B9A2FF' },
-      carbon:    { bg:'#0A0A0B', accent:'#D9C07C' },
-      graphite:  { bg:'#1A1A2E', accent:'#A78BFA' },
-      porcelain: { bg:'#F5F3EE', accent:'#6D4A1C' },
-      ivory:     { bg:'#F7F5F0', accent:'#7B5728' },
+      'obsidian':       { bg: '#0B1020', accent: '#F6D58A' },
+      'vanta-black':    { bg: '#000000', accent: '#F6D58A' },
+      'ebony':          { bg: '#12101A', accent: '#A78BFA' },
+      'dark-charcoal':  { bg: '#1A1A1C', accent: '#D9C07C' },
+      'slate':          { bg: '#1B2431', accent: '#60A5FA' },
+      'glacier-slate':  { bg: '#2A3A4C', accent: '#7FAFD9' },
+      'frost':          { bg: '#E8F0F7', accent: '#2E6FA3' },
+      'parchment':      { bg: '#F5F0E8', accent: '#8B1A1A' },
     },
-    get: function() {
-      try { return localStorage.getItem('cv_site_theme') || 'obsidian'; } catch(e) { return 'obsidian'; }
+    get: function () {
+      try { return localStorage.getItem('cv_site_theme') || 'obsidian'; } catch (e) { return 'obsidian'; }
     },
-    set: function(key) {
-      try { localStorage.setItem('cv_site_theme', key); } catch(e) {}
+    set: function (key) {
+      try { localStorage.setItem('cv_site_theme', key); } catch (e) {}
       document.documentElement.setAttribute('data-theme', key);
     },
   };
   try {
     document.documentElement.setAttribute('data-theme', window.CVTheme.get());
-  } catch(e) {}
+  } catch (e) {}
 }
 
 export default function SettingsPage() {

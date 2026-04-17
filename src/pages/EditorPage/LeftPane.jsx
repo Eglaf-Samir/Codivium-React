@@ -118,7 +118,7 @@ function TabWrapper({ tab, active, locked, showTooltip, locks, onTabClick, onFor
   );
 }
 
-export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNote, onLearnMore }) {
+export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNote, onLearnMore, onTourStart }) {
   const [activeTab, setActiveTab] = useState('req');
   const [lockTooltip, setLockTooltip] = useState(null); // key of open tooltip
 
@@ -163,11 +163,20 @@ export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNo
             />
           );
         })}
-        <button className="tour-btn" id="tourBtn" type="button" aria-label="Start tour" title="Take a tour">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 8v4m0 4h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <button
+          className="tab-btn tour-btn"
+          id="tourBtn"
+          type="button"
+          title="Take a guided tour of this page"
+          aria-label="Guided tour"
+          onClick={onTourStart}
+        >
+          <svg viewBox="0 0 24 24" fill="none" width="13" height="13" className="tour-btn-ico" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8"/>
+            <path d="M12 8v4l3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+            <circle cx="12" cy="7" r="0.5" fill="currentColor"/>
           </svg>
+          Take a Tour
         </button>
       </div>
 

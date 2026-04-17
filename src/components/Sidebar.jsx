@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { logout } from '../utils/auth';
 
 const NAV_ITEMS = [
   { section: 'adaptive', to: '/adaptive-practice', tip: 'Adaptive Practice', icon: 'icon-adaptive', label: 'Adaptive Practice', twoLine: true },
@@ -15,6 +16,9 @@ function getActiveSection(pathname, search) {
   if (pathname.startsWith('/insights')) return 'insights';
   if (pathname.startsWith('/mcq')) return 'mcq';
   if (pathname.startsWith('/settings')) return 'settings';
+
+  if (pathname.startsWith('/interview')) return 'interview';
+  if (pathname.startsWith('/DeliberatePractice')) return 'micro';
 
   if (pathname.startsWith('/menu')) {
     const track = (new URLSearchParams(search).get('track') || '').toLowerCase();
@@ -40,7 +44,13 @@ function SideIcon({ id }) {
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const active = getActiveSection(location.pathname, location.search);
+
+  function handleLogout() {
+    logout();
+    navigate('/login', { replace: true });
+  }
   // ── FIX 1: Initialise from localStorage AND sync body class ──
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('cv_sidebar_collapsed') === '1'; } catch { return false; }
@@ -187,6 +197,24 @@ export default function Sidebar({ isOpen, onClose }) {
               <SideIcon id="icon-settings" />
               <span className="side-label two-line">Account &amp;<br />Settings</span>
             </Link>
+
+            {/* Logout */}
+            <button
+              type="button"
+              className="side-link side-logout"
+              data-section="logout"
+              data-tip="Logout"
+              onClick={handleLogout}
+            >
+              <span className="side-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M10 17l5-5-5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M15 12H3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </span>
+              <span className="side-label">Logout</span>
+            </button>
           </div>
 
           {/* Profile card — stays at bottom */}

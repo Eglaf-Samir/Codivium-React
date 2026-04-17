@@ -1,11 +1,25 @@
 // EditorPage.jsx — Root component for the Codivium exercise workspace.
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 import { useTimer }    from '../../hooks/useTimer.js';
 import { useLocks }    from '../../hooks/useLocks.js';
 import { useExercise } from '../../hooks/useExercise.js';
 import { useSplitters } from '../../hooks/useSplitter.js';
 import { useSettings } from '../../hooks/useSettings.js';
+
+import {
+  CreateOutput as InterviewCreateOutput,
+  SubmitUserInterViewPrepration as SubmitInterviewFinal,
+  SaveInterviewPreparationSession,
+} from '../../api/interviewprepration/apiinterviewprepration';
+import {
+  CreateOutput as DeliberateCreateOutput,
+  SubmitUserInterViewPrepration as SubmitDeliberateFinal,
+  SaveDeliberatePracticeSession,
+} from '../../api/deliberatePractice/apideliberatepractice';
 
 import Timer              from './Timer.jsx';
 import WorkspaceControls  from './WorkspaceControls.jsx';
@@ -14,6 +28,7 @@ import RightPane          from './RightPane.jsx';
 import ReplPane           from './ReplPane.jsx';
 import SettingsPalette    from './SettingsPalette.jsx';
 import FeedbackModal     from './FeedbackModal.jsx';
+import EditorTour        from './EditorTour.jsx';
 import HelpPanel from '../../components/HelpPanel.jsx';
 
 export default function EditorPage() {
@@ -31,10 +46,13 @@ export default function EditorPage() {
     setAttemptNoteSeen(true);
   }, []);
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // ── Core hooks ─────────────────────────────────────────────────────────────
   const timer    = useTimer();
   const settings = useSettings(stageRef);
-  const { exercise, loading, error, reload } = useExercise();
+  const { exercise, loading, error, reload, item, track } = useExercise();
 
   // Locks depend on elapsed seconds from the timer
   const locks = useLocks(timer.elapsedSeconds);
@@ -46,6 +64,7 @@ export default function EditorPage() {
   // ── Layout state ───────────────────────────────────────────────────────────
   const [focusMode,   setFocusMode]   = useState('default');
   const [replVisible, setReplVisible] = useState(true);
+  const [tourActive,  setTourActive]  = useState(false);
 
   // ── Remove loading placeholder on mount ──────────────────────────────────
   useEffect(() => {
@@ -82,18 +101,17 @@ export default function EditorPage() {
   const [submitting,   setSubmitting]   = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);   // { type, message }
   const [testResults,  setTestResults]  = useState(null);
-  const [attemptCount, setAttemptCount] = useState(0);
-  const sessionIdRef   = useRef(null);
-  const sessionStartRef= useRef(Date.now());
+  const [attemptCount, setAttemptCount] = useState(
+    () => Number(location?.state?.totalRunCount) || 0,
+  );
+  const [isStartFresh, setIsStartFresh] = useState(
+    () => (location?.state?.isStartFresh ?? true),
+  );
+  const [lastRunOutput, setLastRunOutput] = useState(null);
+  const [allTestsPassed, setAllTestsPassed] = useState(false);
+  const initialOffsetRef = useRef(Number(location?.state?.initialTimeInSeconds) || 0);
 
-  function createSessionId() {
-    return 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-  }
-  function elapsedSecs() {
-    return Math.round((Date.now() - sessionStartRef.current) / 1000);
-  }
-
-  // Reset per-exercise state when exercise changes
+  // Reset per-exercise state when exercise changes + preload useroldcode if continuing
   useEffect(() => {
     if (!exercise?.id) return;
     const prev = localStorage.getItem('cv_exercise_id') ?? '';
@@ -102,157 +120,243 @@ export default function EditorPage() {
       localStorage.setItem('cv_submission_count', '0');
       timer.reset();
       locks.resetForExercise();
-      setAttemptCount(0);
       setTestResults(null);
       setSubmitStatus(null);
-      sessionIdRef.current    = createSessionId();
-      sessionStartRef.current = Date.now();
+      setAllTestsPassed(false);
+    }
+
+    const useroldcode = location?.state?.useroldcode;
+    if (!isStartFresh && useroldcode && candidateRef.current?.setValue) {
+      candidateRef.current.setValue(useroldcode);
     }
   }, [exercise?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Submit handler ─────────────────────────────────────────────────────────
-  const handleSubmit = useCallback(async () => {
+  // ── Run Code: calls CreateOutput (executes user code against unit tests) ──
+  const handleRunCode = useCallback(async () => {
     if (submitting) return;
-
     const code = candidateRef.current?.getValue()?.trim() ?? '';
     if (!code) {
-      setSubmitStatus({ type: 'warn', message: 'Write some code before submitting.' });
+      setSubmitStatus({ type: 'warn', message: 'Write some code before running.' });
       return;
     }
-    if (!exercise?.id) {
-      setSubmitStatus({ type: 'warn', message: 'No exercise loaded — cannot submit.' });
+    if (!exercise?.raw || !item) {
+      setSubmitStatus({ type: 'warn', message: 'No exercise loaded — cannot run.' });
       return;
     }
 
-    if (!sessionIdRef.current) sessionIdRef.current = createSessionId();
-
+    const Userid = localStorage.getItem('Userid');
     const newCount = attemptCount + 1;
     setAttemptCount(newCount);
     setSubmitting(true);
     setTestResults(null);
     setSubmitStatus({ type: 'running', message: 'Running tests…' });
 
-    // Emit analytics event
+    const totalSecs = timer.elapsedSeconds + initialOffsetRef.current;
+
     try {
-      document.dispatchEvent(new CustomEvent('cvd:submit_clicked', {
-        detail: { exerciseId: exercise.id, attempt: newCount, codeLength: code.length },
-        bubbles: false,
-      }));
-    } catch (_) {}
-
-    // Demo mode — synthetic response
-    if (window.__CODIVIUM_DEMO__) {
-      await new Promise(r => setTimeout(r, 900));
-      const accepted = newCount > 1;
-      const resp = {
-        accepted,
-        testsPassed: accepted ? (exercise.testsTotal || 10) : 7,
-        testsTotal:  exercise.testsTotal || 10,
-        testResults: [
-          { name: 'test_example', status: 'pass', input: '', expected: '', got: '' },
-          { name: 'test_edge',    status: accepted ? 'pass' : 'fail',
-            input: 'edge input', expected: 'expected', got: accepted ? 'expected' : 'wrong' },
-        ],
-        feedback: null,
-      };
-      setSubmitting(false);
-      locks.onSubmission();
-      setTestResults(resp);
-      setSubmitStatus(
-        accepted
-          ? { type: 'success', message: 'All tests passed! (demo mode)' }
-          : { type: 'fail', message: `${resp.testsPassed} / ${resp.testsTotal} tests passed — keep going.` }
-      );
-
-      if (accepted && window.CodiviumFeedback?.show) {
-        window.CodiviumFeedback.show({
-          exerciseId: exercise.id, exerciseName: exercise.name,
-          category: exercise.category, difficulty: exercise.difficulty,
-          testsPassed: resp.testsPassed, testsTotal: resp.testsTotal,
-          returnMenuUrl: '/menu',
-          current: { timeToSuccessSeconds: elapsedSecs(), attempts: newCount },
-          insightText: 'Demo mode — no real scoring.', chips: [], nextSuggestion: '',
-          performanceTier: null, isFirstSolve: true, history: [], deltas: null,
-        });
-      }
-      return;
-    }
-
-    // Real submission
-    try {
-      const token = sessionStorage.getItem('cv_auth_token') || localStorage.getItem('cv_auth_token');
-      const headers = {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(window.__CODIVIUM_CSRF_TOKEN ? { 'X-Csrf-Token': window.__CODIVIUM_CSRF_TOKEN } : {}),
-      };
-
-      const track = (() => {
-        try {
-          const from = decodeURIComponent(new URLSearchParams(window.location.search).get('from') || '');
-          const m = from.match(/[?&]track=([^&]+)/);
-          return m ? m[1] : 'micro';
-        } catch (_) { return 'micro'; }
-      })();
-
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 15000);
-
-      const res = await fetch('/api/exercise/submit', {
-        method: 'POST',
-        headers,
-        credentials: 'same-origin',
-        signal: ctrl.signal,
-        body: JSON.stringify({
-          exerciseId: exercise.id, track, code,
-          sessionId: sessionIdRef.current,
-          elapsedSecs: elapsedSecs(),
-          attempt: newCount,
-        }),
-      });
-      clearTimeout(timeout);
-
-      if (res.status === 429) throw Object.assign(new Error('Rate limited'), { code: 'RATE_LIMITED' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const response = await res.json();
-      setSubmitting(false);
-      locks.onSubmission();
-      setTestResults(response);
-
-      if (response.accepted) {
-        setSubmitStatus({ type: 'success', message: 'All tests passed!' });
-        if (feedbackRef.current && response.feedback) {
-          const fb = response.feedback;
-          feedbackRef.current.show({
-            exerciseId: exercise.id, exerciseName: fb.exerciseName || exercise.name,
-            category: fb.category || exercise.category, difficulty: fb.difficulty || exercise.difficulty,
-            testsPassed: response.testsPassed, testsTotal: response.testsTotal,
-            returnMenuUrl: '/menu', nextExerciseId: fb.nextExerciseId || null,
-            current: {
-              timeToSuccessSeconds: elapsedSecs(), attempts: newCount,
-              bestPreSuccessPercent: fb.bestPreSuccessPercent ?? null,
-              timeToFirstAttemptSecs: fb.timeToFirstAttemptSecs ?? null,
-              avgIterationSeconds: fb.avgIterationSeconds ?? null,
-            },
-            insightText: fb.insightText || '', chips: fb.chips || [],
-            nextSuggestion: fb.nextSuggestion || '', performanceTier: fb.performanceTier || null,
-            isFirstSolve: fb.isFirstSolve ?? false, history: fb.history || [], deltas: fb.deltas || null,
-          });
-        }
+      let body;
+      let runApi;
+      if (track === 'interview') {
+        body = {
+          Id: item.csInterviewPreprationId,
+          ExerciseId: item.excerciseId,
+          Code: code,
+          IsStartFresh: isStartFresh,
+          totalSeconds: totalSecs,
+          interviewPreprationId: item.id,
+          userId: Userid,
+        };
+        runApi = InterviewCreateOutput;
       } else {
-        const p = response.testsPassed || 0, tot = response.testsTotal || 0;
-        setSubmitStatus({ type: 'fail', message: `${p} / ${tot} tests passed — keep going.` });
+        body = {
+          Id: item.deliberatePracticeid,
+          PracticeId: item.practiceId,
+          Code: code,
+          IsStartFresh: isStartFresh,
+          totalSeconds: totalSecs,
+          deliberatePracticePreprationId: item.id,
+          userId: Userid,
+        };
+        runApi = DeliberateCreateOutput;
+      }
+
+      const response = await runApi(JSON.stringify(body));
+      setSubmitting(false);
+
+      if (!response || response.status !== 200 || !response.data) {
+        if (response?.status === 401) {
+          localStorage.clear();
+          navigate('/login');
+          return;
+        }
+        setSubmitStatus({ type: 'error', message: 'Run failed — please try again.' });
+        return;
+      }
+
+      setIsStartFresh(false);
+      setLastRunOutput(response.data);
+      locks.onSubmission();
+
+      const failedIds = response.data.failedUnitTestIDList || [];
+      const totalErrors = response.data.totalErrorTestCount ?? failedIds.length;
+      const totalTests = (exercise.unitTests || []).length;
+      const passed = Math.max(0, totalTests - failedIds.length);
+
+      const mapped = {
+        accepted: failedIds.length === 0 && totalErrors === 0,
+        testsPassed: passed,
+        testsTotal: totalTests,
+        testResults: (exercise.unitTests || []).map((u) => {
+          const out =
+            (response.data.unitTestResults || []).find((r) => r.unitTestId === u.id) || {};
+          const failed = failedIds.includes(u.id);
+          return {
+            name: u.name || `test_${u.id}`,
+            status: failed ? 'fail' : 'pass',
+            input: out.input || '',
+            expected: out.expected || '',
+            got: out.actual || out.got || '',
+          };
+        }),
+      };
+      setTestResults(mapped);
+
+      if (mapped.accepted) {
+        setAllTestsPassed(true);
+        setSubmitStatus({ type: 'success', message: 'All tests passed! Click Submit again to finalise.' });
+      } else {
+        setAllTestsPassed(false);
+        setSubmitStatus({
+          type: 'fail',
+          message: `${mapped.testsPassed} / ${mapped.testsTotal} tests passed — keep going.`,
+        });
       }
     } catch (err) {
       setSubmitting(false);
-      const msg = err.code === 'RATE_LIMITED'
-        ? 'Too many submissions — please wait before retrying.'
-        : `Submission error: ${err.message || 'Unknown error'} — please try again.`;
-      setSubmitStatus({ type: 'error', message: msg });
+      setSubmitStatus({
+        type: 'error',
+        message: `Run error: ${err?.message || 'Unknown error'} — please try again.`,
+      });
     }
-  }, [submitting, exercise, attemptCount, locks]);
+  }, [submitting, exercise, item, track, attemptCount, isStartFresh, timer, locks, navigate]);
+
+  // ── Final Submit: once tests pass, send final submission ──
+  const handleFinalSubmit = useCallback(async () => {
+    if (!lastRunOutput?.id) {
+      setSubmitStatus({ type: 'warn', message: 'Please run your code successfully before submitting.' });
+      return;
+    }
+    const Userid = localStorage.getItem('Userid');
+    const totalSecs = timer.elapsedSeconds + initialOffsetRef.current;
+    setSubmitting(true);
+    setSubmitStatus({ type: 'running', message: 'Submitting…' });
+
+    try {
+      const submitApi =
+        track === 'interview' ? SubmitInterviewFinal : SubmitDeliberateFinal;
+      const body =
+        track === 'interview'
+          ? {
+              ExecutionId: lastRunOutput.id,
+              ExecutionTime: totalSecs,
+              InterviewPreprationId: item.id,
+              UserId: Userid,
+              RunCount: attemptCount,
+            }
+          : {
+              ExecutionId: lastRunOutput.id,
+              ExecutionTime: totalSecs,
+              deliberatePracticePreprationId: item.id,
+              UserId: Userid,
+              RunCount: attemptCount,
+            };
+
+      const response = await submitApi(JSON.stringify(body));
+      setSubmitting(false);
+
+      if (!response || response.status !== 200) {
+        if (response?.status === 401) {
+          localStorage.clear();
+          navigate('/login');
+          return;
+        }
+        Swal.fire({
+          title: 'Error!',
+          text: 'Submission failed. Please try again.',
+          icon: 'error',
+        });
+        setSubmitStatus({ type: 'error', message: 'Submission failed.' });
+        return;
+      }
+
+      setSubmitStatus({ type: 'success', message: 'Submission successful!' });
+      if (feedbackRef.current?.show) {
+        feedbackRef.current.show({
+          exerciseId: exercise.id,
+          exerciseName: exercise.name,
+          category: exercise.category,
+          difficulty: exercise.difficulty,
+          testsPassed: (exercise.unitTests || []).length,
+          testsTotal: (exercise.unitTests || []).length,
+          returnMenuUrl: `/menu?track=${encodeURIComponent(track)}`,
+          current: { timeToSuccessSeconds: totalSecs, attempts: attemptCount },
+          insightText: 'Nice work — exercise submitted.',
+          chips: [],
+          nextSuggestion: '',
+          performanceTier: null,
+          isFirstSolve: true,
+          history: [],
+          deltas: null,
+        });
+      }
+    } catch (err) {
+      setSubmitting(false);
+      setSubmitStatus({
+        type: 'error',
+        message: `Submission error: ${err?.message || 'Unknown error'}`,
+      });
+    }
+  }, [lastRunOutput, item, track, attemptCount, timer, exercise, navigate]);
+
+  // Single button handler: runs tests first; once all pass, next click finalises.
+  const handleSubmit = useCallback(() => {
+    if (allTestsPassed) handleFinalSubmit();
+    else handleRunCode();
+  }, [allTestsPassed, handleFinalSubmit, handleRunCode]);
+
+  // ── Save session on unmount (best-effort) ──
+  useEffect(() => {
+    return () => {
+      if (!item) return;
+      const Userid = localStorage.getItem('Userid');
+      if (!Userid) return;
+      const code = candidateRef.current?.getValue?.() ?? '';
+      const totalSecs = timer.elapsedSeconds + initialOffsetRef.current;
+      try {
+        if (track === 'interview') {
+          SaveInterviewPreparationSession({
+            userId: Userid,
+            interviewPreprationId: item.id,
+            lastUserCode: code,
+            totalSeconds: totalSecs,
+            runCount: attemptCount,
+            lastOutput: null,
+          });
+        } else {
+          SaveDeliberatePracticeSession({
+            userId: Userid,
+            deliberatePracticeId: item.id,
+            lastUserCode: code,
+            totalSeconds: totalSecs,
+            runCount: attemptCount,
+            lastOutput: null,
+          });
+        }
+      } catch (e) {
+        console.error('Save session failed', e);
+      }
+    };
+  }, [item, track]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -300,6 +404,7 @@ export default function EditorPage() {
               attemptNoteSeen={attemptNoteSeen}
               onDismissNote={handleDismissNote}
               onLearnMore={() => window.CodiviumHelp?.openAttemptModal()}
+              onTourStart={() => setTourActive(true)}
             />
 
             <div
@@ -351,6 +456,9 @@ export default function EditorPage() {
 
       {/* Feedback modal — React replacement for feedback.js */}
       <FeedbackModal ref={feedbackRef} />
+
+      {/* Guided tour overlay — spotlights editor UI step-by-step */}
+      <EditorTour active={tourActive} onStop={() => setTourActive(false)} />
 
       {/* Help panel — React replacement for cv-help-panel.js */}
       <HelpPanel />

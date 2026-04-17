@@ -66,7 +66,7 @@ function Login() {
           } else if (response.data.roleName === role.Superadmin) {
             navigate("/AdminDashboard");
           } else {
-            navigate("/adaptive_practice");
+            navigate("/adaptive-practice");
           }
         } else {
           Swal.fire({

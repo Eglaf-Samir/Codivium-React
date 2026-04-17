@@ -1,8 +1,7 @@
 // MenuPage — Exercise menu page
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
+import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
@@ -216,8 +215,10 @@ export default function MenuPage() {
   const checkAlreadyCodeAdd = useCallback(
     async (item) => {
       const Userid = localStorage.getItem('Userid');
+      console.log('[MenuPage] checkAlreadyCodeAdd item:', item);
       setOldcodeinfo(null);
       if (!item?.isSubmitted) {
+        console.log('[MenuPage] item not submitted → fresh navigate');
         navigateFresh(item);
         return;
       }
@@ -227,6 +228,7 @@ export default function MenuPage() {
             ? GetInterviewPreparationSession
             : GetDeliberatePracticeSession;
         const result = await sessionApi(Userid, item.id);
+        console.log('[MenuPage] session result:', result);
         if (result && result.data && result.status === 200) {
           setOldcodeinfo(result.data);
           setSelectedItem(item);
@@ -245,6 +247,7 @@ export default function MenuPage() {
   const handleCardClick = useCallback(
     async (exercise) => {
       const item = exercise.raw || exercise;
+      console.log('[MenuPage] card clicked, item:', item, 'activePackage:', activePackage);
       if (!activePackage) {
         const result = await Swal.fire({
           title: 'Purchase Package?',
@@ -364,55 +367,129 @@ export default function MenuPage() {
 
       <HelpPanel />
 
-      <Modal show={conformShow} onHide={handleCloseRunningCode} centered>
-        <Modal.Header closeButton className="text-light" style={{ position: 'relative' }}>
-          <Modal.Title style={{ color: 'black' }}>
-            <h1>Welcome Back!</h1>
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="text-light">
-          <h3 style={{ color: 'black' }}>
-            It looks like you have some unfinished work. Would you like to continue where you left off, or start fresh?
-          </h3>
-        </Modal.Body>
-        <Modal.Footer className="text-light">
-          <Button
-            variant="info"
-            onClick={() => {
-              setConformShow(false);
-              navigate(codingRoute, {
-                state: {
-                  item: selectedItem,
-                  isStartFresh: true,
-                  initialTimeInSeconds: 0,
-                  useroldcode: '',
-                },
-              });
+      {conformShow && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.55)',
+          }}
+          onClick={handleCloseRunningCode}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: 10,
+              width: '90%',
+              maxWidth: 520,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+              overflow: 'hidden',
             }}
-            style={{ height: 42, fontSize: 16 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            Start fresh
-          </Button>
-          <Button
-            variant="success"
-            onClick={() => {
-              setConformShow(false);
-              navigate(codingRoute, {
-                state: {
-                  item: selectedItem,
-                  initialTimeInSeconds: oldcodeinfo?.totalSeconds || 0,
-                  isStartFresh: false,
-                  useroldcode: oldcodeinfo?.lastUserCode || '',
-                  totalRunCount: oldcodeinfo?.runCount || 0,
-                },
-              });
-            }}
-            style={{ height: 42, fontSize: 16 }}
-          >
-            Continue where I left off
-          </Button>
-        </Modal.Footer>
-      </Modal>
+            {/* Header */}
+            <div style={{
+              padding: '24px 28px 16px',
+              borderBottom: '1px solid #eee',
+              position: 'relative',
+            }}>
+              <h1 style={{ margin: 0, fontSize: 26, color: '#222' }}>Welcome Back!</h1>
+              <button
+                onClick={handleCloseRunningCode}
+                style={{
+                  position: 'absolute',
+                  top: 16,
+                  right: 20,
+                  background: 'none',
+                  border: 'none',
+                  fontSize: 22,
+                  cursor: 'pointer',
+                  color: '#999',
+                  lineHeight: 1,
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '20px 28px' }}>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 400, color: '#333', lineHeight: 1.6 }}>
+                It looks like you have some unfinished work. Would you like to
+                continue where you left off, or start fresh?
+              </h3>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '16px 28px 24px',
+              borderTop: '1px solid #eee',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 12,
+            }}>
+              <button
+                onClick={() => {
+                  setConformShow(false);
+                  navigate(codingRoute, {
+                    state: {
+                      item: selectedItem,
+                      isStartFresh: true,
+                      initialTimeInSeconds: 0,
+                      useroldcode: '',
+                    },
+                  });
+                }}
+                style={{
+                  height: 42,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  padding: '0 22px',
+                  borderRadius: 6,
+                  border: 'none',
+                  background: '#17a2b8',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Start fresh
+              </button>
+              <button
+                onClick={() => {
+                  setConformShow(false);
+                  navigate(codingRoute, {
+                    state: {
+                      item: selectedItem,
+                      initialTimeInSeconds: oldcodeinfo?.totalSeconds || 0,
+                      isStartFresh: false,
+                      useroldcode: oldcodeinfo?.lastUserCode || '',
+                      totalRunCount: oldcodeinfo?.runCount || 0,
+                    },
+                  });
+                }}
+                style={{
+                  height: 42,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  padding: '0 22px',
+                  borderRadius: 6,
+                  border: 'none',
+                  background: '#28a745',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Continue where I left off
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </main>
   );
 }

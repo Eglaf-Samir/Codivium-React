@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { isLoggedIn } from '../utils/auth';
 
 const NAV_LINKS = [
   { label: 'Home', route: 'landing' },
@@ -12,6 +13,7 @@ const NAV_LINKS = [
 export default function Topbar({ onMenuOpen }) {
   const location = useLocation();
   const isEditor = location.pathname === '/editor';
+  const loggedIn = isLoggedIn();
 
   return (
     <div className="topbar" role="navigation" aria-label="Primary">
@@ -65,9 +67,14 @@ export default function Topbar({ onMenuOpen }) {
           Home
         </NavLink>
 
-        <NavLink to={"/articles"||"/article"} className={({ isActive }) =>
-          isActive ? "active" : ""
-        }>
+        <NavLink
+          to="/articles"
+          className={() =>
+            location.pathname === "/articles" || location.pathname === "/article"
+              ? "active"
+              : ""
+          }
+        >
           Articles
         </NavLink>
 
@@ -89,17 +96,27 @@ export default function Topbar({ onMenuOpen }) {
           FAQ
         </NavLink>
 
-        <NavLink to="/join" className={({ isActive }) =>
-          isActive ? "nav-join active" : "nav-join"
-        }>
-          Join
-        </NavLink>
+        {loggedIn ? (
+          <NavLink to="/adaptive-practice" className={({ isActive }) =>
+            isActive ? "nav-login active" : "nav-login"
+          }>
+            Dashboard
+          </NavLink>
+        ) : (
+          <>
+            <NavLink to="/join" className={({ isActive }) =>
+              isActive ? "nav-join active" : "nav-join"
+            }>
+              Join
+            </NavLink>
 
-        <NavLink to="/login" className={({ isActive }) =>
-          isActive ? "nav-login active" : "nav-login"
-        }>
-          Login
-        </NavLink>
+            <NavLink to="/login" className={({ isActive }) =>
+              isActive ? "nav-login active" : "nav-login"
+            }>
+              Login
+            </NavLink>
+          </>
+        )}
 
       </nav>
     </div>

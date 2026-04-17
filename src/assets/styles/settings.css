@@ -583,29 +583,6 @@ html[data-theme="parchment"] .as-tab:hover {
 .as-row-col        { flex-direction: column; align-items: flex-start; gap: 6px; }
 .as-danger-warn    { color: rgba(220,80,80,0.85); }
 
-/* ── Site theme preview chip ── */
-.as-site-preview {
-  width: 28px;
-  height: 18px;
-  border-radius: 5px;
-  background: var(--preview-bg, #0a0a0c);
-  border: 1px solid rgba(255,255,255,0.15);
-  position: relative;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-.as-site-preview::after {
-  content: '';
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--preview-accent, var(--color-text-accent));
-}
-
 /* ── Section label within scrollable area ── */
 .as-row.as-row-col {
   border-bottom: none;
@@ -930,8 +907,23 @@ html[data-theme="parchment"] .as-subpanel-label {
 .as-site-preview-lines span:nth-child(1) { height: 3px; width: 100%; opacity: 0.35; }
 .as-site-preview-lines span:nth-child(2) { height: 2px; width: 80%; opacity: 0.25; }
 .as-site-preview-lines span:nth-child(3) { height: 2px; width: 90%; opacity: 0.20; }
-.as-theme-chip .as-site-preview {
-  margin-bottom: 4px;
+/* Site theme chips use a vertical "tile" layout with the mini menu preview on top */
+#asSiteThemeGrid.as-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+#asSiteThemeGrid .as-theme-chip {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 10px 10px 9px;
+  min-height: 78px;
+  line-height: 1.25;
+}
+#asSiteThemeGrid .as-theme-chip .as-site-preview {
+  margin-bottom: 2px;
 }
 
 html[data-theme="parchment"] .as-switch input:checked + .as-slider {

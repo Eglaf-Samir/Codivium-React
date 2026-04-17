@@ -193,7 +193,7 @@ export default function RightPane({
           <h2 className="pane-title sr-only">Candidate Solution</h2>
           <EditorSlot
             ref={candidateRef}
-            initialValue={exercise?.codeScaffold ?? '# Loading…\n'}
+            initialValue={exercise?.codeScaffold ?? ''}
             syntaxTheme={syntaxTheme}
             readOnly={false}
           />
