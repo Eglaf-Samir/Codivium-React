@@ -1,1 +1,0 @@
-export const getalltopachivers = 'api/v1/userRanking/allTopachivers';

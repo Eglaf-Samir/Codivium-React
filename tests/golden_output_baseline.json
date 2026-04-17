@@ -1,0 +1,716 @@
+{
+  "_note": "Golden output snapshot captured from demo_data_full.js (demo fixture). This is the reference oracle for the refactor. Every numeric value here must be reproduced exactly by the refactored backend. Captured: CVU-2026-03-AL (pre-refactor baseline).",
+  "_fixture": "demo/demo_data_full.js",
+  "_demoName": "Example 1 \u2014 Balanced developing breadth",
+  "version": "dashboard-payload-v2",
+  "overall_metrics": {
+    "codiviumScore": 47.3,
+    "breadthOverall": 39.9,
+    "breadthMicro": 40.0,
+    "breadthInterview": 38.9,
+    "breadthMcq": 41.7,
+    "weightedMcqScore": 68.0,
+    "firstTryPassRate": 42.0,
+    "avgAttemptsToAC": 3.4,
+    "medianTimeToACMinutes": 38.0,
+    "codiviumPointsAll": 920,
+    "codiviumPoints30": 140,
+    "efficiencyPtsPerHr": 8.6,
+    "depthOverall": 58.1,
+    "depthMicro": 58.41,
+    "depthInterview": 57.8
+  },
+  "breadth_by_track": {
+    "micro": 40.0,
+    "interview": 38.9,
+    "mcq": 41.7,
+    "weighted_mcq_score": 68.0
+  },
+  "depth_by_category_combined": {
+    "Graphs": 98.0,
+    "Dynamic Programming": 87.79,
+    "Recursion": 82.68,
+    "Sorting": 72.47,
+    "Searching": 67.37,
+    "Heaps": 67.07,
+    "Stacks": 62.26,
+    "Trees": 59.26,
+    "Two Pointers": 58.96,
+    "Strings": 57.16,
+    "Greedy Algorithms": 56.86,
+    "Binary Search": 53.86,
+    "Arrays": 52.05,
+    "Backtracking": 48.75,
+    "Intervals": 43.65,
+    "Linked Lists": 41.54,
+    "Bit Manipulation": 38.54,
+    "Hash Maps": 33.44,
+    "Mathematical": 28.33,
+    "Tries": 18.12
+  },
+  "depth_by_category_micro": {
+    "Graphs": 100.0,
+    "Dynamic Programming": 89.79,
+    "Recursion": 84.68,
+    "Sorting": 74.47,
+    "Searching": 69.37,
+    "Heaps": 69.07,
+    "Stacks": 64.26,
+    "Trees": 61.26,
+    "Two Pointers": 60.96,
+    "Strings": 59.16,
+    "Greedy Algorithms": 58.86,
+    "Binary Search": 55.86,
+    "Arrays": 54.05,
+    "Backtracking": 50.75,
+    "Intervals": 45.65,
+    "Linked Lists": 43.54,
+    "Bit Manipulation": 40.54,
+    "Hash Maps": 35.44,
+    "Mathematical": 30.33,
+    "Tries": 20.12
+  },
+  "depth_by_category_interview": {
+    "Graphs": 92.0,
+    "Dynamic Programming": 81.99,
+    "Recursion": 76.99,
+    "Sorting": 66.98,
+    "Searching": 61.98,
+    "Heaps": 61.69,
+    "Stacks": 56.97,
+    "Trees": 54.03,
+    "Two Pointers": 53.74,
+    "Strings": 51.98,
+    "Greedy Algorithms": 51.68,
+    "Binary Search": 48.74,
+    "Arrays": 46.97,
+    "Backtracking": 43.73,
+    "Intervals": 38.74,
+    "Linked Lists": 36.67
+  },
+  "depth_avg_by_track": {
+    "micro": 58.41,
+    "interview": 57.8,
+    "combined": 58.41
+  },
+  "allocation_combined": {
+    "Graphs": {
+      "minutes": 533,
+      "solved": 14
+    },
+    "Dynamic Programming": {
+      "minutes": 478,
+      "solved": 24
+    },
+    "Recursion": {
+      "minutes": 451,
+      "solved": 19
+    },
+    "Sorting": {
+      "minutes": 397,
+      "solved": 10
+    },
+    "Searching": {
+      "minutes": 370,
+      "solved": 24
+    },
+    "Heaps": {
+      "minutes": 368,
+      "solved": 11
+    },
+    "Stacks": {
+      "minutes": 342,
+      "solved": 19
+    },
+    "Trees": {
+      "minutes": 326,
+      "solved": 10
+    },
+    "Strings": {
+      "minutes": 315,
+      "solved": 14
+    },
+    "Greedy Algorithms": {
+      "minutes": 314,
+      "solved": 2
+    },
+    "Arrays": {
+      "minutes": 288,
+      "solved": 10
+    },
+    "Linked Lists": {
+      "minutes": 232,
+      "solved": 6
+    },
+    "Bit Manipulation": {
+      "minutes": 216,
+      "solved": 16
+    },
+    "Two Pointers": {
+      "minutes": 203,
+      "solved": 10
+    },
+    "Hash Maps": {
+      "minutes": 189,
+      "solved": 11
+    },
+    "Binary Search": {
+      "minutes": 186,
+      "solved": 7
+    },
+    "Backtracking": {
+      "minutes": 169,
+      "solved": 4
+    },
+    "Mathematical": {
+      "minutes": 162,
+      "solved": 6
+    },
+    "Intervals": {
+      "minutes": 152,
+      "solved": 1
+    },
+    "Tries": {
+      "minutes": 107,
+      "solved": 16
+    }
+  },
+  "heatmap_combined": {
+    "categories": [
+      "Arrays",
+      "Strings",
+      "Stacks",
+      "Searching",
+      "Sorting",
+      "Linked Lists",
+      "Recursion",
+      "Dynamic Programming",
+      "Greedy Algorithms",
+      "Graphs",
+      "Heaps",
+      "Tries",
+      "Trees",
+      "Mathematical",
+      "Hash Maps",
+      "Bit Manipulation",
+      "Intervals",
+      "Backtracking",
+      "Binary Search",
+      "Two Pointers"
+    ],
+    "buckets": [
+      "A1",
+      "A2",
+      "A3",
+      "A4",
+      "A5"
+    ],
+    "values": [
+      [
+        0.395,
+        0.78,
+        0.91,
+        1.0,
+        1.0
+      ],
+      [
+        0.305,
+        0.54,
+        0.645,
+        0.889,
+        0.919
+      ],
+      [
+        0.285,
+        0.435,
+        0.58,
+        0.69,
+        null
+      ],
+      [
+        0.345,
+        0.53,
+        0.7,
+        0.79,
+        0.85
+      ],
+      [
+        0.345,
+        0.505,
+        0.62,
+        0.65,
+        null
+      ],
+      [
+        0.215,
+        0.33,
+        0.4612,
+        0.5713,
+        null
+      ],
+      [
+        0.445,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        0.425,
+        0.65,
+        0.87,
+        1.0,
+        null
+      ],
+      [
+        0.245,
+        0.365,
+        0.4062,
+        0.4513,
+        null
+      ],
+      [
+        0.425,
+        0.65,
+        0.7637,
+        1.0,
+        null
+      ],
+      [
+        0.275,
+        0.46,
+        0.53,
+        0.56,
+        0.62
+      ],
+      [
+        0.375,
+        0.55,
+        null,
+        null,
+        null
+      ],
+      [
+        0.215,
+        0.43,
+        null,
+        null,
+        null
+      ],
+      [
+        0.335,
+        0.495,
+        0.63,
+        0.76,
+        0.9
+      ],
+      [
+        0.315,
+        0.47,
+        0.65,
+        0.78,
+        null
+      ],
+      [
+        0.215,
+        0.305,
+        0.41,
+        0.56,
+        0.62
+      ],
+      [
+        0.3,
+        0.56,
+        0.7,
+        0.85,
+        null
+      ],
+      [
+        0.22,
+        0.36,
+        null,
+        null,
+        null
+      ],
+      [
+        0.55,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        0.3,
+        0.4,
+        0.4525,
+        0.6125,
+        null
+      ]
+    ],
+    "counts": [
+      [
+        23,
+        5,
+        4,
+        3,
+        2
+      ],
+      [
+        25,
+        18,
+        13,
+        5,
+        3
+      ],
+      [
+        15,
+        11,
+        6,
+        4,
+        0
+      ],
+      [
+        21,
+        15,
+        11,
+        8,
+        6
+      ],
+      [
+        27,
+        19,
+        7,
+        5,
+        0
+      ],
+      [
+        17,
+        12,
+        9,
+        6,
+        0
+      ],
+      [
+        9,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        21,
+        15,
+        9,
+        7,
+        0
+      ],
+      [
+        27,
+        19,
+        14,
+        10,
+        0
+      ],
+      [
+        29,
+        21,
+        15,
+        4,
+        0
+      ],
+      [
+        28,
+        10,
+        7,
+        5,
+        4
+      ],
+      [
+        21,
+        13,
+        0,
+        0,
+        0
+      ],
+      [
+        35,
+        12,
+        0,
+        0,
+        0
+      ],
+      [
+        14,
+        10,
+        8,
+        5,
+        3
+      ],
+      [
+        29,
+        21,
+        15,
+        6,
+        0
+      ],
+      [
+        18,
+        13,
+        7,
+        5,
+        3
+      ],
+      [
+        16,
+        12,
+        8,
+        6,
+        0
+      ],
+      [
+        16,
+        12,
+        0,
+        0,
+        0
+      ],
+      [
+        14,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        11,
+        8,
+        6,
+        4,
+        0
+      ]
+    ]
+  },
+  "heatmap_focus_rankings": {
+    "impact": [
+      "Recursion",
+      "Trees",
+      "Heaps",
+      "Greedy Algorithms",
+      "Graphs",
+      "Sorting",
+      "Stacks",
+      "Searching",
+      "Dynamic Programming",
+      "Strings",
+      "Linked Lists",
+      "Bit Manipulation",
+      "Two Pointers",
+      "Backtracking",
+      "Hash Maps",
+      "Arrays",
+      "Binary Search",
+      "Mathematical",
+      "Intervals",
+      "Tries"
+    ],
+    "worst_convergence": [
+      "Backtracking",
+      "Bit Manipulation",
+      "Trees",
+      "Linked Lists",
+      "Greedy Algorithms",
+      "Two Pointers",
+      "Heaps",
+      "Stacks",
+      "Recursion",
+      "Tries",
+      "Hash Maps",
+      "Mathematical",
+      "Sorting",
+      "Strings",
+      "Intervals",
+      "Searching",
+      "Binary Search",
+      "Graphs",
+      "Dynamic Programming",
+      "Arrays"
+    ],
+    "most_time": [
+      "Graphs",
+      "Dynamic Programming",
+      "Recursion",
+      "Sorting",
+      "Searching",
+      "Heaps",
+      "Stacks",
+      "Trees",
+      "Strings",
+      "Greedy Algorithms",
+      "Arrays",
+      "Linked Lists",
+      "Bit Manipulation",
+      "Two Pointers",
+      "Hash Maps",
+      "Binary Search",
+      "Backtracking",
+      "Mathematical",
+      "Intervals",
+      "Tries"
+    ],
+    "lowest_depth": [
+      "Tries",
+      "Mathematical",
+      "Hash Maps",
+      "Bit Manipulation",
+      "Linked Lists",
+      "Intervals",
+      "Backtracking",
+      "Arrays",
+      "Binary Search",
+      "Greedy Algorithms",
+      "Strings",
+      "Two Pointers",
+      "Trees",
+      "Stacks",
+      "Heaps",
+      "Searching",
+      "Sorting",
+      "Recursion",
+      "Dynamic Programming",
+      "Graphs"
+    ],
+    "highest_friction": [
+      "Recursion",
+      "Trees",
+      "Greedy Algorithms",
+      "Heaps",
+      "Sorting",
+      "Stacks",
+      "Graphs",
+      "Linked Lists",
+      "Searching",
+      "Bit Manipulation",
+      "Strings",
+      "Dynamic Programming",
+      "Backtracking",
+      "Two Pointers",
+      "Hash Maps",
+      "Mathematical",
+      "Binary Search",
+      "Intervals",
+      "Arrays",
+      "Tries"
+    ]
+  },
+  "heatmap_focus_default_mode": "impact",
+  "heatmap_focus_top_n_default": 12,
+  "time_on_platform_daily_count": 120,
+  "time_on_platform_daily_first": {
+    "date": "2025-10-30",
+    "minutes": 20
+  },
+  "time_on_platform_daily_last": {
+    "date": "2026-02-26",
+    "minutes": 53
+  },
+  "time_on_platform_total_minutes": 7020,
+  "mcq_by_difficulty": {
+    "basic": {
+      "Arrays": 65,
+      "Strings": 72,
+      "Stacks": 79,
+      "Searching": 86,
+      "Sorting": 93,
+      "Linked Lists": 70,
+      "Recursion": 77,
+      "Dynamic Programming": 84,
+      "Greedy Algorithms": 91,
+      "Graphs": 68,
+      "Heaps": 75,
+      "Tries": 82,
+      "Trees": 89,
+      "Mathematical": 66,
+      "Hash Maps": 73,
+      "Bit Manipulation": 80,
+      "Intervals": 87,
+      "Backtracking": 94,
+      "Binary Search": 71,
+      "Two Pointers": 78
+    },
+    "intermediate": {
+      "Arrays": 50,
+      "Strings": 57,
+      "Stacks": 64,
+      "Searching": 71,
+      "Sorting": 78,
+      "Linked Lists": 55,
+      "Recursion": 62,
+      "Dynamic Programming": 69,
+      "Greedy Algorithms": 76,
+      "Graphs": 53,
+      "Heaps": 60,
+      "Tries": 67,
+      "Trees": 74,
+      "Mathematical": 51,
+      "Hash Maps": 58,
+      "Bit Manipulation": 65,
+      "Intervals": 72,
+      "Backtracking": 79,
+      "Binary Search": 56,
+      "Two Pointers": 63
+    },
+    "advanced": {
+      "Arrays": 32,
+      "Strings": 39,
+      "Stacks": 46,
+      "Searching": 53,
+      "Sorting": 60,
+      "Linked Lists": 37,
+      "Recursion": 44,
+      "Dynamic Programming": 51,
+      "Greedy Algorithms": 58,
+      "Graphs": 35,
+      "Heaps": 42,
+      "Tries": 49,
+      "Trees": 56,
+      "Mathematical": 33,
+      "Hash Maps": 40,
+      "Bit Manipulation": 47,
+      "Intervals": 54,
+      "Backtracking": 61,
+      "Binary Search": 38,
+      "Two Pointers": 45
+    }
+  },
+  "mcq_overall_correct": {
+    "correct": 217,
+    "total": 320
+  },
+  "recommended_actions": [
+    {
+      "id": "cta_heatmap_focus",
+      "panelId": "heatmap",
+      "label": "Start Focus Session"
+    },
+    {
+      "id": "cta_allocation_rebalance",
+      "panelId": "allocation",
+      "label": "Rebalance: Under-covered Set"
+    },
+    {
+      "id": "cta_depth_deepen",
+      "panelId": "depth",
+      "label": "Deepen Weak Spot"
+    },
+    {
+      "id": "cta_time_today",
+      "panelId": "time",
+      "label": "Start Today\u2019s 25\u2011Min Block"
+    },
+    {
+      "id": "cta_mcq_targeted",
+      "panelId": "mcq",
+      "label": "Targeted MCQ Drill"
+    }
+  ]
+}

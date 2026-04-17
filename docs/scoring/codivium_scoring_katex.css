@@ -1,0 +1,217 @@
+    :root{
+      /* Match dashboard background (base.css): --bg var(--color-bg-page) */
+      --cv-bg: var(--color-bg-page);
+      --cv-text: rgba(245,245,252,0.94);
+      --cv-muted: rgba(245,245,252,0.70);
+      --cv-faint: rgba(245,245,252,0.46);
+
+      --cv-accent: rgba(246, 213, 138, 0.92);
+      --cv-accent-2: rgba(255, 192, 90, 0.78);
+      --cv-glow: rgba(255, 200, 110, 0.18);
+
+      --radius: 20px;
+      --border: rgba(255,255,255,0.12);
+      --border-2: rgba(255,255,255,0.16);
+
+      --surface: rgba(34,34,38,0.78);
+      --surface-2: rgba(28,28,30,0.78);
+
+      --shadow: 0 22px 70px rgba(0,0,0,0.55);
+      --shadow-soft: 0 18px 60px rgba(0,0,0,0.45);
+
+      --soft: rgba(0,0,0,0.24);
+    }
+
+    *{ box-sizing: border-box; }
+    html, body{ height: 100%; }
+
+    body{
+      margin: 0;
+      background:
+        radial-gradient(900px 520px at 50% 12%, var(--color-border-accent-subtle), transparent 62%),
+        var(--cv-bg);
+      color: var(--cv-text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      line-height: 1.6;
+      overflow-y: auto;
+    }
+
+    /* Subtle microtexture (matches dashboard vibe) */
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.10;
+      background:
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.20) 0 1px, transparent 1px),
+        radial-gradient(circle at 4px 6px, rgba(255,255,255,0.12) 0 1px, transparent 1px);
+      background-size: 12px 12px, 18px 18px;
+      mix-blend-mode: soft-light;
+      filter: blur(0.15px);
+      z-index: 0;
+    }
+
+    header{
+      padding: 30px 22px 18px;
+      max-width: 1120px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1{
+      margin: 0 0 8px;
+      font-size: 22px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 850;
+    }
+
+    .sub{
+      margin: 0;
+      color: var(--cv-muted);
+      font-size: 13px;
+      max-width: 100ch;
+    }
+
+    .intro{
+      margin-top: 14px;
+      color: var(--color-text-secondary);
+      font-size: 13px;
+      max-width: 100ch;
+      padding: 12px 14px;
+      border: 1px solid var(--color-border-accent-subtle);
+      border-radius: 16px;
+      background:
+        radial-gradient(360px 160px at 14% 35%, var(--color-border-accent-subtle), transparent 66%),
+        rgba(0,0,0,0.18);
+    }
+    .intro strong{ color: var(--color-text-accent); }
+
+    main{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 22px 46px;
+      display: grid;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card{
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) + 6px);
+      background: linear-gradient(180deg, var(--surface), var(--surface-2));
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+
+    .card-head{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title{
+      font-weight: 850;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: var(--color-text-accent);
+    }
+    .hint{
+      font-size: 11px;
+      color: var(--cv-muted);
+      max-width: 70ch;
+      text-align: right;
+    }
+
+    .card-body{
+      padding: 14px 16px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .explain{
+      padding: 12px 12px;
+      border-radius: 16px;
+      background:
+        radial-gradient(320px 150px at 14% 35%, var(--color-border-accent-subtle), transparent 66%),
+        rgba(0,0,0,0.18);
+      border: 1px solid var(--color-border-accent-subtle);
+    }
+    .explain h3{
+      margin: 0 0 6px;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-text-accent);
+    }
+    .explain p{
+      margin: 0;
+      font-size: 12.5px;
+      color: var(--color-text-secondary);
+      max-width: 105ch;
+    }
+    .explain p + p{ margin-top: 9px; }
+
+    .eq{
+      padding: 12px 12px;
+      border-radius: 16px;
+      background: var(--soft);
+      border: 1px solid rgba(255,255,255,0.10);
+      overflow-x: auto;
+    }
+    .label{
+      font-size: 12px;
+      color: var(--color-text-primary);
+      font-weight: 750;
+      margin-bottom: 6px;
+    }
+    .note{
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      margin: 0;
+      max-width: 105ch;
+    }
+    .note + .note{ margin-top: 7px; }
+
+    .bul{
+      margin: 8px 0 0 18px;
+      padding: 0;
+      color: var(--color-text-secondary);
+      font-size: 12.5px;
+      max-width: 105ch;
+    }
+    .bul li{ margin: 6px 0; }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.22);
+      color: var(--color-text-accent);
+      white-space: nowrap;
+    }
+
+
+    pre.cfg{
+      margin: 0;
+      padding: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--color-text-secondary);
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* KaTeX theme */
+    .katex{ color: var(--cv-text); }
+    .katex-display{ margin: 0.55em 0; }
+  

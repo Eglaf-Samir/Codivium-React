@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" 
+     aria-label="Dynamic Programming" role="img">
+  <path d="M3 3h8v8H3z M13 3h8v8h-8z M3 13h8v8H3z M13 13h8v8h-8z M7 7h0.01 M17 7h0.01 M7 17h0.01 M17 17h0.01" stroke="currentColor" stroke-width="2.1" 
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

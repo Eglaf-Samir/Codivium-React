@@ -1,0 +1,458 @@
+{
+  "version": "codivium-score-v1",
+  "flags": {
+    "enable_heatmap_score": true,
+    "enable_improvement_bonus": true,
+    "enable_time_bonus": true
+  },
+  "difficulty": {
+    "allowed_values": [
+      1,
+      2,
+      3
+    ],
+    "labels": {
+      "1": "Easy",
+      "2": "Medium",
+      "3": "Hard"
+    },
+    "weights": {
+      "1": 1.0,
+      "2": 1.7,
+      "3": 2.6
+    },
+    "baseline_time_minutes": {
+      "1": 15.0,
+      "2": 35.0,
+      "3": 60.0
+    },
+    "test_time_adjust": 0.12
+  },
+  "convergence": {
+    "stagnation_eps": 0.02,
+    "weights": {
+      "auc": 0.55,
+      "efficiency": 0.35,
+      "not_stuck": 0.1
+    },
+    "alpha_tries": 1.1
+  },
+  "mcq": {
+    "beta": 1.3
+  },
+  "scales": {
+    "lambda_coding": 10.0,
+    "mu_mcq": 4.0,
+    "rho_heatmap": 6.0,
+    "eta_improve": 5.0,
+    "kappa_time": 8.0
+  },
+  "improvement": {
+    "window": 20,
+    "eps": 1e-09
+  },
+  "heatmap": {
+    "buckets": [
+      "A1",
+      "A2",
+      "A3",
+      "A4",
+      "A5"
+    ],
+    "bucket_attempt_index": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4,
+      "A5": 5
+    },
+    "bucket_weights": {
+      "A1": 1.0,
+      "A2": 0.85,
+      "A3": 0.7,
+      "A4": 0.55,
+      "A5": 0.45
+    },
+    "focus_modes": {
+      "default_mode": "impact",
+      "top_n_default": 12,
+      "top_n_options": [
+        8,
+        10,
+        12,
+        14,
+        16
+      ],
+      "modes": [
+        {
+          "id": "impact",
+          "label": "Impact (time × weakness)",
+          "description": "Prioritises categories where time spent is high and early convergence is low.",
+          "isDefault": true
+        },
+        {
+          "id": "worst_convergence",
+          "label": "Worst convergence",
+          "description": "Lowest early attempt pass% (A1–A3)."
+        },
+        {
+          "id": "most_time",
+          "label": "Most time spent",
+          "description": "Highest time allocation."
+        },
+        {
+          "id": "lowest_depth",
+          "label": "Lowest depth",
+          "description": "Lowest depth score by category."
+        },
+        {
+          "id": "highest_friction",
+          "label": "Highest friction",
+          "description": "Proxy for slow progress: low early convergence scaled by time."
+        }
+      ]
+    }
+  },
+  "categories": {
+    "groups": {
+      "Fundamentals": [
+        "Arrays",
+        "Strings",
+        "Sorting",
+        "Searching"
+      ],
+      "Data Structures": [
+        "Stacks",
+        "Linked Lists",
+        "Heaps",
+        "Tries",
+        "Trees",
+        "Graphs"
+      ],
+      "Techniques": [
+        "Recursion",
+        "Dynamic Programming",
+        "Greedy Algorithms"
+      ],
+      "Math": [
+        "Mathematical"
+      ]
+    },
+    "display_order": [
+      "Arrays",
+      "Strings",
+      "Stacks",
+      "Searching",
+      "Sorting",
+      "Linked Lists",
+      "Recursion",
+      "Dynamic Programming",
+      "Greedy Algorithms",
+      "Graphs",
+      "Heaps",
+      "Tries",
+      "Trees",
+      "Mathematical"
+    ],
+    "available_by_track": {
+      "micro": [
+        "Arrays",
+        "Strings",
+        "Stacks",
+        "Searching",
+        "Sorting",
+        "Linked Lists",
+        "Recursion",
+        "Dynamic Programming",
+        "Greedy Algorithms",
+        "Graphs",
+        "Heaps",
+        "Tries",
+        "Trees",
+        "Mathematical"
+      ],
+      "interview": [
+        "Arrays",
+        "Strings",
+        "Stacks",
+        "Searching",
+        "Sorting",
+        "Linked Lists",
+        "Recursion",
+        "Dynamic Programming",
+        "Greedy Algorithms",
+        "Graphs",
+        "Heaps",
+        "Tries",
+        "Trees",
+        "Mathematical"
+      ],
+      "mcq": [
+        "Arrays",
+        "Strings",
+        "Stacks",
+        "Searching",
+        "Sorting",
+        "Linked Lists",
+        "Recursion",
+        "Dynamic Programming",
+        "Greedy Algorithms",
+        "Graphs",
+        "Heaps",
+        "Tries",
+        "Trees",
+        "Mathematical"
+      ]
+    }
+  },
+  "tracks": {
+    "micro": {
+      "display_name": "Micro Challenges"
+    },
+    "interview": {
+      "display_name": "Interview Prep"
+    },
+    "mcq": {
+      "display_name": "MCQ Practice"
+    }
+  },
+  "category_key": {
+    "primary": "lower(trim(CategoryId))",
+    "fallback": "lower(trim(CategoryName))",
+    "aliases": {}
+  },
+  "analysis": {
+    "codivium_score_bands": [
+      {
+        "min": 0,
+        "max": 25,
+        "label": "Getting started",
+        "explain": "You are ramping up. Focus on getting consistent clean solves and covering a few core categories."
+      },
+      {
+        "min": 25,
+        "max": 45,
+        "label": "Building foundations",
+        "explain": "You have a base. Next, widen category coverage and reduce retries/time by improving planning and testing."
+      },
+      {
+        "min": 45,
+        "max": 65,
+        "label": "Developing consistency",
+        "explain": "You are building repeatable performance. Keep widening coverage and push for higher first-try pass in familiar categories."
+      },
+      {
+        "min": 65,
+        "max": 85,
+        "label": "Strong performance",
+        "explain": "You are performing strongly across many areas. Focus on hard categories and interview transfer."
+      },
+      {
+        "min": 85,
+        "max": 1000000,
+        "label": "Advanced trajectory",
+        "explain": "You are on an advanced trajectory. Maintain breadth while pushing difficulty and speed with high correctness."
+      }
+    ],
+    "efficiency_thresholds": {
+      "median_time_minutes": {
+        "strong_max": 20.0,
+        "developing_max": 45.0
+      },
+      "avg_attempts": {
+        "strong_max": 2.0,
+        "developing_max": 3.5
+      },
+      "first_try_pass_rate": {
+        "strong_min": 55.0,
+        "developing_min": 35.0
+      },
+      "weighted_mcq_score": {
+        "low_max": 50.0,
+        "moderate_max": 70.0
+      }
+    },
+    "evidence_thresholds": {
+      "low_max": 2,
+      "moderate_max": 6
+    },
+    "coding_difficulty_labels": {
+      "1": "Basic",
+      "2": "Intermediate",
+      "3": "Advanced"
+    },
+    "pattern_rules": {
+      "min_solved_for_patterns": 4,
+      "min_solved_per_track": 3,
+      "min_solved_per_difficulty": 2,
+      "difficulty_cliff_gap_pp": 25.0,
+      "transfer_gap_time_ratio": 1.6,
+      "transfer_gap_first_try_gap_pp": 20.0
+    },
+    "targets": {
+      "top_n": 5,
+      "min_solved_per_category": 2,
+      "min_solved_per_category_for_rates": 3
+    },
+    "depth": {
+      "top_n": 5,
+      "bottom_n": 5,
+      "untouched_examples_n": 6,
+      "outlier_min_evidence": 6,
+      "outlier_robust_z": 1.5,
+      "outlier_min_abs_gap": 5.0,
+      "outlier_max_per_side": 3,
+      "focus_percentile": 0.8,
+      "building_percentile": 0.5,
+      "emerging_percentile": 0.2,
+      "concentration_top1_share": 0.45,
+      "concentration_top3_share": 0.75,
+      "min_depth_nonzero": 1e-06
+    },
+    "heatmap": {
+      "mostly_passing_threshold": 0.85,
+      "min_cell_count": 4,
+      "min_categories": 5,
+      "stall_late_gain_eps": 0.05,
+      "top_n": 3,
+      "max_actions": 3
+    },
+    "time_on_platform": {
+      "min_active_days_for_trend": 6,
+      "min_weeks_for_trend": 4,
+      "trend_rel_threshold": 0.15,
+      "spike_share_threshold": 0.35,
+      "top_n_callouts": 3,
+      "max_actions": 3
+    },
+    "exercise_time_by_category": {
+      "min_total_minutes": 60,
+      "min_minutes_per_category": 20,
+      "concentration_top1_share": 0.45,
+      "concentration_top3_share": 0.75,
+      "min_solved_for_efficiency": 3,
+      "top_n_callouts": 3,
+      "max_actions": 3
+    },
+    "mcq_performance": {
+      "min_questions_per_bar": 20,
+      "min_attempts_per_bar": 2,
+      "min_categories_for_summary": 5,
+      "difficulty_cliff_gap_pp": 25.0,
+      "bands": {
+        "low_max": 50.0,
+        "moderate_max": 70.0
+      },
+      "top_n": 3,
+      "max_actions": 3
+    }
+  },
+  "katex": {
+    "version": "codivium.scoring.katex.v1",
+    "tracks": {
+      "coding_tracks": [
+        "micro",
+        "interview"
+      ],
+      "mcq_track": "mcq",
+      "pool_categories_across_tracks_for_mastery": false,
+      "mcq_contributes_to_depth_in_mastery": false
+    },
+    "recency": {
+      "half_life_days": 15
+    },
+    "difficulty_factor": {
+      "basic": 1.0,
+      "intermediate": 1.3,
+      "advanced": 1.6
+    },
+    "coding": {
+      "activity_weight": {
+        "micro": 1.0,
+        "interview": 1.0
+      },
+      "tries_factor": {
+        "min": 0.45,
+        "max": 1.0,
+        "formula": "clamp(1/sqrt(attempts), min, max)"
+      },
+      "convergence": {
+        "weights": [
+          1.0,
+          0.92,
+          0.85,
+          0.78,
+          0.7,
+          0.6
+        ],
+        "attempt_bucket": "A=min(attempts,6); 1..5 => A1..A5; >5 => A6"
+      },
+      "time_factor": {
+        "min": 0.6,
+        "max": 1.0,
+        "Td_minutes": {
+          "basic": 90,
+          "intermediate": 120,
+          "advanced": 160
+        },
+        "formula": "clamp(exp(-t/Td), min, max)"
+      }
+    },
+    "mcq": {
+      "breadth": {
+        "gamma": 1.5,
+        "uses_recency_decay": true
+      },
+      "points": {
+        "Pmcq": 0.8,
+        "formula": "Pmcq*sqrt(U_all)"
+      },
+      "quiz_constraints": {
+        "single_category_per_quiz": true,
+        "single_difficulty_per_quiz": true
+      }
+    },
+    "breadth": {
+      "tau_E": 1.5,
+      "alpha": 0.65,
+      "beta": 0.35,
+      "confidence_k": {
+        "micro": 10,
+        "interview": 8,
+        "mcq": 14
+      },
+      "overall_weights": {
+        "micro": 0.4,
+        "interview": 0.4,
+        "mcq": 0.2
+      }
+    },
+    "depth": {
+      "lambda": 12,
+      "overall_weights": {
+        "micro": 0.5,
+        "interview": 0.5
+      },
+      "chart": {
+        "lambda_chart": 12,
+        "merge_rule": "sum evidence by canonical category key"
+      }
+    },
+    "points": {
+      "P0": 4.0,
+      "Predo": 2.5,
+      "redo_spacing_days": 7
+    },
+    "efficiency": {
+      "epsilon_minutes": 1.0
+    },
+    "category_key": {
+      "primary": "lower(trim(CategoryId))",
+      "fallback": "lower(trim(CategoryName))",
+      "aliases": {}
+    },
+    "edge_cases": {
+      "when_total_evidence_is_zero_return": 0
+    }
+  }
+}

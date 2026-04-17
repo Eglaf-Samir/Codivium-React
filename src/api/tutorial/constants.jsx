@@ -1,1 +1,0 @@
-export const getalltutorial = 'api/v1/tutorial';

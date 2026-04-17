@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Compile everything in backend/ except api/ and tests/ subdirectories.
+      backend/reference/ is now empty of compiled files after the refactor.
+      The .deleted files there are excluded automatically (not .cs).
+      Scoring engine is CodiviumScoringEngine.cs (replaces v37).
+      DTOs are in CodiviumPayloadDtos.cs (replaces v38).
+    -->
+    <Compile Remove="api\**\*.cs" />
+    <Compile Remove="tests\**\*.cs" />
+    <Compile Remove="reference\**\*.deleted" />
+  </ItemGroup>
+</Project>

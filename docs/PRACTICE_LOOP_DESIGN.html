@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codivium — Practice Loop Design</title>
+  <link rel="stylesheet" href="integration-guide.css">
+</head>
+<body>
+
+<header>
+  <div class="doc-kicker">Codivium Platform</div>
+  <h1>Practice Loop Design</h1>
+  <p>How the exercise menu, editor, and feedback form work together — and exactly what remains to be built.</p>
+</header>
+
+<div class="layout">
+
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">1. The loop at a glance</a>
+    <a href="#menu">2. Exercise Menu</a>
+    <a class="sub" href="#menu-data">Data payload</a>
+    <a class="sub" href="#menu-cards">Card structure</a>
+    <a class="sub" href="#menu-filter">Filtering and sorting</a>
+    <a class="sub" href="#menu-search">Search</a>
+    <a class="sub" href="#menu-navigate">Navigating to an exercise</a>
+    <a href="#editor">3. Editor Page</a>
+    <a class="sub" href="#editor-load">Loading an exercise</a>
+    <a class="sub" href="#editor-submit">Submitting code</a>
+    <a class="sub" href="#editor-fail">On failure</a>
+    <a class="sub" href="#editor-success">On success</a>
+    <a href="#feedback">4. Feedback Modal</a>
+    <a class="sub" href="#feedback-structure">Structure and content</a>
+    <a class="sub" href="#feedback-insight">Rule-based insight</a>
+    <a class="sub" href="#feedback-next">Next-exercise hint</a>
+    <a class="sub" href="#feedback-buttons">Navigation buttons</a>
+    <a href="#data-flow">5. Data flow end to end</a>
+    <a href="#remaining">6. What remains to be built</a>
+    <a class="sub" href="#remaining-menu">Menu page</a>
+    <a class="sub" href="#remaining-editor">Editor page</a>
+    <a class="sub" href="#remaining-api">API endpoints</a>
+    <a class="sub" href="#remaining-feedback">Feedback modal</a>
+    <a href="#contracts">7. Interface contracts</a>
+  </nav>
+
+  <main>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <section id="overview">
+      <span class="section-number">Section 1</span>
+      <h2>The loop at a glance</h2>
+      <p>The practice loop is the core activity cycle of Codivium. It has three stages:</p>
+
+      <div class="layer-stack">
+        <div class="layer db">
+          <span class="layer-badge" class="lb-gold">Menu</span>
+          <span class="layer-desc">Browse all exercises for a track. Filter by category, difficulty, completion. Search by name. Click a card to enter the loop.</span>
+        </div>
+        <div class="layer-arrow">↓</div>
+        <div class="layer raw">
+          <span class="layer-badge" class="lb-blue">Editor</span>
+          <span class="layer-desc">Work on a single exercise. Read the problem, write code, submit, see test results. Iterate freely. No interruption on failure.</span>
+        </div>
+        <div class="layer-arrow">↓ (on success only)</div>
+        <div class="layer score">
+          <span class="layer-badge" class="lb-green">Feedback</span>
+          <span class="layer-desc">Floating modal over the editor. Immediate performance analysis. Three explicit choices: Dashboard, Return to Menu, Try Again.</span>
+        </div>
+        <div class="layer-arrow">↓</div>
+        <div class="layer api">
+          <span class="layer-badge" class="lb-gold">Back to loop</span>
+          <span class="layer-desc">User chooses where to go. Loop continues or breaks. New session data feeds the dashboard scoring model.</span>
+        </div>
+      </div>
+
+      <p>The loop is intentionally asymmetric. <strong>Success</strong> triggers a ceremony — the feedback modal appears, progress is acknowledged, and a clear decision is required before moving on. <strong>Failure</strong> is silent — the editor remains open and the user retains full control with no interruption. This asymmetry is a deliberate design choice, not an oversight.</p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <section id="menu">
+      <span class="section-number">Section 2</span>
+      <h2>Exercise Menu</h2>
+      <p>File: <code>menu-page.html</code>. One HTML file serves both the Micro Challenges and Interview Preparation tracks via a URL parameter: <code>menu-page.html?track=micro</code> or <code>menu-page.html?track=interview</code>. The page reads the track from the URL on load, fetches the appropriate exercise list, and renders everything from that data. The MCQ track does not use this page — it has its own separate flow.</p>
+
+      <section id="menu-data">
+        <h3>Data payload</h3>
+        <p>On load the page calls <code>GET /api/menu/payload?track=micro</code> (or <code>interview</code>). The server returns a single JSON object:</p>
+        <pre><code>{
+  <span class="hl-str">"track"</span>: <span class="hl-str">"micro"</span>,
+  <span class="hl-str">"trackLabel"</span>: <span class="hl-str">"Micro Challenges"</span>,
+  <span class="hl-str">"categories"</span>: [<span class="hl-str">"Arrays"</span>, <span class="hl-str">"Strings"</span>, <span class="hl-str">"Trees"</span>, <span class="hl-cm">/* 14 total */</span>],
+  <span class="hl-str">"difficultyLevels"</span>: [<span class="hl-str">"basic"</span>, <span class="hl-str">"intermediate"</span>, <span class="hl-str">"advanced"</span>],
+  <span class="hl-str">"exercises"</span>: [
+    {
+      <span class="hl-str">"id"</span>: <span class="hl-str">"micro_042"</span>,
+      <span class="hl-str">"name"</span>: <span class="hl-str">"Minimum Window Substring"</span>,
+      <span class="hl-str">"shortDescription"</span>: <span class="hl-str">"Find the smallest substring containing all required characters."</span>,
+      <span class="hl-str">"category"</span>: <span class="hl-str">"Strings"</span>,
+      <span class="hl-str">"difficulty"</span>: <span class="hl-str">"advanced"</span>,
+      <span class="hl-str">"completionStatus"</span>: <span class="hl-str">"completed"</span>,
+      <span class="hl-str">"completedAt"</span>: <span class="hl-str">"2026-02-14"</span>
+    }
+    <span class="hl-cm">/* ... all exercises for this track */</span>
+  ]
+}</code></pre>
+
+        <p>The <code>completionStatus</code> field uses three values: <code>"completed"</code> (at least one accepted solve), <code>"attempted"</code> (submitted but never passed all tests), <code>"not_started"</code> (never opened). The current filter drawer UI shows only completed / not-started, but the third state is carried in the payload so it can be added to the filter later without a schema change.</p>
+
+        <p>The <code>categories</code> and <code>difficultyLevels</code> arrays are sent explicitly (not derived from the exercises list) so the filter drawer always shows all options even if no exercises currently exist in a given category or difficulty.</p>
+
+        <p>All filtering and sorting happens entirely on the client side in memory. The full list is delivered once and never re-fetched during a browse session. At 200–1,000 exercises this is fast, the payload is small (under 100KB gzipped), and there is no round-trip cost on every filter interaction.</p>
+      </section>
+
+      <section id="menu-cards">
+        <h3>Card structure</h3>
+        <p>Each exercise is rendered as a card in a 6-column CSS grid. The card HTML generated from the payload looks like this:</p>
+        <pre><code>&lt;<span class="hl-kw">a</span> class=<span class="hl-str">"exercise-card"</span>
+   data-cat=<span class="hl-str">"strings"</span>
+   data-level=<span class="hl-str">"advanced"</span>
+   data-status=<span class="hl-str">"completed"</span>
+   data-id=<span class="hl-str">"micro_042"</span>
+   href=<span class="hl-str">"editor.html?id=micro_042&amp;from=menu-page.html%3Ftrack%3Dmicro"</span>&gt;
+
+  &lt;<span class="hl-kw">div</span> class=<span class="hl-str">"card-status done"</span>&gt;...tick svg...&lt;/<span class="hl-kw">div</span>&gt;
+  &lt;<span class="hl-kw">div</span> class=<span class="hl-str">"card-body"</span>&gt;
+    &lt;<span class="hl-kw">h3</span> class=<span class="hl-str">"card-title"</span>&gt;Minimum Window Substring&lt;/<span class="hl-kw">h3</span>&gt;
+    &lt;<span class="hl-kw">div</span> class=<span class="hl-str">"card-desc"</span>&gt;Find the smallest substring...&lt;/<span class="hl-kw">div</span>&gt;
+  &lt;/<span class="hl-kw">div</span>&gt;
+  &lt;<span class="hl-kw">div</span> class=<span class="hl-str">"pill-row"</span>&gt;
+    &lt;<span class="hl-kw">span</span> class=<span class="hl-str">"pill"</span>&gt;Strings&lt;/<span class="hl-kw">span</span>&gt;
+    &lt;<span class="hl-kw">span</span> class=<span class="hl-str">"pill pill-level advanced"</span>&gt;Advanced&lt;/<span class="hl-kw">span</span>&gt;
+  &lt;/<span class="hl-kw">div</span>&gt;
+&lt;/<span class="hl-kw">a</span>&gt;</code></pre>
+
+        <p>Four <code>data-*</code> attributes drive the filter logic: <code>data-cat</code>, <code>data-level</code>, <code>data-status</code>, <code>data-id</code>. All values are stored in lowercase. The <code>card-status</code> element uses class <code>done</code> (green tick), <code>todo</code> (yellow cross), or <code>attempted</code> (grey partial) to show completion state visually. The card is an <code>&lt;a&gt;</code> element so clicking navigates directly — no JS click handler needed for the navigation itself.</p>
+      </section>
+
+      <section id="menu-filter">
+        <h3>Filtering and sorting</h3>
+        <p>The filter logic in <code>drawer-and-filters.js</code> is already implemented and working against the current static cards. It reads three sets of checkboxes (category, difficulty, completeness), reads the sort key and direction from two dropdowns, and applies them to the card DOM nodes in the grid. The filter function runs when the Apply button is clicked.</p>
+
+        <p>When the page is wired to the real data payload, the only change needed in the filter JS is:</p>
+        <ol>
+          <li>The filter drawer's category checkboxes need to be dynamically generated from <code>payload.categories</code> instead of being hardcoded in the HTML. Currently they are hardcoded to a subset of categories.</li>
+          <li>The <code>getCardMeta()</code> function reads <code>data-cat</code>, <code>data-level</code>, and <code>card-status.classList</code> from each card. These are already the right attribute names — the dynamic card renderer just needs to write them correctly.</li>
+          <li>The sort comparators already handle title, category, level, and completeness. No changes needed there.</li>
+        </ol>
+
+        <p>The filter operates by showing/hiding cards via <code>style.display</code>. Cards that do not match the active filters are hidden; matching cards are re-ordered in the DOM via <code>appendChild</code> into the grid in sorted order. This is fast at the expected scale.</p>
+      </section>
+
+      <section id="menu-search">
+        <h3>Search</h3>
+        <p>A text input field sits above the exercise grid (outside the collapsible filter drawer, always visible). As the user types, the exercise list filters in real time. The search matches against <code>data-name</code> and <code>data-desc</code> attributes on each card using case-insensitive substring matching. The search result is combined with the filter drawer's active selections via AND — a card must satisfy both the text search and any active filters to be shown.</p>
+
+        <p>This field does not exist in the current HTML yet. It needs to be added — a single <code>&lt;input&gt;</code> above the grid, with a corresponding event listener in the filter JS. The logic is a small addition to the existing <code>applyFilters()</code> function.</p>
+      </section>
+
+      <section id="menu-navigate">
+        <h3>Navigating to an exercise</h3>
+        <p>Clicking any card navigates to the editor page. The URL carries two pieces of information:</p>
+        <pre><code>editor.html?id=micro_042&amp;from=menu-page.html%3Ftrack%3Dmicro</code></pre>
+
+        <p><code>id</code> is the globally unique exercise ID. <code>from</code> is the full return URL, URL-encoded, so the feedback modal's "Return to Menu" button sends the learner back to the exact same page and track they came from. The browser back button also works naturally. No session state or localStorage is needed.</p>
+
+        <div class="callout info">
+          <div class="callout-label">Exercise ID uniqueness</div>
+          <p>If the micro challenges and interview exercises are in separate database tables with independent ID sequences, their numeric IDs may collide. The scoring engine uses ExerciseId for distinct-solve counting and redo-spacing — collisions corrupt both. Prefix with the track: <code>micro_42</code> and <code>interview_42</code> for exercise #42 in each track respectively.</p>
+        </div>
+      </section>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <section id="editor">
+      <span class="section-number">Section 3</span>
+      <h2>Editor Page</h2>
+      <p>File: <code>editor.html</code> (not yet built). The editor is the coding environment for a single exercise. It follows the same shared component structure as all other pages — the same topbar, the same sidebar with the same buttons, the same logo and cube.</p>
+
+      <section id="editor-load">
+        <h3>Loading an exercise</h3>
+        <p>On load the page reads <code>?id=</code> from the URL and calls:</p>
+        <pre><code>GET /api/exercise?id=micro_042</code></pre>
+
+        <p>The response contains everything needed to render the exercise view:</p>
+        <pre><code>{
+  <span class="hl-str">"id"</span>: <span class="hl-str">"micro_042"</span>,
+  <span class="hl-str">"name"</span>: <span class="hl-str">"Minimum Window Substring"</span>,
+  <span class="hl-str">"category"</span>: <span class="hl-str">"Strings"</span>,
+  <span class="hl-str">"difficulty"</span>: <span class="hl-str">"advanced"</span>,
+  <span class="hl-str">"problemStatement"</span>: <span class="hl-str">"Given a string s and a string t, find..."</span>,
+  <span class="hl-str">"constraints"</span>: [<span class="hl-str">"1 &lt;= s.length &lt;= 10^5"</span>, <span class="hl-cm">/* ... */</span>],
+  <span class="hl-str">"examples"</span>: [{ <span class="hl-str">"input"</span>: <span class="hl-str">"s=ADOBECODEBANC,t=ABC"</span>, <span class="hl-str">"output"</span>: <span class="hl-str">"BANC"</span> }],
+  <span class="hl-str">"codeScaffold"</span>: <span class="hl-str">"def minWindow(s: str, t: str) -> str:\n    pass"</span>,
+  <span class="hl-str">"testsTotal"</span>: <span class="hl-num">24</span>,
+  <span class="hl-str">"priorAttempts"</span>: <span class="hl-num">3</span>,
+  <span class="hl-str">"bestPriorScore"</span>: <span class="hl-num">92</span>,
+  <span class="hl-str">"lastSolvedAt"</span>: <span class="hl-str">"2026-02-14"</span>
+}</code></pre>
+
+        <p>The <code>priorAttempts</code>, <code>bestPriorScore</code>, and <code>lastSolvedAt</code> fields allow the editor to show the learner their history with this exercise before they start — "You have solved this before. Your best previous run: 3 attempts, 92% peak." This is optional UI chrome, not required for the editor to function.</p>
+      </section>
+
+      <section id="editor-submit">
+        <h3>Submitting code</h3>
+        <p>When the learner clicks Submit, the editor POSTs their code to:</p>
+        <pre><code>POST /api/exercise/submit
+{
+  <span class="hl-str">"exerciseId"</span>: <span class="hl-str">"micro_042"</span>,
+  <span class="hl-str">"code"</span>: <span class="hl-str">"def minWindow(s, t):\n    ..."</span>,
+  <span class="hl-str">"sessionId"</span>: <span class="hl-str">"sess_abc123"</span>   <span class="hl-cm">// session created when the editor was first opened</span>
+}</code></pre>
+
+        <p>The server runs the test suite against the submitted code and returns a result. The response has two shapes depending on the outcome.</p>
+
+        <h4>Failed submission response</h4>
+        <pre><code>{
+  <span class="hl-str">"accepted"</span>: <span class="hl-kw">false</span>,
+  <span class="hl-str">"testsPassed"</span>: <span class="hl-num">8</span>,
+  <span class="hl-str">"testsTotal"</span>: <span class="hl-num">24</span>,
+  <span class="hl-str">"failedTests"</span>: [
+    { <span class="hl-str">"input"</span>: <span class="hl-str">"..."</span>, <span class="hl-str">"expected"</span>: <span class="hl-str">"..."</span>, <span class="hl-str">"got"</span>: <span class="hl-str">"..."</span> }
+  ],
+  <span class="hl-str">"timeMs"</span>: <span class="hl-num">42</span>
+}</code></pre>
+
+        <h4>Successful submission response</h4>
+        <pre><code>{
+  <span class="hl-str">"accepted"</span>: <span class="hl-kw">true</span>,
+  <span class="hl-str">"testsPassed"</span>: <span class="hl-num">24</span>,
+  <span class="hl-str">"testsTotal"</span>: <span class="hl-num">24</span>,
+  <span class="hl-str">"feedback"</span>: {
+    <span class="hl-str">"exerciseId"</span>: <span class="hl-str">"micro_042"</span>,
+    <span class="hl-str">"exerciseName"</span>: <span class="hl-str">"Minimum Window Substring"</span>,
+    <span class="hl-str">"category"</span>: <span class="hl-str">"Strings"</span>,
+    <span class="hl-str">"difficulty"</span>: <span class="hl-str">"advanced"</span>,
+    <span class="hl-str">"isFirstSolve"</span>: <span class="hl-kw">false</span>,
+    <span class="hl-str">"returnMenuUrl"</span>: <span class="hl-str">"menu-page.html?track=micro"</span>,
+    <span class="hl-str">"current"</span>: {
+      <span class="hl-str">"timeToSuccessSeconds"</span>: <span class="hl-num">768</span>,
+      <span class="hl-str">"attempts"</span>: <span class="hl-num">2</span>,
+      <span class="hl-str">"bestPreSuccessPercent"</span>: <span class="hl-num">92</span>,
+      <span class="hl-str">"timeToFirstAttemptSecs"</span>: <span class="hl-num">125</span>,
+      <span class="hl-str">"avgIterationSeconds"</span>: <span class="hl-num">314</span>
+    },
+    <span class="hl-str">"history"</span>: [
+      { <span class="hl-str">"timeToSuccessSeconds"</span>: <span class="hl-num">1020</span>, <span class="hl-str">"attempts"</span>: <span class="hl-num">4</span> },
+      <span class="hl-cm">/* previous completions, oldest first, up to 8 */</span>
+    ],
+    <span class="hl-str">"deltas"</span>: {
+      <span class="hl-str">"timeToSuccess"</span>: <span class="hl-num">-11</span>,   <span class="hl-cm">// % change vs most recent prior completion</span>
+      <span class="hl-str">"attempts"</span>: <span class="hl-num">-33</span>
+    }
+  }
+}</code></pre>
+
+        <p>Notice the feedback payload is nested inside the submission response. This means one round trip handles both "did I pass?" and "here is your analysis." The editor does not need a separate call to get the feedback data — it arrives with the acceptance confirmation.</p>
+      </section>
+
+      <section id="editor-fail">
+        <h3>On failure — no dialog</h3>
+        <p>When <code>accepted: false</code> is returned, the editor updates the test results panel to show which tests passed and which failed, with input/expected/got detail for failed tests. Nothing else happens. No modal, no dialog, no sound, no interruption. The code editor remains focused. The learner decides what to do next entirely on their own terms — fix the code and resubmit, open the sidebar to navigate away, or press the browser back button to return to the menu.</p>
+
+        <p>The sidebar is always present on the editor page. The learner can navigate away at any point, including mid-exercise, using any sidebar button. This is the same sidebar as every other page — same buttons, same positions, same behaviour.</p>
+      </section>
+
+      <section id="editor-success">
+        <h3>On success — show the feedback modal</h3>
+        <p>When <code>accepted: true</code> is returned, the editor extracts the <code>feedback</code> object from the response and calls:</p>
+        <pre><code>CodiviumFeedback.show(result.feedback);</code></pre>
+
+        <p>This is the entire integration with the feedback component. The modal appears as a floating overlay. The editor and the learner's accepted code remain fully visible behind it. The learner sees their solution and the feedback simultaneously.</p>
+
+        <p>The <code>returnMenuUrl</code> field in the feedback payload is constructed server-side from the <code>from</code> query parameter that arrived in the original editor URL. The server reads <code>?from=</code>, decodes it, and echoes it into the feedback payload so the "Return to Menu" button navigates to exactly the right place.</p>
+      </section>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <section id="feedback">
+      <span class="section-number">Section 4</span>
+      <h2>Feedback Modal</h2>
+      <p>Files: <code>assets/components/feedback/feedback.css</code>, <code>assets/components/feedback/feedback.js</code>. Fully built. The public API is a single function: <code>CodiviumFeedback.show(result)</code>. The modal is added to the DOM programmatically — it is not present in any page's HTML. It appears as a floating 1040px-wide overlay on top of whatever page calls it, with a blurred semi-transparent backdrop that keeps the editor visible behind it.</p>
+
+      <section id="feedback-structure">
+        <h3>Structure and content</h3>
+        <p>The modal has a header, a four-row body, and a footer.</p>
+
+        <p><strong>Header</strong> — Green checkmark seal, exercise name, three pills (category, difficulty, test count). No close button. The only way out is the three footer buttons.</p>
+
+        <p><strong>Row 1: Primary metrics + Insight</strong> — Left side: Time to Success (mm:ss) and Attempts (count), each with a coloured delta badge (green down-arrow for improvement, red up-arrow for regression, compared to the most recent prior completion of this exercise). Right side: the Insight panel — a gold-bordered block with analysis text and badge chips.</p>
+
+        <p><strong>Row 2: Secondary micro-metrics</strong> — Three smaller cards: Time to First Attempt (how long before the first submission — a proxy for planning vs diving in), Best Pre-Success pass rate (the highest test percentage achieved before the final passing submission — shows how close the initial solution was), and Average Iteration time (mean time between consecutive submissions — measures the efficiency of the fix-and-retry loop).</p>
+
+        <p><strong>Row 3: Trend charts</strong> — Only rendered when <code>history</code> contains 2 or more prior completions. Two inline SVG charts side by side: Time to Success Trend (line chart with area fill and dot markers, last 8 completions) and Attempts Trend (bar chart with overlay trend line, last 8 completions). Both show Best / Median / Latest in a text legend below.</p>
+
+        <p><strong>Footer</strong> — "Codivium — Immediate feedback" stamp on the left. Three buttons on the right.</p>
+      </section>
+
+      <section id="feedback-insight">
+        <h3>Rule-based insight engine</h3>
+        <p>The insight text is generated synchronously by a rule set inside <code>feedback.js</code>. It evaluates the current run and produces a 2–3 sentence personalised paragraph. Rules in order of evaluation:</p>
+
+        <p><strong>Convergence quality rule</strong> — based on attempt count:</p>
+        <ul>
+          <li>1 attempt → "First-attempt acceptance — your pre-submission reasoning was precise."</li>
+          <li>2 attempts → references the best pre-success percent: "Your first attempt reached X% of tests — one focused iteration closed the gap."</li>
+          <li>3–4 attempts → "The failure pattern was identified and resolved cleanly."</li>
+          <li>5+ attempts → "Consider writing a small concrete test case before submitting — it tends to surface the edge case responsible for most retries."</li>
+        </ul>
+
+        <p><strong>Time quality rule</strong> — compares <code>timeToSuccessSeconds</code> against the KaTeX T_d benchmark for this difficulty (basic = 5,400s / 90min, intermediate = 7,200s / 120min, advanced = 9,600s / 160min):</p>
+        <ul>
+          <li>Under 30% of T_d → "Well inside the reference window — strong signal of a solid mental model."</li>
+          <li>30–60% → "Comfortably within the expected range."</li>
+          <li>60–100% → "Approached the reference window — a written plan before coding is usually faster overall."</li>
+          <li>Over 100% → Recommends timeboxing and post-mortem.</li>
+        </ul>
+
+        <p><strong>Historical trend rule</strong> — if prior history exists:</p>
+        <ul>
+          <li>Time improved by more than 10% → explicitly calls it out: "X% faster than your previous attempt."</li>
+          <li>Attempts reduced by more than 15% → adds a "Fewer attempts" chip.</li>
+          <li>No prior history → adds a "First solve" chip.</li>
+        </ul>
+
+        <p>Badge chips are assembled alongside the text and shown in the insight panel as small pill elements. They summarise the key signals at a glance: "First-try pass", "Fast solve", "Personal best time", "A2 convergence", etc.</p>
+
+        <p>AI-generated text was explicitly rejected for this role. The rule engine is synchronous — it produces the insight before the DOM is even built. An AI call would add 1–3 seconds of latency between the submission response arriving and the modal appearing, which would feel like a loading stall at the exact moment the learner is expecting immediate feedback.</p>
+      </section>
+
+      <section id="feedback-next">
+        <h3>Next-exercise hint</h3>
+        <p>A single chip in the insight panel, prefixed with →, suggests what to do next. This is also rule-based:</p>
+        <ul>
+          <li>Struggled (5+ attempts OR over the time benchmark) → "Consolidate: another [difficulty] [category] exercise."</li>
+          <li>Excelled (first-try AND under 40% of T_d) AND not already at advanced → "Strong run — try an [next difficulty] [category] challenge."</li>
+          <li>Otherwise → "Continue: next [difficulty] [category] exercise."</li>
+        </ul>
+        <p>This hint is advisory only. The learner can ignore it and use any of the three footer buttons regardless of what it says.</p>
+      </section>
+
+      <section id="feedback-buttons">
+        <h3>Navigation buttons</h3>
+        <table>
+          <thead><tr><th>Button</th><th>Style</th><th>What happens</th><th>Why this position</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Dashboard</td>
+              <td>Ghost (secondary)</td>
+              <td>Navigates to <code>codivium_insights_embedded.html</code></td>
+              <td>Listed first because it is the most likely destination for a learner who wants to see their updated mastery scores immediately after a completion.</td>
+            </tr>
+            <tr>
+              <td>Return to Menu</td>
+              <td>Ghost (secondary)</td>
+              <td>Navigates to <code>result.returnMenuUrl</code> — e.g. <code>menu-page.html?track=micro</code></td>
+              <td>Second because it continues the current practice session — the learner goes back to the list and picks another exercise.</td>
+            </tr>
+            <tr>
+              <td>Try Again</td>
+              <td>Gold (primary)</td>
+              <td>Navigates to <code>editor.html?id={id}&amp;from={encodedReturnUrl}</code> — reloads the same exercise fresh</td>
+              <td>Gold because it is the highest-value action from a mastery perspective. Re-attempting immediately after a solve (especially with more attempts) is the most effective form of deliberate practice. The visual weight of gold draws the eye to this option without forcing it.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <section id="data-flow">
+      <span class="section-number">Section 5</span>
+      <h2>Data flow end to end</h2>
+      <p>The following describes every data movement in one complete pass through the practice loop, from the learner opening the menu to the feedback modal appearing.</p>
+
+      <h3>Step 1 — Menu page loads</h3>
+      <p>Browser reads <code>?track=micro</code> from URL. JS calls <code>GET /api/menu/payload?track=micro</code>. Server queries: all exercises for the micro track from the exercise catalogue, plus the user's <code>coding_sessions</code> table to determine completion status per exercise. Returns one JSON payload. JS renders all cards into the grid, populates filter checkboxes from <code>payload.categories</code>.</p>
+
+      <h3>Step 2 — Filter / search / sort</h3>
+      <p>All client-side. No server calls. The JS filter function reads the active checkboxes and search field text, then shows/hides and re-orders card DOM nodes. Instant response.</p>
+
+      <h3>Step 3 — Learner clicks a card</h3>
+      <p>The card's <code>href</code> navigates to <code>editor.html?id=micro_042&amp;from=menu-page.html%3Ftrack%3Dmicro</code>. Normal browser navigation. The menu page is discarded.</p>
+
+      <h3>Step 4 — Editor page loads</h3>
+      <p>Browser reads <code>?id=micro_042</code> from URL. JS calls <code>GET /api/exercise?id=micro_042</code>. Server queries the exercises table for the problem content plus the user's attempt history for this exercise. Returns the exercise payload. Editor renders the problem statement, populates the code editor with the scaffold, shows the learner's prior history if any.</p>
+
+      <h3>Step 5 — Learner submits code</h3>
+      <p>JS POSTs to <code>/api/exercise/submit</code> with the code and session ID. Server runs the test suite. Two outcomes:</p>
+      <ul>
+        <li><strong>Failure</strong>: response <code>accepted: false</code>. Editor updates test results panel. Session data is written to <code>coding_attempts</code> for this submission. No modal.</li>
+        <li><strong>Success</strong>: response <code>accepted: true</code> with full <code>feedback</code> object. Editor writes the session to <code>coding_sessions</code> (marking it accepted). Calls <code>CodiviumFeedback.show(result.feedback)</code>.</li>
+      </ul>
+
+      <h3>Step 6 — Feedback modal appears</h3>
+      <p>The modal builds itself from the <code>feedback</code> object in memory. No additional server calls. The insight text is generated synchronously by the rule engine. If <code>feedback.history</code> has 2+ entries, the chart SVGs are drawn 50ms after DOM insertion (to allow the container dimensions to be computed). The modal animates in. The editor and the learner's accepted code are visible behind it.</p>
+
+      <h3>Step 7 — Learner chooses</h3>
+      <ul>
+        <li><strong>Dashboard</strong>: navigates to <code>codivium_insights_embedded.html</code>. The dashboard's next load will pick up the new session data (cache TTL 60s). The Codivium Score and all metrics reflect the new evidence.</li>
+        <li><strong>Return to Menu</strong>: navigates to <code>result.returnMenuUrl</code>. The menu page reloads from the API — the completed exercise now shows a green tick.</li>
+        <li><strong>Try Again</strong>: navigates to <code>editor.html?id=micro_042&amp;from=menu-page.html%3Ftrack%3Dmicro</code>. A fresh editor session starts. The prior attempt history is now one longer.</li>
+      </ul>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <section id="remaining">
+      <span class="section-number">Section 6</span>
+      <h2>What remains to be built</h2>
+
+      <section id="remaining-menu">
+        <h3>Menu page</h3>
+        <p>The HTML structure, CSS, filter/sort JS, and sidebar are all complete. What is missing:</p>
+        <table>
+          <thead><tr><th>Task</th><th>Where</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Dynamic card rendering from payload</td>
+              <td>New JS file or extension of <code>drawer-and-filters.js</code></td>
+              <td>On page load, call the API, iterate <code>payload.exercises</code>, generate card HTML for each exercise, append to <code>.exercise-grid</code>. Card HTML structure is documented in Section 2. The filter JS is already written to read the correct data attributes — the renderer just needs to write them.</td>
+            </tr>
+            <tr>
+              <td>Dynamic filter checkbox population</td>
+              <td>Same JS, runs immediately after card render</td>
+              <td>Clear the existing hardcoded category checkboxes in the filter drawer. Generate one checkbox per entry in <code>payload.categories</code>. Difficulty checkboxes are already correct (basic/intermediate/advanced are fixed). Completeness checkboxes are correct.</td>
+            </tr>
+            <tr>
+              <td>Track title display</td>
+              <td>HTML, set from <code>payload.trackLabel</code></td>
+              <td>The page currently has no track-specific heading. Should show "Micro Challenges" or "Interview Preparation" based on which track loaded. Can be the page title, the <code>data-page</code> body attribute, and/or a visible heading above the grid.</td>
+            </tr>
+            <tr>
+              <td>Search field HTML</td>
+              <td><code>menu-page.html</code></td>
+              <td>One <code>&lt;input type="search"&gt;</code> element, placed above the grid, outside the filter drawer. Needs an <code>id</code> so the filter JS can attach an <code>input</code> event listener.</td>
+            </tr>
+            <tr>
+              <td>Search logic in JS</td>
+              <td><code>drawer-and-filters.js</code></td>
+              <td>Read the search field value inside <code>applyFilters()</code>. Add a check: if the search string is non-empty, also test <code>card.dataset.name</code> and <code>card.dataset.desc</code> for substring match (case-insensitive). The existing AND combination with filter checkboxes handles itself.</td>
+            </tr>
+            <tr>
+              <td>Apply filter on search input (live)</td>
+              <td><code>drawer-and-filters.js</code></td>
+              <td>Add an <code>input</code> event listener on the search field that calls <code>applyFilters()</code>. The Apply button in the drawer can remain for explicit filter application; search should be live.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="remaining-editor">
+        <h3>Editor page</h3>
+        <p>The editor page does not exist yet. The full design is decided — what needs to be built:</p>
+        <table>
+          <thead><tr><th>Task</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Page HTML</td>
+              <td>Follow the same structure as every other page: same shared CSS and JS files in the same order, same topbar HTML, same sidebar HTML with the same 6 buttons. Add <code>data-page="Exercise Editor"</code> to the body. The main content area will be custom.</td>
+            </tr>
+            <tr>
+              <td>Three-panel layout</td>
+              <td>Left: problem statement (description, constraints, examples). Centre: code editor. Right: test results panel. The exact proportions and whether this is resizable are a layout decision not yet made.</td>
+            </tr>
+            <tr>
+              <td>Code editor component</td>
+              <td>A browser-based code editor. CodeMirror 6 or Monaco are the standard choices. Which language(s) are supported needs a decision — the scaffold and test suite in the exercise data will be language-specific.</td>
+            </tr>
+            <tr>
+              <td>Exercise load on init</td>
+              <td>Read <code>?id=</code> from URL. Call <code>GET /api/exercise?id=...</code>. Populate the problem panel, initialise the editor with the code scaffold, show prior attempt history if available.</td>
+            </tr>
+            <tr>
+              <td>Submit handler</td>
+              <td>POST to <code>/api/exercise/submit</code>. On failure: update test results panel, do nothing else. On success: call <code>CodiviumFeedback.show(response.feedback)</code>. The feedback CSS and JS are already loaded as shared components — just include <code>feedback.css</code> in the stylesheet list and <code>feedback.js</code> in the script list.</td>
+            </tr>
+            <tr>
+              <td>Session tracking</td>
+              <td>A session ID needs to be created when the learner opens the editor (either server-side on first load or client-side). Each submission carries this session ID so the server can group all attempts under one session record.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="remaining-api">
+        <h3>API endpoints</h3>
+        <table>
+          <thead><tr><th>Endpoint</th><th>Status</th><th>What to build</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>GET /api/menu/payload?track=</code></td>
+              <td>Not built</td>
+              <td>Query exercise catalogue for the track. Join with user's <code>coding_sessions</code> to derive completion status per exercise. Return the payload shape documented in Section 2. The exercise catalogue is read-only data; completion status is user-specific and must be joined server-side.</td>
+            </tr>
+            <tr>
+              <td><code>GET /api/exercise?id=</code></td>
+              <td>Not built</td>
+              <td>Return full exercise details: problem statement, constraints, examples, code scaffold, test count. Also return the user's prior attempt history for this exercise (count, best score, last solved date) so the editor can show it.</td>
+            </tr>
+            <tr>
+              <td><code>POST /api/exercise/submit</code></td>
+              <td>Not built</td>
+              <td>This is the most complex endpoint. Receives code + session ID. Runs the test suite (in a sandboxed execution environment — this is a significant infrastructure piece). Writes the attempt to <code>coding_attempts</code>. If accepted, writes to <code>coding_sessions</code> and assembles the feedback payload (including prior history for this exercise and delta calculations). Returns the full response shape documented in Section 3. Cache invalidation for the dashboard payload should fire here.</td>
+            </tr>
+            <tr>
+              <td><code>/api/sessions/start</code></td>
+              <td>Stub built</td>
+              <td>Currently returns a placeholder redirect. Needs real exercise selection logic: query the catalogue for exercises matching the recommended track/category/difficulty, exclude recently solved exercises (within the last 7 days to respect redo spacing), pick the first <code>count</code> matching exercises, create a session record, return a redirect URL. Decision needed: does this navigate to the editor with one exercise, or to the menu pre-filtered?</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout warn">
+          <div class="callout-label">Code execution is infrastructure, not application code</div>
+          <p>The <code>/api/exercise/submit</code> endpoint needs to run the learner's code against the test suite in an isolated execution environment. This is a sandboxed runtime (e.g. a Docker container, a WASM runtime, a cloud code execution service). It is the most significant infrastructure piece in the entire system and needs to be designed independently of the application layer described in this document.</p>
+        </div>
+      </section>
+
+      <section id="remaining-feedback">
+        <h3>Feedback modal</h3>
+        <p>The feedback modal is fully built. No further development needed on the component itself. What connects it to the rest of the system:</p>
+        <ul>
+          <li>Add <code>&lt;link href="#" data-illustrative="true" title="Future asset: assets/components/feedback/feedback.css" rel="stylesheet"/&gt;</code> to <code>editor.html</code>.</li>
+          <li>Add <code>&lt;script src="#" data-illustrative="true" title="Future asset: assets/components/feedback/feedback.js"&gt;&lt;/script&gt;</code> to <code>editor.html</code> (loaded after the shared scripts, before any page-specific script).</li>
+          <li>On successful submission response: call <code>CodiviumFeedback.show(response.feedback)</code> where <code>response.feedback</code> is the feedback object from the submission endpoint.</li>
+          <li>The <code>returnMenuUrl</code> in that feedback object should be the decoded <code>?from=</code> parameter from the editor's URL. The server should read this from the submission context and echo it into the feedback payload.</li>
+        </ul>
+      </section>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <section id="contracts">
+      <span class="section-number">Section 7</span>
+      <h2>Interface contracts summary</h2>
+      <p>The precise data shapes that connect each piece of the system.</p>
+
+      <h3>Menu payload (<code>GET /api/menu/payload</code>)</h3>
+      <pre><code>{
+  track: string,           <span class="hl-cm">// "micro" | "interview"</span>
+  trackLabel: string,      <span class="hl-cm">// "Micro Challenges" | "Interview Preparation"</span>
+  categories: string[],    <span class="hl-cm">// 14 canonical category names</span>
+  difficultyLevels: string[], <span class="hl-cm">// ["basic","intermediate","advanced"]</span>
+  exercises: Array&lt;{
+    id: string,            <span class="hl-cm">// globally unique, e.g. "micro_042"</span>
+    name: string,
+    shortDescription: string,
+    category: string,      <span class="hl-cm">// one of the 14 categories</span>
+    difficulty: string,    <span class="hl-cm">// "basic" | "intermediate" | "advanced"</span>
+    completionStatus: string, <span class="hl-cm">// "completed" | "attempted" | "not_started"</span>
+    completedAt: string | null <span class="hl-cm">// ISO date of most recent acceptance</span>
+  }&gt;
+}</code></pre>
+
+      <h3>Exercise payload (<code>GET /api/exercise</code>)</h3>
+      <pre><code>{
+  id, name, category, difficulty,
+  problemStatement: string,
+  constraints: string[],
+  examples: Array&lt;{ input, output, explanation? }&gt;,
+  codeScaffold: string,
+  testsTotal: number,
+  priorAttempts: number,
+  bestPriorScore: number,    <span class="hl-cm">// % peak tests passed, 0-100</span>
+  lastSolvedAt: string | null
+}</code></pre>
+
+      <h3>Feedback payload (nested in submission response)</h3>
+      <pre><code>{
+  exerciseId, exerciseName, category, difficulty,
+  testsPassed, testsTotal, isFirstSolve,
+  returnMenuUrl: string,     <span class="hl-cm">// decoded from editor's ?from= param</span>
+  current: {
+    timeToSuccessSeconds,
+    attempts,
+    bestPreSuccessPercent,
+    timeToFirstAttemptSecs,
+    avgIterationSeconds
+  },
+  history: Array&lt;{ timeToSuccessSeconds, attempts }&gt;, <span class="hl-cm">// oldest first, max 8</span>
+  deltas: {
+    timeToSuccess: number | null,  <span class="hl-cm">// % change vs previous, null if first</span>
+    attempts: number | null
+  }
+}</code></pre>
+
+      <h3>Card data attributes (generated by menu page JS renderer)</h3>
+      <pre><code>&lt;a class="exercise-card"
+   data-id="{exercise.id}"
+   data-cat="{exercise.category.toLowerCase()}"
+   data-level="{exercise.difficulty}"
+   data-status="{exercise.completionStatus}"
+   data-name="{exercise.name.toLowerCase()}"
+   data-desc="{exercise.shortDescription.toLowerCase()}"
+   href="#" data-illustrative="true" title="URL template — not a live link"&gt;</code></pre>
+
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

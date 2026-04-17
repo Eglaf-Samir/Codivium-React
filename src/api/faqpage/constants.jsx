@@ -1,1 +1,0 @@
-export const getallfaqpage = 'api/v1/pages/details?type=';

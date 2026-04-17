@@ -1,1 +1,0 @@
-export const allusertransactionhistory = 'api/v1/userPayment/usertransactionhistory?id=';

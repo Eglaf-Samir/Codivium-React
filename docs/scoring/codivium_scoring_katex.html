@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Codivium — Scoring Equations + Detailed Explanations (KaTeX)</title>
+
+  <!-- KaTeX (CDN) -->
+  <!-- NOTE: This doc is intentionally CDN-backed so it renders even when assets/vendor is not bundled. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+  <script defer src="codivium_scoring_katex_render.js"></script>
+
+  <link rel="stylesheet" href="codivium_scoring_katex.css">
+
+</head>
+
+<body>
+  <header>
+    <h1>Codivium Scoring Equations + Detailed Explanations (KaTeX)</h1>
+    <p class="sub">
+      This document is the scoring “source of truth” for Codivium. It describes the exact metrics the dashboard shows,
+      how they are computed from verified user activity, and why each step exists (i.e., the design intent).
+      Open this file in a browser (internet required for the KaTeX CDN).
+    </p>
+
+    <div class="intro">
+      <strong>Introduction.</strong> Codivium is designed for elite deliberate practice. The scoring system reflects that by separating:
+      (1) a <strong>capped</strong> mastery score that answers “how strong are you right now?”,
+      from (2) <strong>uncapped</strong> progression and efficiency signals that answer “how much verified work have you banked?” and
+      “how efficiently are you converting time into verified mastery?”.
+      <br><br>
+      The dashboard therefore shows one headline number called <strong>Codivium Score</strong> (0–100), plus two supporting numbers:
+      <strong>Codivium Points</strong> (uncapped, with both all-time and last-30-days views) and <strong>Efficiency (pts/hr)</strong> (uncapped rate).
+      These work together: the headline score stays interpretable and comparable, while the supporting numbers reward sustained, high-quality practice.
+    </div>
+  </header>
+
+  <main>
+    <!-- ======================================================= -->
+    <!-- Overview of what is shown on dashboard -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Dashboard Score Overview</div>
+        <div class="hint">One headline score + two supporting numbers (elite design).</div>
+      </div>
+      <div class="card-body">
+        <div class="explain">
+          <h3>What the user sees</h3>
+          <p>
+            The dashboard displays three primary scoring readouts:
+          </p>
+          <ul class="bul">
+            <li><strong>Codivium Score</strong> (0–100): a mastery score, computed as a harmonic mean of breadth and depth.</li>
+            <li><strong>Codivium Points</strong> (uncapped): a progression score for verified volume, shown as (a) all-time points and (b) points gained in the last 30 days.</li>
+            <li><strong>Efficiency (pts/hr)</strong> (uncapped): a rate metric that rewards producing accepted solves quickly (and penalizes slow/inefficient progress) while using a recency decay so that recent performance matters most.</li>
+          </ul>
+          <p>
+            The key idea is: <strong>Codivium Score stays stable and meaningful</strong>, while points and efficiency provide “career” and “momentum” context.
+            This is more premium than collapsing everything into one number, because it remains interpretable and hard to game.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Codivium Score (headline mastery score, capped 0–100)</div>
+          $$\text{CodiviumScore} = \text{Mastery} = \frac{2BD}{B+D}$$
+          <p class="note">
+            The harmonic mean ensures the score reflects elite balance: if breadth is high but depth is low (or vice-versa), the score is constrained.
+            This prevents “one-trick” profiles from inflating the headline number.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Codivium Points (uncapped progression; shown as All-time and Last-30-days)</div>
+          $$\text{Points}_{\text{all}} = \text{CodingPoints}_{\text{all}}+\text{RedoPoints}_{\text{all}}+\text{McqPoints}_{\text{all}}$$
+          $$\text{Points}_{30} = \text{CodingPoints}_{30}+\text{RedoPoints}_{30}$$
+          <p class="note">
+            Points are intentionally uncapped so progress can continue for years, but they are designed with diminishing returns and anti-farming rules
+            (especially for re-doing the same exercise).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Efficiency (pts/hr) (uncapped rate; accepted solves only; recent work matters more)</div>
+          $$\text{Efficiency}=\frac{\sum_i w_i\,q_i}{\epsilon+\sum_i w_i\,t_i}\qquad\text{and}\qquad \text{pts/hr}=60\cdot \text{Efficiency}$$
+          <p class="note">
+            Efficiency is a rate: “verified quality per minute”. It rewards producing accepted solutions efficiently, and it cannot be increased by spending
+            time without producing accepted solves. This avoids rewarding inefficiency.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- Tracks + raw data prerequisites -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Tracks and Raw Data Requirements</div>
+        <div class="hint">What must exist in the raw data so the equations are well-defined.</div>
+      </div>
+      <div class="card-body">
+        <div class="explain">
+          <h3>Tracks (three streams)</h3>
+          <p>
+            Codivium has three tracks, each with its own category set:
+            <strong>Micro Challenges</strong>, <strong>Interview Preparation</strong>, and <strong>MCQ</strong>.
+            We compute <strong>breadth per track</strong>.
+            For mastery depth, we compute depth for the two <strong>coding</strong> tracks (micro and interview) separately and then combine them;
+            we do <strong>not</strong> pool categories across tracks.
+            The depth-by-category bar chart uses the union of coding categories (micro + interview) merged by a canonical category key.
+          </p>
+          <p>
+            The raw data is expected to be track-aware and category-aware, and it must include timestamps to support recency decay and “last 30 days” windows.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Minimum raw fields for coding sessions (accepted solves)</div>
+          <p class="note">
+            For each accepted coding solve event, we require:
+          </p>
+          <ul class="bul">
+            <li><span class="kbd">ExerciseId</span> — required to count distinct solves and re-dos correctly.</li>
+            <li><span class="kbd">Track</span> — micro or interview (coding tracks).</li>
+            <li><span class="kbd">CategoryId</span> — which skill category this exercise belongs to.</li>
+            <li><span class="kbd">Difficulty</span> — mapped to \(f_d\).</li>
+            <li><span class="kbd">CompletedAtUtc</span> — timestamp used for recency and rolling windows.</li>
+            <li><span class="kbd">Attempts</span> — used for tries factor \(q_{\text{tries}}\) and convergence \(q_{\text{conv}}\).</li>
+            <li><span class="kbd">TimeToACMinutes</span> — used in \(q_{\text{time}}\) and in efficiency denominator.</li>
+          </ul>
+        </div>
+        <div class="eq">
+          <div class="label">Minimum raw fields for MCQ</div>
+          <p class="note">
+            MCQ contributes to <strong>breadth</strong> via quiz results and to <strong>points</strong> via an all-time unique-correct counter.
+            MCQ results are always considered “accepted” (there is no accepted/failed notion; every quiz result counts).
+          </p>
+          <p class="note">
+            For <strong>MCQ breadth</strong>, we require one record per quiz result event:
+          </p>
+          <ul class="bul">
+            <li><span class="kbd">QuizId</span> — identifies the quiz instance.</li>
+            <li><span class="kbd">CategoryId</span> — the MCQ category for this quiz (single category per quiz).</li>
+            <li><span class="kbd">Difficulty</span> — one of basic/intermediate/advanced (single difficulty per quiz), mapped to \(f_d\).</li>
+            <li><span class="kbd">CompletedAtUtc</span> — timestamp used for recency decay and rolling windows.</li>
+            <li><span class="kbd">ScorePercent</span> — the quiz mark in \([0,100]\). This percentage may reflect partial completion.</li>
+          </ul>
+          <p class="note">
+            For <strong>MCQ points</strong> (all-time padding), the backend additionally provides:
+            <span class="kbd">UniqueCorrectMcqAllTime</span> \(=U_{\text{all}}\) — lifetime count of distinct MCQ question IDs answered correctly.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- Evidence -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Step 1 — Evidence</div>
+        <div class="hint">Convert verified activity into “proof of work” per track and category.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>What evidence is and why it exists</h3>
+          <p>
+            Evidence is the atomic unit of the mastery score. Each verified action contributes some evidence to a category.
+            Evidence is designed to be:
+            <strong>verified</strong> (only accepted solves count for coding),
+            <strong>difficulty-aware</strong> (harder work counts more),
+            <strong>quality-aware</strong> (attempts, convergence, and time influence the value),
+            and <strong>recency-aware</strong> (newer work counts more than old work).
+          </p>
+          <p>
+            The reason we do this instead of counting “minutes spent” is that elite practice values outcomes.
+            Time can only help the score if it produces verified competence.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Days since event (recency input)</div>
+          $$\Delta(e)=\frac{\text{now}-t(e)}{86400},\qquad \Delta(e)\leftarrow \max(0,\Delta(e))$$
+          <p class="note">
+            We turn timestamps into “days ago”. If a timestamp is accidentally in the future, we clamp it to 0 to avoid giving extra credit.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Recency decay with half-life</div>
+          $$\text{decay}(e)=0.5^{\Delta(e)/H}$$
+          <p class="note">
+            The half-life \(H\) means: after \(H\) days, identical work counts half as much. This keeps mastery “current”.
+            Default \(H=15\) days, meaning work 30 days old is weighted at \(0.25\).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Premium coding outcome: accepted solves only</div>
+          $$o(e)=\mathbf{1}_{\text{accepted}}(e)\cdot q_{\text{tries}}(e)\cdot q_{\text{conv}}(e)\cdot q_{\text{time}}(e)$$
+          <p class="note">
+            This is the core “premium” rule: unsolved attempts do not contribute. We only count accepted work.
+            The quality factors then distinguish fast, clean solves from slow, many-attempt solves.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Quality factors (defaults)</div>
+          $$q_{\text{tries}}(e)=\text{clamp}\!\left(\frac{1}{\sqrt{\text{attempts}(e)}},\,0.45,\,1.0\right)$$
+          $$q_{\text{conv}}(e)=g(\text{A}(e))\quad\text{where}\quad g=[1.00,0.92,0.85,0.78,0.70,0.60]$$
+          $$q_{\text{time}}(e)=\text{clamp}\!\left(e^{-t(e)/T_d},\,0.6,\,1.0\right)$$
+          <p class="note">
+            Explanation:
+          </p>
+          <ul class="bul">
+            <li><strong>tries</strong> penalizes repeated submissions (diminishing returns).</li>
+            <li><strong>convergence</strong> uses attempt buckets: \(A(e)=\min(\text{attempts}(e),6)\), where A1..A5 correspond to 1..5 attempts and A6 corresponds to &gt;5 attempts.</li>
+            <li><strong>time</strong> uses \(t(e)=\text{TimeToACMinutes}(e)\) with a mild bounded penalty. \(T_d\) depends on difficulty: basic 90, intermediate 120, advanced 160 (minutes). The clamp ensures \(q_{\text{time}}\in[0.6,1.0]\).</li>
+</ul>
+        </div>
+
+                <div class="eq">
+          <div class="label">Event contribution (coding — Micro/Interview)</div>
+          $$\text{contrib}_{\text{code}}(e)=w_{a(e)}\cdot o(e)\cdot f_{d(e)}\cdot \text{decay}(e)$$
+          <p class="note">
+            Read as: (track importance) × (verified quality) × (difficulty) × (recency).
+            This applies only to accepted coding solves in the micro and interview tracks.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Event contribution (MCQ quiz result)</div>
+          $$\text{contrib}_{\text{mcq}}(e)=\left(\frac{p(e)}{100}\right)^{\gamma}\cdot f_{d(e)}\cdot \text{decay}(e)$$
+          <p class="note">
+            Here \(p(e)\in[0,100]\) is the quiz percentage mark (it may reflect partial completion).
+            MCQ does not use \(o(e)\), attempts buckets, or coding time penalties.
+            Default \(\gamma=1.5\) so higher marks contribute disproportionately more evidence than low marks.
+          </p>
+        </div>
+
+                        <div class="eq">
+          <div class="label">Evidence per track and category</div>
+          $$E_{a,c}=\sum_{e\in\mathcal{E}_a:\,c(e)=c}\text{contrib}_a(e)$$
+          <p class="note">
+            Where \(\text{contrib}_a\) is \(\text{contrib}_{\text{code}}\) for \(a\in\{\text{micro},\text{interview}\}\),
+            and \(\text{contrib}_{\text{mcq}}\) for \(a=\text{mcq}\).
+            Breadth is computed per track from these values.
+            Depth for mastery is computed for the two coding tracks separately (no cross-track pooling).
+          </p>
+        </div>
+
+            </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- Breadth -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Step 2 — Breadth (per track)</div>
+        <div class="hint">Breadth asks “how wide is your verified competence?”</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>Why breadth is not just “how many categories you touched”</h3>
+          <p>
+            Breadth has three parts:
+            (1) <strong>coverage</strong> (how many categories have meaningful evidence),
+            (2) <strong>balance</strong> (how evenly your evidence is distributed),
+            and (3) <strong>confidence</strong> (prevents early users from getting unstable scores from tiny data).
+          </p>
+          <p>
+            We compute breadth separately per track so the dashboard can show whether you’re broad in Micro, broad in Interview, and broad in MCQ.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Activation threshold (a category counts as covered if evidence is real)</div>
+          $$A_{a,c}=\mathbf{1}\{E_{a,c}\ge\tau_E\}$$
+          <p class="note">
+            \(\tau_E\) prevents “one tiny action” from marking a category as covered. Default \(\tau_E=1.5\).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Coverage (fraction of covered categories)</div>
+          $$\text{cov}_a=\frac{1}{|C_a|}\sum_{c\in C_a}A_{a,c}$$
+          <p class="note">
+            This is the simplest breadth idea: what fraction of the category set has meaningful evidence.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Balance (entropy of evidence distribution, normalized)</div>
+          $$p_{a,c}=\frac{E_{a,c}}{\sum_{j\in C_a}E_{a,j}}$$
+          $$H_a=-\sum_{c\in C_a}p_{a,c}\ln p_{a,c}$$
+          $$\text{bal}_a=\frac{H_a}{\ln |C_a|}$$
+          <p class="note">
+            Balance prevents “breadth inflation” by concentrating all evidence in one category. If evidence is spread evenly, entropy is higher.
+            Edge case: if total evidence \(\sum_{j\in C_a}E_{a,j}=0\), we define \(H_a=0\) and \(\text{bal}_a=0\).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Confidence stabilizer (prevents early volatility)</div>
+          $$T_a=\sum_{c\in C_a}E_{a,c}$$
+          $$\text{conf}_a = 1-e^{-T_a/k_a}$$
+          <p class="note">
+            When evidence is tiny, confidence is small, and breadth stays conservative. As evidence accumulates, confidence approaches 1 and breadth reflects coverage + balance.
+            Defaults: \(k_{\text{micro}}=10\), \(k_{\text{interview}}=8\), \(k_{\text{mcq}}=14\).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Breadth per track (0–100)</div>
+          $$B_a = 100\cdot \text{conf}_a \cdot \left(\alpha\cdot \text{cov}_a+\beta\cdot \text{bal}_a\right)$$
+          <p class="note">
+            We blend coverage and balance. Defaults: \(\alpha=0.65\) and \(\beta=0.35\).
+            This puts slightly more weight on “cover more categories” while still penalizing narrow concentration.
+            Edge case: if \(T_a=\sum_{c\in C_a}E_{a,c}=0\), then \(\text{cov}_a=0\), \(\text{bal}_a=0\), \(\text{conf}_a=0\), and therefore \(B_a=0\).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Overall breadth across tracks (0–100)</div>
+          $$B=0.4\,B_{\text{micro}}+0.4\,B_{\text{interview}}+0.2\,B_{\text{mcq}}$$
+          <p class="note">
+            These fixed weights make the headline score predictable and transparent: coding breadth dominates, while MCQ breadth still matters.
+            If a track has zero evidence then its breadth is 0 by definition (see edge cases below).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    
+    <!-- ======================================================= -->
+    <!-- Depth -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Step 3 — Depth (coding tracks)</div>
+        <div class="hint">Depth asks “how strong are you within each category?” (computed per coding track; no cross-track pooling).</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>Why depth uses a saturating curve</h3>
+          <p>
+            Depth should have diminishing returns: the difference between “0 and some evidence” is huge, but the difference between “a lot and a little more”
+            should not explode the score. We therefore map evidence into a 0–100 depth value per category using a saturating curve.
+          </p>
+          <p>
+            Categories are <strong>not pooled across tracks</strong> because each track has its own category set.
+            Depth for mastery is defined for the two coding tracks (micro + interview) and then combined.
+            MCQ contributes to <strong>breadth</strong> and <strong>points</strong>, but does not contribute to mastery depth in the initial version.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Depth per category (per coding track, 0–100, saturating)</div>
+          $$D_{a,c}=100\left(1-e^{-E_{a,c}/\lambda}\right)\qquad a\in\{\text{micro},\text{interview}\}$$
+          <p class="note">
+            \(\lambda\) controls how quickly depth rises. Default \(\lambda=12\). At \(E_{a,c}=\lambda\), depth reaches about 63% of its maximum.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Track depth (0–100, evidence-weighted)</div>
+          $$D_a=
+          \begin{cases}
+            \dfrac{\sum_{c\in C_a}E_{a,c}D_{a,c}}{\sum_{c\in C_a}E_{a,c}}, & \text{if }\sum_{c\in C_a}E_{a,c}>0\\[8pt]
+            0, & \text{otherwise}
+          \end{cases}$$
+          <p class="note">
+            We weight by evidence so categories with real work influence depth more than categories with tiny evidence.
+            Edge case: if a track has zero evidence, its depth is defined as 0.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Overall depth used in CodiviumScore (0–100)</div>
+          $$D = 0.5\,D_{\text{micro}} + 0.5\,D_{\text{interview}}$$
+          <p class="note">
+            Depth is intentionally coding-centric in the initial version, matching the depth-by-category chart (coding categories only).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Depth-by-category bar chart (coding categories union; chart-only)</div>
+          $$E^{\text{chart}}_{c}=E_{\text{micro},c}+E_{\text{interview},c}\quad\text{(merged by canonical category key)}$$
+          $$D^{\text{chart}}_{c}=100\left(1-e^{-E^{\text{chart}}_{c}/\lambda_{\text{chart}}}\right)$$
+          <p class="note">
+            The chart uses the union of coding categories across micro + interview.
+            If the same canonical category key exists in both tracks, evidence is summed before applying the saturating curve.
+            Default \(\lambda_{\text{chart}}=12\).
+            This chart is a visualization of coding depth by category and does not introduce cross-track pooling into the mastery score.
+          </p>
+        </div>
+      </div>
+    </section>
+<!-- ======================================================= -->
+    <!-- Mastery Score -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Step 4 — Codivium Score (Mastery)</div>
+        <div class="hint">The headline score is capped 0–100 and punishes imbalance.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>Why the harmonic mean is used</h3>
+          <p>
+            Elite developers are both broad and deep. The harmonic mean enforces that:
+            if either breadth or depth is weak, the combined score is pulled down.
+            This matches deliberate practice: you cannot claim “elite” if you avoid large parts of the skill surface.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Codivium Score (0–100)</div>
+          $$\text{CodiviumScore}=\frac{2BD}{B+D}$$
+          <p class="note">
+            Both \(B\) and \(D\) are in \([0,100]\), so the final score is also in \([0,100]\).
+            Edge case: if \(B=0\) or \(D=0\), we define \(\text{CodiviumScore}=0\).
+            This makes the headline score stable and interpretable.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- Efficiency -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Supporting Metric — Efficiency (pts/hr)</div>
+        <div class="hint">Uncapped, hard to game: only accepted solves count; slow solves reduce the rate.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>Design goal: reward time only when it produces verified outcomes</h3>
+          <p>
+            Efficiency exists because two users can have similar mastery levels but very different practice quality:
+            one may produce accepted solutions quickly and consistently, while another may spend the same time on fewer accepted solves.
+          </p>
+          <p>
+            Efficiency therefore behaves like a “throughput” metric: it increases with more accepted solves, and it increases when accepted solves are achieved with less time.
+            Because only accepted solves are included, it does not reward unproductive time.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Recency weights for efficiency (so recent performance dominates)</div>
+          $$w_i=0.5^{\Delta_i/H}$$
+          <p class="note">
+            \(\Delta_i\) is days since solve \(i\), and \(H\) is the same half-life as used in evidence (default 15 days).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Solve quality weight for efficiency (premium)</div>
+          $$q_i = f_{d(i)}\cdot q_{\text{tries}}(i)\cdot q_{\text{conv}}(i)$$
+          <p class="note">
+            For efficiency we exclude the explicit time penalty inside \(q_i\) because time is already accounted for in the denominator.
+            This avoids “double counting” time. Difficulty, tries, and convergence remain because they reflect quality.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Efficiency (uncapped) and displayed as pts/hr</div>
+          $$\text{Efficiency}=\frac{\sum_i w_iq_i}{\epsilon+\sum_i w_it_i}$$
+          $$\text{Efficiency(pts/hr)} = 60\cdot \text{Efficiency}$$
+          <p class="note">
+            \(\epsilon\) is a small constant (default 1 minute) to avoid division by zero. \(t_i\) is time-to-AC in minutes.
+            The score is uncapped: as a user gets faster and completes more accepted solves, efficiency can continue to rise.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- Points -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Supporting Metric — Codivium Points (uncapped)</div>
+        <div class="hint">Progression: bank verified work over a career, and track 30-day momentum.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>Design goal: reward verified volume without inflating mastery</h3>
+          <p>
+            Points exist because a 0–100 mastery score is intentionally capped. Elite users still need a way to see long-term progression:
+            “How much verified work have I accumulated?” and “How much did I progress recently?”
+          </p>
+          <p>
+            Points are uncapped but carefully designed:
+            they reward distinct achievements more than repeats, and repeats have diminishing returns and spacing rules to prevent farming.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Parameters (defaults)</div>
+          <p class="note">
+            Default points parameters:
+            <span class="kbd">P0=4.0</span> (first accepted solve),
+            <span class="kbd">Predo=2.5</span> (redo baseline),
+            <span class="kbd">Pmcq=0.8</span> (MCQ all-time padding via \(\sqrt{U_{\text{all}}}\)),
+            <span class="kbd">G=7 days</span> (minimum spacing between counted re-dos).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Distinct coding points (first accepted solve per ExerciseId)</div>
+          $$S_{\text{first}}=\{\text{firstAcceptedSolve}(x)\ \forall\ \text{ExerciseId }x\}$$
+          $$\text{CodingPoints}_{\text{all}}=\sum_{e\in S_{\text{first}}}P_0\cdot w_{a(e)}\cdot f_{d(e)}\cdot q_{\text{conv}}(e)$$
+          $$\text{CodingPoints}_{30}=\sum_{e\in S_{\text{first}}\cap W_{30}}P_0\cdot w_{a(e)}\cdot f_{d(e)}\cdot q_{\text{conv}}(e)$$
+          <p class="note">
+            Why this works:
+          </p>
+          <ul class="bul">
+            <li><strong>Distinct</strong> means you get the main credit once per exercise (requires ExerciseId).</li>
+            <li>We still reward difficulty and convergence so that “hard clean wins” bank more points.</li>
+            <li>The 30-day version measures momentum: how much distinct ground you covered recently.</li>
+          </ul>
+        </div>
+
+        <div class="eq">
+          <div class="label">Redo points (accepted re-solves, spaced, diminishing returns)</div>
+          $$\text{validRedo}(x,k)=\mathbf{1}\{t_k(x)-t_{k-1}(x)\ge G\text{ days}\}$$
+          $$R_{\text{valid,all}}(x)=\sum_{k\ge2}\text{validRedo}(x,k)$$
+          $$R_{\text{valid,30}}(x)=\sum_{k\ge2}\text{validRedo}(x,k)\cdot \mathbf{1}\{t_k(x)\in W_{30}\}$$
+          $$\text{RedoPoints}_{\text{all}}=\sum_x P_{\text{redo}}\cdot w_{a(x)}\cdot f_{d(x)}\cdot \ln(1+R_{\text{valid,all}}(x))$$
+          $$\text{RedoPoints}_{30}=\sum_x P_{\text{redo}}\cdot w_{a(x)}\cdot f_{d(x)}\cdot \ln(1+R_{\text{valid,30}}(x))$$
+          <p class="note">
+            The spacing rule \(G\) discourages immediate repeats. The log term makes the reward sublinear:
+            repeating the same exercise helps (spaced repetition matters), but you cannot inflate points linearly by farming one item.
+            Here \(a(x)\) and \(d(x)\) are the track and difficulty of exercise \(x\) (exercise metadata; assumed stable across attempts).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">MCQ points (all-time only, unique correct count with sqrt)</div>
+          $$\text{McqPoints}_{\text{all}}=P_{\text{mcq}}\sqrt{U_{\text{all}}}$$
+          $$\text{McqPoints}_{30}=0\quad\text{(initial implementation)}$$
+          <p class="note">
+            MCQ points are a separate uncapped progression signal and are not used in the mastery score.
+            They use \(U_{\text{all}}\): lifetime distinct MCQ questions answered correctly.
+            MCQ breadth, by contrast, is computed from quiz results (category + difficulty + percent mark) with the same recency decay as coding.
+            The sqrt makes early progress feel rewarding while keeping long-term growth controlled.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Final points totals</div>
+          $$\text{Points}_{\text{all}}=\text{CodingPoints}_{\text{all}}+\text{RedoPoints}_{\text{all}}+\text{McqPoints}_{\text{all}}$$
+          $$\text{Points}_{30}=\text{CodingPoints}_{30}+\text{RedoPoints}_{30}$$
+          <p class="note">
+            These are the two point values shown on the dashboard: All-time (career bank) and last-30-days (momentum).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- Progress Panel + Primary Driver -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Progress Panel, Primary Driver, and CTAs</div>
+        <div class="hint">How the dashboard turns analytics into deliberate practice.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>Why progress needs deltas, not just totals</h3>
+          <p>
+            Premium dashboards do not only show “where you are”; they show “how you are moving”.
+            The Progress Panel therefore displays:
+            (a) recent deltas (e.g., last 7 days), (b) small trend lines (sparklines), (c) a primary driver explanation, and (d) one next action.
+          </p>
+          <p>
+            These are computed in the backend so the explanation is consistent with the score math, and so it can be tuned via config.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Example delta computations (backend)</div>
+          $$\Delta\text{Score}_{7d}=\text{CodiviumScore}(\text{today})-\text{CodiviumScore}(\text{today}-7\text{ days})$$
+          $$\Delta\text{Points}_{30}=\text{Points}_{30}(\text{today})-\text{Points}_{30}(\text{today}-7\text{ days})$$
+          <p class="note">
+            The backend stores (or recomputes) daily values so the UI can show deltas and trend lines without duplicating math in the browser.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Primary driver (config-driven choice)</div>
+          <p class="note">
+            The backend selects a “primary driver” mode from config. Example modes:
+          </p>
+          <ul class="bul">
+            <li><strong>Mastery decomposition (default):</strong> did breadth or depth contribute more to \(\Delta\)Score?</li>
+            <li><strong>Largest category evidence gain:</strong> which category increased \(E_c\) most in the selected window?</li>
+            <li><strong>Efficiency improvement:</strong> which factor increased pts/hr most?</li>
+            <li><strong>Heatmap improvement:</strong> which focus categories improved early convergence (A1/A2) most?</li>
+          </ul>
+          <p class="note">
+            The chosen mode produces: a short title, a one-paragraph explanation, and a few supporting numbers for transparency.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Purpose of CTA buttons (how the dashboard becomes actionable)</div>
+          <p class="note">
+            CTA buttons exist to close the deliberate practice loop:
+          </p>
+          <ul class="bul">
+            <li><strong>Analytics → Prescription:</strong> the backend computes recommended actions from the same aggregates used in the charts.</li>
+            <li><strong>Prescription → Session:</strong> clicking a CTA calls a backend endpoint that creates a practice session and returns a redirect URL.</li>
+            <li><strong>Session → Evidence:</strong> completing the session generates verified events, increasing evidence and therefore improving breadth/depth/score.</li>
+          </ul>
+          <p class="note">
+            This is the “elite” product behavior: the dashboard does not merely report; it directs.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    
+    <!-- ======================================================= -->
+    <!-- Configuration Defaults (single reference) -->
+    <!-- ======================================================= -->
+
+    <!-- ======================================================= -->
+    <!-- Step 5 — Convergence Heatmap                            -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Step 5 — Convergence Heatmap</div>
+        <div class="hint">How the heatmap cell values and focus-mode rankings are computed.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>What the heatmap measures</h3>
+          <p>
+            The convergence heatmap shows, for each coding category and each attempt number,
+            how correct your code was on average at that exact submission. This is different
+            from a cumulative pass rate — it measures <strong>quality at attempt k</strong>,
+            not "whether you eventually passed by attempt k."
+          </p>
+          <p>
+            This is useful because it reveals <em>how quickly your code converges to correct</em>:
+            a category with high A1 values means you typically submit near-correct solutions
+            immediately; low A1 but rising A3/A4 means you need several iterations to converge.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Cell value — mean unit-test pass ratio at attempt k</div>
+          <p class="note">
+            For a session with <strong>N</strong> unit tests, the ratio at attempt <em>k</em> is:
+          </p>
+          $$r_k(s) = \text{clamp}\!\left(\frac{\text{UnitTestsPassed}_k(s)}{N},\;0,\;1
+ight)$$
+          <p class="note">
+            The cell value for category <em>c</em> at bucket <em>A_k</em> is the mean across all
+            sessions in category <em>c</em> that had at least <em>k</em> attempts:
+          </p>
+          $$\text{cell}(c,\,k) =
+            \begin{cases}
+              \dfrac{1}{|\mathcal{S}_{c,k}|}\displaystyle\sum_{s \in \mathcal{S}_{c,k}} r_k(s)
+                & \text{if } |\mathcal{S}_{c,k}| > 0 \[8pt]
+              \text{null} & \text{otherwise}
+            \end{cases}$$
+          <p class="note">
+            where \(\mathcal{S}_{c,k}\) is the set of sessions in category \(c\) that had
+            at least \(k\) submission attempts. Sessions with fewer than \(k\) attempts contribute
+            nothing to bucket \(A_k\) — they are absent, not counted as zero.
+            A <strong>null</strong> is displayed when no session reached that attempt count
+            (rather than zero, which would be misleading).
+            Buckets: <span class="kbd">A1..A5</span> correspond to attempt indices 1..5.
+            Micro and interview sessions are pooled for the combined view.
+          </p>
+        </div>
+
+        <div class="explain">
+          <h3>Why the cell value is a mean ratio, not a cumulative pass fraction</h3>
+          <p>
+            A cumulative pass fraction would ask "what fraction of users passed <em>by</em> attempt k?"
+            The mean unit-test ratio instead asks "how correct was the code <em>at</em> attempt k on average?"
+            This is more informative for deliberate practice: it shows whether partial progress is being
+            made (rising ratio across buckets) or whether submissions are random (flat ratio).
+          </p>
+        </div>
+
+        <div class="explain">
+          <h3>Focus modes — what the dropdown controls</h3>
+          <p>
+            The heatmap dropdown selects a <strong>focus mode</strong>: a ranking of categories
+            from most to least worth practising under that lens. All modes use the same underlying
+            cell values; they differ only in how they rank categories.
+          </p>
+          <p>
+            Shared derived inputs used by all modes:
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Early convergence (input to focus mode rankings)</div>
+          $$\text{earlyConv}(c) = \frac{1}{|\{k : \text{cell}(c,k) 
+e \text{null},\, k \le 3\}|}
+            \sum_{\substack{k=1 \ \text{cell}(c,k)
+etext{null}}}^{3} \text{cell}(c,k)$$
+          <p class="note">
+            Mean of the A1, A2, A3 cell values for category \(c\), averaging only the buckets
+            that have data. If no sessions reached A1–A3, \(\text{earlyConv}(c)=0\).
+          </p>
+          $$\text{weakness}(c) = \text{clamp}(1 - \text{earlyConv}(c),\;0,\;1)$$
+          $$\text{depthNorm}(c) = \text{clamp}\!\left(\frac{D^{\text{chart}}_c}{100},\;0,\;1
+ight)$$
+          $$\text{timeWeight}(c) = \ln\!\left(1 + \max(0,\,\text{minutes}_c)
+ight)$$
+          <p class="note">
+            where \(\text{minutes}_c\) is the total allocation minutes for category \(c\)
+            and \(D^{\text{chart}}_c\) is the depth-by-category chart value from Step 3.
+            The log scaling compresses large time differences so very-high-time categories
+            do not dominate rankings purely due to accumulated time.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Focus mode: Impact (default)</div>
+          $$\text{score}_{\text{impact}}(c) =
+            \bigl(alpha_{\text{imp}}\cdottext{weakness}(c)
+            + beta_{\text{imp}}\cdot(1-\text{depthNorm}(c))\bigr)
+            \times \text{timeWeight}(c)$$
+          <p class="note">
+            Prioritises categories where early-attempt quality is low <strong>and</strong>
+            depth is weak, scaled by how much time you have already invested there.
+            Categories where you spend time but still submit poor code and have low depth
+            rank highest. Default blend weights:
+            <span class="kbd">&alpha;<sub>imp</sub>=0.55</span>,
+            <span class="kbd">&beta;<sub>imp</sub>=0.45</span>
+            (stored in config under <span class="kbd">heatmap.focus_modes.impact_weights</span>).
+            Ties broken alphabetically by category name.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Focus mode: Worst Convergence</div>
+          $$\text{score}_{\text{worst\_conv}}(c) = \text{weakness}(c)$$
+          <p class="note">
+            Ranks categories by how low early-attempt code quality is, descending.
+            Higher weakness = more wrong answers on first attempts = ranked higher.
+            Ties broken alphabetically.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Focus mode: Most Time Spent</div>
+          $$\text{score}_{\text{most\_time}}(c) = \text{minutes}_c$$
+          <p class="note">
+            Ranks by raw minutes allocated to the category, descending.
+            Shows where practice time is currently concentrated.
+            Ties broken alphabetically.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Focus mode: Lowest Depth</div>
+          $$\text{score}_{\text{lowest\_depth}}(c) = 1 - \text{depthNorm}(c)$$
+          <p class="note">
+            Ranks by weakest depth score, descending (inverted so lowest depth ranks first).
+            Ties broken alphabetically.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Focus mode: Highest Friction</div>
+          $$\text{score}_{\text{friction}}(c) = \text{weakness}(c) \times \text{timeWeight}(c)$$
+          <p class="note">
+            Ranks categories where you spend significant time but still produce low-quality
+            early submissions. Similar to Impact but without the depth term — pure
+            "effort × poor early quality." Ties broken alphabetically.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- Step 6 — Supplementary Diagnostics                      -->
+    <!-- ======================================================= -->
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Step 6 — Supplementary Diagnostics</div>
+        <div class="hint">Dashboard metrics that are not part of the mastery score but provide practice-quality context.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>What supplementary diagnostics are and why they exist</h3>
+          <p>
+            The mastery score (Steps 1–4) answers <em>"how strong are you right now?"</em>
+            Supplementary diagnostics answer <em>"how is your practice process performing?"</em>
+            They are computed from the same raw session data but are not inputs to
+            <span class="kbd">CodiviumScore</span>, <span class="kbd">Breadth</span>,
+            <span class="kbd">Depth</span>, or <span class="kbd">Points</span>.
+          </p>
+          <p>
+            All supplementary diagnostics use <strong>accepted coding sessions only</strong>
+            (sessions where at least one attempt passed all unit tests),
+            combining micro and interview tracks.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">First-try pass rate (%)</div>
+          $$\text{FirstTryPass} = 100 \cdot
+            \frac{\bigl|\{s \in \mathcal{S}_{\text{accepted}} : \text{attemptsToAC}(s) = 1\}\bigr|}
+                 {|\mathcal{S}_{\text{accepted}}|}$$
+          <p class="note">
+            Percentage of accepted sessions where the very first submission passed all unit tests.
+            Measures precision and pre-submission planning quality.
+            \(\text{attemptsToAC}(s)\) = index of the last accepted attempt + 1
+            (total submissions in the session up to and including the final pass).
+            Returns 0 if \(|\mathcal{S}_{\text{accepted}}| = 0\).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Average attempts to accepted</div>
+          $$\text{AvgAttempts} = \frac{1}{|\mathcal{S}_{\text{accepted}}|}
+            \sum_{s \in \mathcal{S}_{\text{accepted}}} \text{attemptsToAC}(s)$$
+          <p class="note">
+            Mean number of submissions required to reach a passing solution across all accepted sessions.
+            Returns 0 if \(|\mathcal{S}_{\text{accepted}}| = 0\).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Median time to accepted (minutes)</div>
+          $$\text{MedianTimeToAC} = \text{median}\!\left(\{t_{\text{AC}}(s) : s \in \mathcal{S}_{\text{accepted}}\}
+ight)$$
+          <p class="note">
+            Median of \(t_{\text{AC}}(s)\) across accepted sessions, where
+            \(t_{\text{AC}}(s) = \text{TimeToACMinutes}(s)\) if explicitly provided,
+            otherwise the <span class="kbd">TimeToSubmissionMinutes</span> of the last accepted attempt.
+            The median is used rather than the mean to avoid skew from rare very-long sessions.
+            Returns 0 if \(|\mathcal{S}_{\text{accepted}}| = 0\).
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Weighted MCQ score (%)</div>
+          <p class="note">
+            A difficulty-weighted quality indicator for MCQ performance. For each difficulty
+            level \(d \in \{\text{basic, intermediate, advanced}\}\):
+          </p>
+          $$\bar{p}_d = \frac{1}{|\mathcal{Q}_d|}\sum_{q \in \mathcal{Q}_d} \text{ScorePercent}(q)
+            \qquad \text{(mean score at difficulty } dtext{)}$$
+          $$\text{WeightedMcqScore} = \frac{\displaystyle\sum_{d} f_d \cdot \bar{p}_d}
+            {\displaystyle\sum_{d} f_d}$$
+          <p class="note">
+            where \(f_d\) is the standard difficulty factor
+            (basic=1.0, intermediate=1.3, advanced=1.6) and \(\mathcal{Q}_d\) is the set of
+            all MCQ quiz attempts at difficulty \(d\).
+            If a difficulty level has no attempts, it is excluded from both numerator and denominator.
+            Result is in \([0, 100]\).
+          </p>
+        </div>
+
+        <div class="explain">
+          <h3>Time on platform (daily series)</h3>
+        </div>
+
+        <div class="eq">
+          <div class="label">Daily minutes (time-on-platform series)</div>
+          $$\text{minutes}(d) = \sum_{\substack{s \in \mathcal{S}_{\text{accepted}} \ \text{date}(s) = d}}
+            t_{\text{AC}}(s)
+            \;+\;
+            \sum_{\substack{q \in \mathcal{Q}_{\text{all}} \ \text{date}(q) = d}}
+            \text{MinutesSpent}(q)$$
+          <p class="note">
+            Total minutes on a given calendar day, combining:
+            (1) <span class="kbd">TimeToACMinutes</span> from accepted coding sessions
+            whose <span class="kbd">CompletedAtUtc</span> falls on day \(d\), and
+            (2) <span class="kbd">MinutesSpent</span> from MCQ quiz attempts on day \(d\)
+            (defaulting to a 6-minute estimate per attempt if not provided).
+            Days with no activity are omitted from the series.
+            The series is bounded by the query window (from/to parameters).
+          </p>
+        </div>
+
+        <div class="explain">
+          <h3>Allocation by category</h3>
+        </div>
+
+        <div class="eq">
+          <div class="label">Category allocation (minutes and solved count)</div>
+          $$\text{minutes}(c) = \sum_{\substack{s \in \mathcal{S}_{\text{accepted}} \ \text{category}(s) = c}}
+            t_{\text{AC}}(s)$$
+          $$\text{solved}(c) = \bigl|\{s \in \mathcal{S}_{\text{accepted}} : \text{category}(s) = c\}\bigr|$$
+          <p class="note">
+            Total minutes spent on accepted sessions in category \(c\), and the count of
+            those sessions. Combines micro and interview tracks. Categories with zero
+            accepted sessions are omitted. Used for the time-by-category allocation chart.
+          </p>
+        </div>
+
+        <div class="explain">
+          <h3>MCQ performance charts</h3>
+        </div>
+
+        <div class="eq">
+          <div class="label">MCQ score by category and difficulty</div>
+          $$\text{McqScore}(c,\,d) =
+            \begin{cases}
+              \dfrac{1}{|\mathcal{Q}_{c,d}|}\displaystyle\sum_{q \in \mathcal{Q}_{c,d}} \text{ScorePercent}(q)
+                & \text{if } |\mathcal{Q}_{c,d}| > 0 \[8pt]
+              \text{null} & \text{otherwise}
+            \end{cases}$$
+          <p class="note">
+            Arithmetic mean of <span class="kbd">ScorePercent</span> across all MCQ quiz attempts
+            in category \(c\) at difficulty \(d\).
+            \(\mathcal{Q}_{c,d}\) is the set of all MCQ attempts in that category/difficulty cell.
+            A <strong>null</strong> is shown when no attempts exist for that cell (not zero).
+            Evidence fields — attempt count and total questions — are included alongside the
+            score value for tooltip context.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="title">Configuration Defaults (Source of Truth)</div>
+        <div class="hint">All defaults, formulas, and clarifying decisions are documented here and mirrored in config.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="explain">
+          <h3>Why defaults live in both docs and config</h3>
+          <p>
+            This document is the human-readable scoring reference. The same defaults must also exist in a machine-readable config
+            (backend config file or equivalent) so the implementation stays aligned over time.
+            Any future tuning must update <em>both</em> the config and this document.
+          </p>
+        </div>
+
+        <div class="eq">
+          <div class="label">Track decisions (documented)</div>
+          <ul class="bul">
+            <li>Tracks: micro (coding), interview (coding), mcq.</li>
+            <li>Each track has its own category set; categories are <strong>not pooled across tracks</strong> for mastery computations.</li>
+            <li>MCQ contributes to breadth (via quiz results) and to points (via \(U_{\text{all}}\)); MCQ does not contribute to mastery depth in the initial version.</li>
+            <li>Depth-by-category chart uses the union of coding categories (micro + interview), merged by canonical category key by summing evidence.</li>
+            <li>Standard edge-case rule: any function depending on total evidence returns 0 when total evidence is 0.</li>
+          </ul>
+        </div>
+
+        <div class="eq">
+          <div class="label">Core constants</div>
+          <ul class="bul">
+            <li>Recency half-life: <span class="kbd">H=15</span> days.</li>
+            <li>Breadth activation threshold: <span class="kbd">τE=1.5</span>.</li>
+            <li>Breadth blend: <span class="kbd">α=0.65</span>, <span class="kbd">β=0.35</span>.</li>
+            <li>Confidence stabilizers: <span class="kbd">k_micro=10</span>, <span class="kbd">k_interview=8</span>, <span class="kbd">k_mcq=14</span>.</li>
+            <li>Depth saturating constant: <span class="kbd">λ=12</span> (and <span class="kbd">λ_chart=12</span> for the depth-by-category chart).</li>
+          </ul>
+        </div>
+
+        <div class="eq">
+          <div class="label">Difficulty mapping (all tracks)</div>
+          <p class="note">Codivium difficulties are: basic, intermediate, advanced. Map to numeric factors:</p>
+          <ul class="bul">
+            <li>basic → <span class="kbd">1.0</span></li>
+            <li>intermediate → <span class="kbd">1.3</span></li>
+            <li>advanced → <span class="kbd">1.6</span></li>
+          </ul>
+        </div>
+
+        <div class="eq">
+          <div class="label">Coding quality defaults</div>
+          <ul class="bul">
+            <li>tries factor clamp: <span class="kbd">min=0.45</span>, <span class="kbd">max=1.0</span></li>
+            <li>convergence weights: <span class="kbd">g=[1.00, 0.92, 0.85, 0.78, 0.70, 0.60]</span></li>
+            <li>attempt bucket: <span class="kbd">A=min(attempts, 6)</span> (A1..A5 for 1..5 attempts, A6 for &gt;5)</li>
+            <li>time factor clamp: <span class="kbd">min=0.6</span>, <span class="kbd">max=1.0</span></li>
+            <li>time penalty constants \(T_d\) (minutes): basic 90, intermediate 120, advanced 160</li>
+            <li>activity weights for coding evidence/points: <span class="kbd">w_micro=1.0</span>, <span class="kbd">w_interview=1.0</span></li>
+          </ul>
+        </div>
+
+        <div class="eq">
+          <div class="label">MCQ breadth defaults</div>
+          <ul class="bul">
+            <li>Recency decay: same \(H\) as coding.</li>
+            <li>Evidence from quiz marks: exponent <span class="kbd">γ=1.5</span> in \( (p/100)^\gamma \).</li>
+            <li>MCQ quizzes have a single difficulty level (basic/intermediate/advanced) per quiz.</li>
+          </ul>
+        </div>
+
+        <div class="eq">
+          <div class="label">Aggregation into headline mastery score</div>
+          <ul class="bul">
+            <li>Overall breadth: \(B=0.4B_{micro}+0.4B_{interview}+0.2B_{mcq}\).</li>
+            <li>Overall depth: \(D=0.5D_{micro}+0.5D_{interview}\).</li>
+            <li>Headline score: \(\text{CodiviumScore}=\frac{2BD}{B+D}\) with \(\text{CodiviumScore}=0\) if \(B=0\) or \(D=0\).</li>
+          </ul>
+        </div>
+
+        <div class="eq">
+          <div class="label">Points + efficiency defaults</div>
+          <ul class="bul">
+            <li>First-solve points constant: <span class="kbd">P0=4.0</span></li>
+            <li>Redo points constant: <span class="kbd">Predo=2.5</span></li>
+            <li>Redo spacing: <span class="kbd">G=7 days</span></li>
+            <li>MCQ points scaling: <span class="kbd">Pmcq=0.8</span> in \(P_{mcq}\sqrt{U_{all}}\)</li>
+            <li>Efficiency stabilizer: <span class="kbd">ε=1.0</span> minute</li>
+          </ul>
+        </div>
+
+        <div class="eq">
+          <div class="label">Canonical category key (for chart merging)</div>
+          <p class="note">
+            Default canonical key rule:
+            use <span class="kbd">lower(trim(CategoryId))</span> if CategoryId is stable across coding tracks;
+            otherwise use <span class="kbd">lower(trim(CategoryName))</span>.
+            Maintain a small alias mapping table in config for known merges (optional).
+          </p>
+        </div>
+
+        <div class="eq">
+  <div class="label">Machine-readable defaults (JSON)</div>
+  <p class="note">
+    Defaults are stored in a separate config file for easy backend integration:     <a class="cvHelpLink" href="../../config/scoring-config.katex.v1.json" target="_blank" rel="noopener noreferrer">scoring-config.katex.v1.json</a>.
+  </p>
+</div>
+      </div>
+    </section>
+
+
+  </main>
+</body>
+</html>

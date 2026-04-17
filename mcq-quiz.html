@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Theme applied before first paint to prevent flash -->
+  <script src="assets/components/core/theme.js"></script>
+  <meta charset="utf-8" />
+<meta name="robots" content="noindex, nofollow"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Codivium MCQ — quiz in progress." />
+  <title>Codivium — MCQ Quiz</title>
+
+  <link rel="icon" href="assets/favicons/favicon.ico" sizes="any"/>
+  <link rel="icon" href="assets/favicons/favicon.svg" type="image/svg+xml"/>
+  <link rel="icon" href="assets/favicons/favicon-32x32.png" type="image/png" sizes="32x32"/>
+  <link rel="icon" href="assets/favicons/favicon-16x16.png" type="image/png" sizes="16x16"/>
+  <link rel="apple-touch-icon" href="assets/favicons/apple-touch-icon.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="dns-prefetch" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="dns-prefetch" href="https://fonts.gstatic.com"/>
+  <script defer src="assets/components/core/cv-font-loader.js"></script>
+
+  <link rel="stylesheet" href="assets/components/core/base.css"/>
+  <link rel="stylesheet" href="assets/components/logo/logo.css"/>
+  <link rel="stylesheet" href="assets/components/topbar/topbar.css"/>
+  <link rel="stylesheet" href="assets/components/sidebar/sidebar.css"/>
+  <link rel="stylesheet" href="assets/components/sidebar/menu-overrides.css"/>
+  <link rel="stylesheet" href="assets/components/mcq/mcq-forms.css"/>
+  <link rel="stylesheet" href="assets/components/mcq/mcq-quiz.css"/>
+<link rel="stylesheet" href="assets/components/core/tour.css"/>
+
+  
+
+  <!-- Preload largest component script for faster TTI -->
+  
+
+  <link rel="preload" as="script" href="assets/components/sidebar/sidebar.js"/>
+  <link rel="preload" as="script" href="assets/components/core/global.js"/>
+  <link rel="stylesheet" href="assets/components/help/cv-help-panel.css"/>
+  <link rel="preload" as="script" href="assets/react-dist/mcq-quiz.bundle.js"/>
+</head>
+<body class="mcq-quiz" data-page="MCQ">
+<noscript>
+  <div class="cv-noscript-wall">
+    <h1>JavaScript required</h1>
+    <p>Codivium requires JavaScript to run. Please enable JavaScript in your browser settings.</p>
+  </div>
+</noscript>
+<div class="svg-sprite-container">
+<!-- Sidebar icon sprite: referenced by all nav icons below -->
+<!-- sidebar-icons.svg — Shared SVG symbol sprite for all sidebar navigation icons.
+     Include this file once per page (hidden) then reference via <use href="#icon-id"/>.
+     All paths use currentColor so they inherit the CSS color property. -->
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="icon-adaptive" viewBox="0 0 24 24">
+    <path d="M3 10.5 12 3l9 7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"/><path d="M5 10.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.0"/><path d="M9 21v-6h6v6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.0"/>
+  </symbol>
+  <symbol id="icon-tutorials" viewBox="0 0 24 24">
+    <path d="M2.5 5.5h7.5a3.8 3.8 0 0 1 3.8 3.8V21a2.6 2.6 0 0 0-2.6-2.6H2.5V5.5Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2.0"/><path d="M21.5 5.5H14a3.8 3.8 0 0 0-3.8 3.8V21a2.6 2.6 0 0 1 2.6-2.6h8.7V5.5Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2.0"/>
+  </symbol>
+  <symbol id="icon-insights" viewBox="0 0 24 24">
+    <path d="M4 19V5" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M8 19V11" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M12 19V8" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M16 19V14" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M20 19V6" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/>
+  </symbol>
+  <symbol id="icon-interview" viewBox="0 0 24 24">
+    <path d="M7 7h10" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M7 12h6" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M7 17h10" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M6 4h12a2 2 0 0 1 2 2v14l-4-2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2.0"/>
+  </symbol>
+  <symbol id="icon-micro" viewBox="0 0 24 24">
+    <path d="M12 2v4" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M12 18v4" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M4.9 4.9l2.8 2.8" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M16.3 16.3l2.8 2.8" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M2 12h4" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M18 12h4" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M4.9 19.1l2.8-2.8" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M16.3 7.7l2.8-2.8" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z" stroke="currentColor" stroke-width="2.0"/>
+  </symbol>
+  <symbol id="icon-mcq" viewBox="0 0 24 24">
+    <path d="M7 9h10" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M7 13h6" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M9 3h6" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><path d="M7 21h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2.0"/>
+  </symbol>
+  <symbol id="icon-settings" viewBox="0 0 24 24">
+    <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-linecap="round" stroke-width="2.0"/><path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="2.0"/>
+  </symbol>
+</svg>
+</div></div>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<div class="watermarks" aria-hidden="true">
+  <div class="wm1">CODIVIUM</div>
+  <div class="wm2">CODIVIUM</div>
+  <div class="wm3">CODIVIUM</div>
+</div>
+
+</div>
+
+<div aria-label="Primary" class="topbar" role="navigation">
+<a aria-label="Codivium Home (logo)" class="brand" href="menu-page.html" id="brandLogo">
+<div aria-hidden="true" class="brand-mark cv-cube">
+<div class="cube-wrap">
+<div aria-hidden="true" class="cube3d" id="brandCube">
+<div class="cube-face cube-front"><div class="cube-wire"></div><div class="cube-symbol">κ</div></div>
+<div class="cube-face cube-right"><div class="cube-wire"></div><div class="cube-symbol">δ</div></div>
+<div class="cube-face cube-back"><div class="cube-wire"></div><div class="cube-symbol"><span class="cube-symbol-small">φσα</span></div></div>
+<div class="cube-face cube-left"><div class="cube-wire"></div><div class="cube-symbol">η</div></div>
+<div class="cube-face cube-top"><div class="cube-wire"></div><div class="cube-symbol">ν</div></div>
+<div class="cube-face cube-bottom"><div class="cube-wire"></div><div class="cube-symbol"><span class="cube-symbol-small">δα</span></div></div>
+</div>
+</div>
+</div>
+<div class="brand-text">
+<div class="brand-name">Codivium</div>
+</div>
+</a>
+<nav role="none" aria-label="Site links" class="navlinks">
+<a data-route="landing"  href="#">Home</a>
+<a data-route="articles" href="#">Articles</a>
+<a data-route="pricing"  href="#">Prices</a>
+<a data-route="contact"  href="#">Contact</a>
+<a data-route="faq"      href="#">FAQ</a>
+<a data-route="join"     href="#" class="nav-join">Join</a>
+<a data-route="login"    href="#" class="nav-login">Login</a>
+</nav>
+
+<a class="cv-back-to-menu" id="backToMenu" href="menu-page.html"
+   aria-label="Back to exercise list" hidden data-route-back="true">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <span>Exercises</span>
+</a>
+</div>
+
+<aside aria-label="Side menu" class="sidebar" id="sidebar">
+<div aria-controls="sidebar" aria-expanded="true" aria-label="Toggle side menu" class="sidebar-handle" id="sidebarHandle" role="button" tabindex="0">
+<span aria-hidden="true" class="sb-handle-ico"></span>
+</div>
+<div class="side-top">
+<div aria-hidden="true" class="side-title"></div>
+</div>
+<nav aria-label="Menu items" class="side-nav">
+
+<a class="side-link" data-section="home" data-tip="Adaptive Practice" href="adaptive-practice.html">
+<span aria-hidden="true" class="side-ico">
+<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-adaptive"/></svg>
+</span>
+<span class="side-label two-line">Adaptive<br/>Practice</span>
+</a>
+
+<a aria-disabled="true" class="side-link is-disabled" data-disabled="true" data-section="tutorials" data-tip="Tutorials (Coming Soon)" href="#">
+<span aria-hidden="true" class="side-ico">
+<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-tutorials"/></svg>
+</span>
+<span class="side-label">Tutorials</span>
+<span aria-hidden="true" class="side-comingsoon">
+<svg viewBox="0 0 200 70" preserveAspectRatio="none">
+<defs><path id="csArcNav" d="M8,56 Q100,10 192,56"/></defs>
+<g class="cs-curved"><text font-size="18"><textPath href="#csArcNav" startOffset="50%" text-anchor="middle">Coming Soon!</textPath></text></g>
+</svg>
+</span>
+</a>
+
+<a class="side-link" data-section="dashboard" data-tip="Performance Insights" href="codivium_insights_embedded.html">
+<span aria-hidden="true" class="side-ico">
+<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-insights"/></svg>
+</span>
+<span class="side-label two-line">Performance<br/>Insights</span>
+</a>
+
+<a class="side-link" data-section="interview" data-tip="Interview Preparation" href="menu-page.html?track=interview">
+<span aria-hidden="true" class="side-ico">
+<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-interview"/></svg>
+</span>
+<span class="side-label two-line">Interview<br/>Preparation</span>
+</a>
+
+<a class="side-link" data-section="micro" data-tip="Micro Challenges" href="menu-page.html?track=micro">
+<span aria-hidden="true" class="side-ico">
+<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-micro"/></svg>
+</span>
+<span class="side-label two-line">Micro<br/>Challenges</span>
+</a>
+
+<a class="side-link" data-section="mcq" data-tip="Multiple Choice Quizzes" href="mcq-parent.html" >
+<span aria-hidden="true" class="side-ico">
+<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-mcq"/></svg>
+</span>
+<span class="side-label">MCQ</span>
+</a>
+
+<div class="side-sep"></div>
+<div aria-label="Account and settings" class="side-bottom-links">
+<a class="side-link" data-section="account-settings" data-tip="Account &amp; Settings" href="account-settings.html">
+<span aria-hidden="true" class="side-ico">
+<svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-settings"/></svg>
+</span>
+<span class="side-label two-line">Account &amp;<br/>Settings</span>
+</a>
+
+</div>
+
+<div aria-label="Profile summary" class="profile-card">
+<div aria-hidden="true" class="profile-avatar">
+<img alt="" id="profileImg" src="assets/img/profile-placeholder.svg"/>
+</div>
+<div class="profile-meta">
+<div class="profile-kicker">Profile</div>
+<div class="profile-name" id="profileName">Profile</div>
+</div>
+</div>
+
+</nav>
+</aside>
+<script>
+/* Active link + collapse state — runs immediately after sidebar is parsed, before first paint */
+(function(){
+  try{if(localStorage.getItem('cv_sidebar_collapsed')==='1'){
+    var sb=document.getElementById('sidebar');
+    if(sb){sb.classList.add('collapsed');document.body.classList.add('sidebar-collapsed');}
+  }}catch(e){}
+  var p=window.location.pathname.split('/').pop()||'';
+  var q=window.location.search||'';
+  var sec='';
+  if(p==='adaptive-practice.html') sec='home';
+  else if(p==='codivium_insights_embedded.html') sec='dashboard';
+  else if(p==='mcq-parent.html'||p==='mcq-quiz.html') sec='mcq';
+  else if(p==='account-settings.html') sec='account-settings';
+  else if(p==='menu-page.html'){
+    sec=new URLSearchParams(q).get('track')==='interview'?'interview':'micro';
+  } else if(p==='editor.html'){
+    var f='';try{f=decodeURIComponent(new URLSearchParams(q).get('from')||'');}catch(e){}
+    var t=((f.match(/[?&]track=([^&]+)/)||[])[1]||new URLSearchParams(q).get('track')||'').toLowerCase();
+    sec=t==='interview'?'interview':'micro';
+  }
+  if(!sec) return;
+  var links=document.querySelectorAll('.side-link');
+  links.forEach(function(a){
+    var match=a.dataset.section===sec;
+    a.classList.toggle('active',match);
+    if(match)a.setAttribute('aria-current','page');
+    else a.removeAttribute('aria-current');
+  });
+})();
+</script>
+
+<main id="main-content" class="main" role="main">
+<div id="mcq-quiz-react-root">
+  <div style="padding:32px;font-family:monospace;color:#888;font-size:14px;">
+    Loading… (check DevTools if this persists)
+  </div>
+</div>
+</main>
+  
+  
+  <script src="assets/react-dist/mcq-quiz.bundle.js" defer></script>
+  
+</body>
+</html>
