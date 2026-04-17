@@ -1,5 +1,5 @@
 // MenuPage — Exercise menu page
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
@@ -18,6 +18,116 @@ import MenuTour from './MenuTour.jsx';
 import HelpPanel from '../../components/HelpPanel.jsx';
 
 const PREF_KEY = 'cv_menu_filters_v3';
+
+function fmtMmss(s) {
+  if (s == null) return '—';
+  const m = Math.floor(s / 60);
+  const sec = Math.round(s % 60);
+  return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+}
+
+function WelcomeBackModal({ item, oldcodeinfo, onClose, onStartFresh, onContinue }) {
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el) return;
+    let raf = null, lastE = null;
+    const onMove = (e) => {
+      lastE = e;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = null;
+        if (!lastE) return;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--mx', `${((lastE.clientX - r.left) / r.width) * 100}%`);
+        el.style.setProperty('--my', `${((lastE.clientY - r.top) / r.height) * 100}%`);
+      });
+    };
+    el.addEventListener('mousemove', onMove, { passive: true });
+    return () => el.removeEventListener('mousemove', onMove);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const runCount = oldcodeinfo?.runCount ?? 0;
+  const spent = oldcodeinfo?.totalSeconds ?? 0;
+  const exerciseName = item?.name || item?.title || 'Exercise';
+  const category = item?.categoryName || item?.category || '';
+  const difficulty = item?.difficultyLabel || item?.difficulty || '';
+  const difficultyLabel = difficulty
+    ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
+    : '';
+
+  return (
+    <div
+      className="fb-overlay is-open"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Welcome back"
+      onClick={onClose}
+    >
+      <div className="fb-backdrop" aria-hidden="true" />
+      <div className="fb-modal" ref={modalRef} onClick={(e) => e.stopPropagation()}>
+        <header className="fb-head">
+          <div className="fb-title">
+            <div className="fb-seal" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 8v4l3 2M21 12a9 9 0 1 1-9-9"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div className="fb-hgroup">
+              <div className="fb-kicker">Welcome back</div>
+              <h2 className="fb-exercise-name" title={exerciseName}>{exerciseName}</h2>
+              <div className="fb-pills">
+                {category && <span className="fb-pill cat">{category}</span>}
+                {difficultyLabel && <span className="fb-pill level">{difficultyLabel}</span>}
+                <span className="fb-pill tests">Runs: {runCount}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="fb-body">
+          <aside className="fb-insight" aria-label="Unfinished session">
+            <h3>Pick up where you left off</h3>
+            <p>
+              You already made {runCount} {runCount === 1 ? 'run' : 'runs'}
+              {spent > 0 ? ` over ${fmtMmss(spent)}` : ''} on this exercise.
+              Continue from your last saved code, or start fresh with a clean slate.
+            </p>
+          </aside>
+        </div>
+
+        <footer className="fb-foot">
+          <div className="fb-foot-left">
+            <div className="fb-stamp">
+              <strong>Codivium</strong> &mdash; Resume or restart
+            </div>
+          </div>
+          <div className="fb-foot-actions">
+            <button className="fb-btn ghost" type="button" onClick={onStartFresh}>
+              Start Fresh
+            </button>
+            <button className="fb-btn gold" type="button" onClick={onContinue}>
+              Continue Where I Left Off
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+}
 
 function loadPrefs() {
   try {
@@ -368,126 +478,34 @@ export default function MenuPage() {
       <HelpPanel />
 
       {conformShow && createPortal(
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(0,0,0,0.55)',
+        <WelcomeBackModal
+          item={selectedItem}
+          oldcodeinfo={oldcodeinfo}
+          onClose={handleCloseRunningCode}
+          onStartFresh={() => {
+            setConformShow(false);
+            navigate(codingRoute, {
+              state: {
+                item: selectedItem,
+                isStartFresh: true,
+                initialTimeInSeconds: 0,
+                useroldcode: '',
+              },
+            });
           }}
-          onClick={handleCloseRunningCode}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: 10,
-              width: '90%',
-              maxWidth: 520,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
-              overflow: 'hidden',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div style={{
-              padding: '24px 28px 16px',
-              borderBottom: '1px solid #eee',
-              position: 'relative',
-            }}>
-              <h1 style={{ margin: 0, fontSize: 26, color: '#222' }}>Welcome Back!</h1>
-              <button
-                onClick={handleCloseRunningCode}
-                style={{
-                  position: 'absolute',
-                  top: 16,
-                  right: 20,
-                  background: 'none',
-                  border: 'none',
-                  fontSize: 22,
-                  cursor: 'pointer',
-                  color: '#999',
-                  lineHeight: 1,
-                }}
-              >
-                &times;
-              </button>
-            </div>
-
-            {/* Body */}
-            <div style={{ padding: '20px 28px' }}>
-              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 400, color: '#333', lineHeight: 1.6 }}>
-                It looks like you have some unfinished work. Would you like to
-                continue where you left off, or start fresh?
-              </h3>
-            </div>
-
-            {/* Footer */}
-            <div style={{
-              padding: '16px 28px 24px',
-              borderTop: '1px solid #eee',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: 12,
-            }}>
-              <button
-                onClick={() => {
-                  setConformShow(false);
-                  navigate(codingRoute, {
-                    state: {
-                      item: selectedItem,
-                      isStartFresh: true,
-                      initialTimeInSeconds: 0,
-                      useroldcode: '',
-                    },
-                  });
-                }}
-                style={{
-                  height: 42,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  padding: '0 22px',
-                  borderRadius: 6,
-                  border: 'none',
-                  background: '#17a2b8',
-                  color: '#fff',
-                  cursor: 'pointer',
-                }}
-              >
-                Start fresh
-              </button>
-              <button
-                onClick={() => {
-                  setConformShow(false);
-                  navigate(codingRoute, {
-                    state: {
-                      item: selectedItem,
-                      initialTimeInSeconds: oldcodeinfo?.totalSeconds || 0,
-                      isStartFresh: false,
-                      useroldcode: oldcodeinfo?.lastUserCode || '',
-                      totalRunCount: oldcodeinfo?.runCount || 0,
-                    },
-                  });
-                }}
-                style={{
-                  height: 42,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  padding: '0 22px',
-                  borderRadius: 6,
-                  border: 'none',
-                  background: '#28a745',
-                  color: '#fff',
-                  cursor: 'pointer',
-                }}
-              >
-                Continue where I left off
-              </button>
-            </div>
-          </div>
-        </div>,
+          onContinue={() => {
+            setConformShow(false);
+            navigate(codingRoute, {
+              state: {
+                item: selectedItem,
+                initialTimeInSeconds: oldcodeinfo?.totalSeconds || 0,
+                isStartFresh: false,
+                useroldcode: oldcodeinfo?.lastUserCode || '',
+                totalRunCount: oldcodeinfo?.runCount || 0,
+              },
+            });
+          }}
+        />,
         document.body,
       )}
     </main>
