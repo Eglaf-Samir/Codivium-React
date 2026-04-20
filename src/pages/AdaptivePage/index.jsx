@@ -7,6 +7,7 @@ import { useAdaptiveState }  from '../../hooks/useAdaptiveState.js';
 import OrientationMode       from './OrientationMode.jsx';
 import BuildingMode          from './BuildingMode.jsx';
 import FullMode              from './FullMode.jsx';
+import OnboardingTour        from './tour/OnboardingTour.jsx';
 
 export default function AdaptivePage() {
   const { data, loading } = useAdaptiveState();
@@ -31,6 +32,7 @@ export default function AdaptivePage() {
       {mode === 'orientation' && <OrientationMode />}
       {mode === 'building'    && <BuildingMode state={data} />}
       {mode === 'full'        && <FullMode     state={data} />}
+      <OnboardingTour />
     </main>
   );
 }
