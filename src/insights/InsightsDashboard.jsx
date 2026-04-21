@@ -131,7 +131,7 @@ function LayoutDock({ panels, uiMode, onPreset }) {
       role="group" aria-label="Dashboard layout presets">
       {PRESETS.map(p => (
         <button key={p.id} type="button"
-          className={`cvLayoutBtn${activePresetId===p.id ? ' isActive' : ''}`}
+          className={`cvLayoutBtn${activePresetId===p.id ? ' isOn isActive' : ''}`}
           data-layout-preset={p.id} aria-label={p.label}
           onClick={() => onPreset(p)}>
           <span className="cvLayoutBtnLabel">
@@ -216,9 +216,16 @@ export default function InsightsDashboard() {
     return () => document.removeEventListener('cv:theme-change', onTheme);
   }, []);
 
-  // Point mountRef at the existing #ciMount in the HTML
+  // Point mountRef at the #ciMount rendered by this component, and mark the
+  // body with data-page so scoped selectors in dashboard.shell.css apply.
   useEffect(() => {
     mountRef.current = document.getElementById('ciMount');
+    const prevPage = document.body.dataset.page;
+    document.body.dataset.page = 'Performance Insights';
+    return () => {
+      if (prevPage === undefined) delete document.body.dataset.page;
+      else document.body.dataset.page = prevPage;
+    };
   }, []);
 
   // ── Apply data-layout, data-cv-panels, body class, grid layout ────────────
@@ -341,13 +348,13 @@ export default function InsightsDashboard() {
   const cls = (base, visible) => `${base}${visible ? '' : ' isHidden'}`;
 
   return (
-    <>
+    <div id="ciMount">
       <LayoutDock
         panels={panels} uiMode={uiMode}
         onPreset={applyPreset}
       />
 
-      {/* ── insights-layout — rendered into #insights-react-root inside #ciMount ── */}
+      {/* ── insights-layout — rendered inside #ciMount ── */}
       <div className="insights-layout">
 
         <section className="insights-form" id="insightsForm">
@@ -476,6 +483,6 @@ export default function InsightsDashboard() {
 
       {faqOpen   && createPortal(<FaqModal      open onClose={() => setFaqOpen(false)}   />, document.body)}
       {glossOpen && createPortal(<GlossaryModal open onClose={() => setGlossOpen(false)} />, document.body)}
-    </>
+    </div>
   );
 }

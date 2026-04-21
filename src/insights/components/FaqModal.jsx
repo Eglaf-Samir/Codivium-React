@@ -13,7 +13,7 @@ const FAQ_HTML = `<div aria-labelledby="cvFaqTitle" aria-modal="true" class="cvH
 <header>
 <h1 id="cvFaqTitle">Dashboard FAQ</h1>
 <p class="sub">How to use the Performance Insights Dashboard, what it covers, and how to interpret every metric.</p><p class="sub sub-spacer">
-<a class="cvHelpLink" href="assets/docs/scoring_how_it_works.html" rel="noopener noreferrer" target="_blank">How your scores are calculated</a>
+<a class="cvHelpLink" href="/docs/scoring_how_it_works.html" rel="noopener noreferrer" target="_blank">How your scores are calculated</a>
 </p>
 </header>
 <section aria-label="Dashboard FAQ grouped" class="faq-groups">

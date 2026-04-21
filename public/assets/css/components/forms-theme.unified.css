@@ -1,0 +1,234 @@
+
+/* ===== Unified form design system ===== */
+:root{
+  --cv-form-card-bg: rgb(250, 245, 245);
+  --cv-form-text: rgb(18, 18, 22);
+  --cv-form-strip-bg: rgb(7, 7, 10);
+  --cv-form-strip-text: rgba(250, 245, 245, 0.96);
+  --cv-form-border: rgba(216, 178, 104, 0.32);
+  --cv-form-shadow:
+    var(--cv-shadow),
+    0 1px 0 rgba(255,255,255,0.70) inset,
+    0 -18px 38px rgba(0,0,0,0.08) inset;
+  --cv-form-input-border: rgba(0,0,0,0.16);
+  --cv-form-focus: rgba(216,178,104,0.85);
+  --cv-form-button-text: rgb(18,18,22);
+}
+
+body[data-page="login"] .login-card,
+body[data-page="join"] .card,
+body[data-page="contact"] .card,
+body[data-page="pricing"] .card-single,
+body[data-page="password_reset"] .login-card{
+  background: var(--cv-form-card-bg) !important;
+  color: var(--cv-form-text) !important;
+  border: 1px solid var(--cv-form-border) !important;
+  box-shadow: var(--cv-form-shadow) !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+}
+
+body[data-page="login"] .login-card-top,
+body[data-page="join"] .plan,
+body[data-page="contact"] .title,
+body[data-page="pricing"] .plan,
+body[data-page="password_reset"] .login-card-top{
+  background: var(--cv-form-strip-bg) !important;
+  color: var(--cv-form-strip-text) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+body[data-page="login"] .login-card-top,
+body[data-page="password_reset"] .login-card-top{
+  margin: var(--cv-form-strip-inset-top) var(--cv-form-strip-inset-x) 0 var(--cv-form-strip-inset-x) !important;
+  width: auto !important;
+}
+body[data-page="join"] .plan,
+body[data-page="pricing"] .plan{
+  margin: var(--cv-form-strip-inset-top) var(--cv-form-strip-inset-x) 12px var(--cv-form-strip-inset-x) !important;
+  padding: 12px 16px !important;
+}
+body[data-page="contact"] .title{
+  display: block !important;
+  margin: var(--cv-form-strip-inset-top) var(--cv-form-strip-inset-x) 14px var(--cv-form-strip-inset-x) !important;
+  padding: 14px 18px !important;
+  text-align: center !important;
+}
+
+body[data-page="login"] .login-strip-title,
+body[data-page="join"] .plan h2,
+body[data-page="contact"] .title,
+body[data-page="pricing"] .plan h2,
+body[data-page="password_reset"] .login-strip-title{
+  font-family: "Cinzel", serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.14em !important;
+  font-size: 16px !important;
+  color: var(--cv-form-strip-text) !important;
+}
+
+body[data-page="login"] .cv-field input,
+body[data-page="join"] .input,
+body[data-page="contact"] .control input,
+body[data-page="contact"] textarea,
+body[data-page="password_reset"] .cv-field input{
+  border: 1px solid var(--cv-form-input-border) !important;
+  background: rgb(255,255,255) !important;
+  color: var(--cv-form-text) !important;
+  border-radius: 14px !important;
+}
+body[data-page="login"] .cv-field input:focus,
+body[data-page="join"] .input:focus,
+body[data-page="contact"] .control input:focus,
+body[data-page="contact"] textarea:focus,
+body[data-page="password_reset"] .cv-field input:focus{
+  border-color: var(--cv-form-focus) !important;
+  box-shadow: 0 0 0 4px var(--cv-form-focus-ring) !important;
+}
+
+body[data-page="login"] .login-btn,
+body[data-page="join"] #subscribeBtn,
+body[data-page="contact"] .btn:not(.ghost),
+body[data-page="pricing"] .select-btn,
+body[data-page="password_reset"] .login-btn{
+  background: var(--cv-form-button-enabled) !important;
+  color: var(--cv-form-button-text) !important;
+  border: 1px solid var(--cv-form-button-border) !important;
+  box-shadow:
+    0 14px 30px rgba(0,0,0,0.18),
+    0 1px 0 rgba(255,255,255,0.46) inset,
+    0 -8px 16px rgba(0,0,0,0.06) inset !important;
+  border-radius: 10px !important;
+}
+body[data-page="login"] .login-btn:disabled,
+body[data-page="join"] #subscribeBtn:disabled,
+body[data-page="contact"] .btn:not(.ghost):disabled,
+body[data-page="pricing"] .select-btn:disabled,
+body[data-page="password_reset"] .login-btn:disabled,
+body[data-page="login"] .login-btn[aria-disabled="true"]{
+  background: var(--cv-form-button-disabled) !important;
+  color: rgba(18,18,22,0.46) !important;
+  border: 1px solid var(--cv-form-button-border-disabled) !important;
+  opacity: 1 !important;
+  box-shadow:
+    0 10px 22px rgba(0,0,0,0.10),
+    0 1px 0 rgba(255,255,255,0.55) inset,
+    0 -6px 12px rgba(0,0,0,0.03) inset !important;
+  filter: none !important;
+}
+
+
+/* ===== Final patch v23: canonical button state model ===== */
+body[data-page="login"] .login-btn,
+body[data-page="join"] #subscribeBtn,
+body[data-page="contact"] .btn:not(.ghost),
+body[data-page="pricing"] .select-btn,
+body[data-page="password_reset"] .login-btn{
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    filter 140ms ease,
+    transform 140ms ease !important;
+}
+body[data-page="login"] .login-btn:not(:disabled):hover,
+body[data-page="join"] #subscribeBtn:not(:disabled):hover,
+body[data-page="contact"] .btn:not(.ghost):not(:disabled):hover,
+body[data-page="pricing"] .select-btn:not(:disabled):hover,
+body[data-page="password_reset"] .login-btn:not(:disabled):hover{
+  background: var(--cv-form-button-enabled-hover) !important;
+  filter: none !important;
+  transform: translateY(-1px) !important;
+}
+body[data-page="login"] .login-btn:not(:disabled):active,
+body[data-page="join"] #subscribeBtn:not(:disabled):active,
+body[data-page="contact"] .btn:not(.ghost):not(:disabled):active,
+body[data-page="pricing"] .select-btn:not(:disabled):active,
+body[data-page="password_reset"] .login-btn:not(:disabled):active{
+  background: var(--cv-form-button-enabled-active) !important;
+  transform: translateY(0) !important;
+}
+body[data-page="login"] .login-btn:focus-visible,
+body[data-page="join"] #subscribeBtn:focus-visible,
+body[data-page="contact"] .btn:not(.ghost):focus-visible,
+body[data-page="pricing"] .select-btn:focus-visible,
+body[data-page="password_reset"] .login-btn:focus-visible{
+  outline: none !important;
+  box-shadow:
+    0 14px 30px rgba(0,0,0,0.18),
+    0 1px 0 rgba(255,255,255,0.46) inset,
+    0 -8px 16px rgba(0,0,0,0.06) inset,
+    0 0 0 4px var(--cv-form-focus-ring) !important;
+}
+
+
+/* ===== Final patch v23: responsive form layout safeguards ===== */
+@media (max-width: 900px){
+  body[data-page="login"] .login-card,
+  body[data-page="password_reset"] .login-card{
+    width: min(92vw, 540px) !important;
+  }
+  body[data-page="join"] .card{
+    width: min(94vw, 680px) !important;
+    min-height: auto !important;
+  }
+  body[data-page="contact"] .shell{
+    width: min(94vw, 620px) !important;
+  }
+  body[data-page="pricing"] .card-single{
+    width: min(94vw, 520px) !important;
+  }
+}
+
+@media (max-width: 640px){
+  body[data-page="login"] .login-card,
+  body[data-page="password_reset"] .login-card{
+    width: min(94vw, 480px) !important;
+  }
+  body[data-page="login"] .cv-form,
+  body[data-page="login"] .login-links,
+  body[data-page="login"] .login-status,
+  body[data-page="password_reset"] .cv-form{
+    width: min(100%, 320px) !important;
+  }
+
+  body[data-page="join"] .card{
+    width: min(95vw, 560px) !important;
+  }
+  body[data-page="join"] .subscribe-form-offset,
+  body[data-page="join"] .smallrow,
+  body[data-page="join"] .checkline,
+  body[data-page="join"] .form-actions{
+    width: min(100%, 360px) !important;
+  }
+
+  body[data-page="contact"] .shell{
+    width: min(95vw, 560px) !important;
+  }
+
+  body[data-page="pricing"] .card-single{
+    width: min(95vw, 420px) !important;
+  }
+  body[data-page="pricing"] .price{
+    gap: 6px !important;
+  }
+}
+
+@media (max-width: 420px){
+  body[data-page="login"] .login-card,
+  body[data-page="password_reset"] .login-card,
+  body[data-page="join"] .card,
+  body[data-page="contact"] .shell,
+  body[data-page="pricing"] .card-single{
+    width: 95vw !important;
+  }
+  body[data-page="join"] .plan,
+  body[data-page="pricing"] .plan,
+  body[data-page="contact"] .title,
+  body[data-page="login"] .login-card-top,
+  body[data-page="password_reset"] .login-card-top{
+    margin-left: 10px !important;
+    margin-right: 10px !important;
+  }
+}

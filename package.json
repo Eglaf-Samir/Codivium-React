@@ -1,43 +1,33 @@
 {
-  "name": "codivium-platform",
-  "version": "1.2.1",
-  "description": "Codivium Platform \u2014 frontend package",
+  "name": "codivium-react",
+  "version": "1.1.0",
+  "description": "Codivium — React SPA",
   "private": true,
   "type": "module",
   "scripts": {
-    "build:editor": "vite build --config vite.config.editor.js",
-    "build:menu": "vite build --config vite.config.menu.js",
-    "build:adaptive": "vite build --config vite.config.adaptive.js",
-    "build:settings": "vite build --config vite.config.settings.js",
-    "build:insights": "vite build --config vite.config.insights.js",
-    "build:mcq-parent": "vite build --config vite.config.mcq-parent.js",
-    "build:mcq-quiz": "vite build --config vite.config.mcq-quiz.js",
-    "build:mcq": "npm run build:mcq-parent && npm run build:mcq-quiz",
-    "build:react": "npm run build:editor && npm run build:menu && npm run build:adaptive && npm run build:settings && npm run build:mcq-parent && npm run build:mcq-quiz && npm run build:insights",
-    "build": "npm run build:react",
-    "test": "node --test tests/dashboard.test.cjs",
-    "smoke": "node scripts/smoke_test.cjs",
-    "links": "node scripts/link_check.cjs",
-    "validate": "node scripts/validate_payload_contract.cjs",
-    "manifest": "node scripts/generate_manifest.cjs",
-    "verify": "bash scripts/run_checks.sh",
-    "test:mount": "node --test tests/dashboard.mount.test.cjs",
-    "test:all": "node --test tests/dashboard.test.cjs && node --test tests/dashboard.mount.test.cjs"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite"
+  },
+  "dependencies": {
+    "ace-builds": "^1.43.6",
+    "axios": "^1.15.0",
+    "chart.js": "^4.5.1",
+    "marked": "^18.0.0",
+    "react": "^18.3.1",
+    "react-ace": "^14.0.1",
+    "react-bootstrap": "^2.10.10",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "react-toastify": "^11.0.5",
+    "sweetalert2": "^11.26.24"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "marked": "^9.1.6",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "chart.js": "^4.4.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^5.0.0",
-    "vite": "^8.0.0"
-  },
-  "keywords": [],
-  "author": "Codivium",
-  "license": "UNLICENSED"
+  }
 }

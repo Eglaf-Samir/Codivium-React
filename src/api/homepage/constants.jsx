@@ -1,0 +1,1 @@
+export const getallhomepage = 'api/v1/pages/details?type=';

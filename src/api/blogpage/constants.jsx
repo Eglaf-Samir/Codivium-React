@@ -1,0 +1,1 @@
+export const getallblogpage = 'api/v1/pages/details?type=';
