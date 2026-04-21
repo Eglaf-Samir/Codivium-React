@@ -1117,11 +1117,19 @@ html[data-theme="glacier-slate"] .as-select option   { background: #D6DDE3 !impo
 html[data-theme="frost"] .as-select,
 html[data-theme="frost"] .as-select option           { background: #FBFDFF !important; border-color: #C9D9E6 !important; color: #16202A !important; }
 
-/* ─── Settings page: anchor .main to viewport so form doesn't shift ─────────
-   The default .main uses left:var(--sidebar-w, 264px) with a transition, making the
-   form slide when the sidebar collapses. On settings we fix left:0 so the
-   form is centered on the full viewport and is completely static.            */
+/* ─── Settings page: sit to the right of the sidebar, same as every other
+   app page. Previous rule used left:0 to keep the form static when the
+   sidebar collapsed, but that parked content under the sidebar — removing
+   the visible gap.                                                          */
 body.cv-settings .main {
-  left: 0 !important;
-  transition: none !important;
+  left: var(--sidebar-w, 264px) !important;
+}
+body.cv-settings.sidebar-collapsed .main {
+  left: var(--sidebar-w-collapsed, 76px) !important;
+}
+@media (max-width: 920px) {
+  body.cv-settings .main,
+  body.cv-settings.sidebar-collapsed .main {
+    left: 0 !important;
+  }
 }

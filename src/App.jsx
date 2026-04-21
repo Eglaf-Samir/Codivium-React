@@ -50,7 +50,11 @@ function AppRoute({ component: Component, bodyClass = '' }) {
   useEffect(() => {
     const label = PAGE_TITLES[location.pathname] || 'Codivium';
     document.title = `Codivium — ${label}`;
-    document.body.removeAttribute('data-page');
+    // Note: do NOT clear data-page here. AppRoute's useEffect fires AFTER
+    // child page effects (React runs parent effects after children), so
+    // wiping data-page would undo whatever the child page just set (e.g.
+    // InsightsDashboard's 'Performance Insights'). Each page that sets
+    // data-page is responsible for restoring it in its own cleanup.
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
 

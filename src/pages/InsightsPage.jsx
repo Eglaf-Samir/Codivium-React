@@ -1,7 +1,9 @@
-// InsightsPage.jsx — componentised React dashboard.
-// The dashboard.bundle.js in /public/dashboard-js/ acts only as a data bridge,
-// calling window.CodiviumInsights.update(payload) which the hook picks up.
-import React, { useEffect, useRef, Component } from 'react';
+// InsightsPage.jsx — thin wrapper around the componentised React dashboard.
+// The dashboard is self-contained: useDashboardData() waits for external
+// callers to push data via window.CodiviumInsights.update(payload).
+// No dashboard.bundle.js — it was the old server-rendered bridge and
+// clashed with the React portals (NotFoundError on navigation away).
+import React, { Component } from 'react';
 import InsightsDashboard from '../insights/InsightsDashboard.jsx';
 
 class DashboardErrorBoundary extends Component {
@@ -14,41 +16,12 @@ class DashboardErrorBoundary extends Component {
   render() { return this.props.children; }
 }
 
-function loadScript(src) {
-  const s = document.createElement('script');
-  s.src = src + '?_t=' + Date.now();
-  s.defer = true;
-  document.body.appendChild(s);
-  return s;
-}
-
-function cleanupBridge() {
-  try {
-    if (window.CodiviumInsights?.destroy) window.CodiviumInsights.destroy();
-  } catch (_) {}
-  document.querySelectorAll('script[src*="dashboard.bundle"]').forEach(el => {
-    try { document.body.removeChild(el); } catch (_) {}
-  });
-}
-
 export default function InsightsPage() {
-  const scriptRef = useRef(null);
-
-  useEffect(() => {
-    cleanupBridge();
-    scriptRef.current = loadScript('/dashboard-js/dashboard.bundle.js');
-    return () => {
-      cleanupBridge();
-      if (scriptRef.current) {
-        try { document.body.removeChild(scriptRef.current); } catch (_) {}
-        scriptRef.current = null;
-      }
-    };
-  }, []);
-
   return (
-    <DashboardErrorBoundary>
-      <InsightsDashboard />
-    </DashboardErrorBoundary>
+    <main id="main-content" className="main" role="main">
+      <DashboardErrorBoundary>
+        <InsightsDashboard />
+      </DashboardErrorBoundary>
+    </main>
   );
 }

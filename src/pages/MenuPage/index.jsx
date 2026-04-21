@@ -15,7 +15,6 @@ import MenuHeader from './MenuHeader.jsx';
 import FilterDrawer from './FilterDrawer.jsx';
 import ExerciseGrid from './ExerciseGrid.jsx';
 import MenuTour from './MenuTour.jsx';
-import HelpPanel from '../../components/HelpPanel.jsx';
 
 const PREF_KEY = 'cv_menu_filters_v3';
 
@@ -474,8 +473,6 @@ export default function MenuPage() {
       </div>
 
       <MenuTour active={tourActive} onStop={() => setTourActive(false)} />
-
-      <HelpPanel />
 
       {conformShow && createPortal(
         <WelcomeBackModal

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import SvgSprite from './SvgSprite.jsx';
 import Topbar from './Topbar.jsx';
 import Sidebar from './Sidebar.jsx';
+import HelpPanel from './HelpPanel.jsx';
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -13,6 +14,7 @@ export default function Layout({ children }) {
       <Topbar onMenuOpen={() => setSidebarOpen(true)} />
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       {children}
+      <HelpPanel />
     </>
   );
 }

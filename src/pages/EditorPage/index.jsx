@@ -29,7 +29,6 @@ import ReplPane           from './ReplPane.jsx';
 import SettingsPalette    from './SettingsPalette.jsx';
 import FeedbackModal     from './FeedbackModal.jsx';
 import EditorTour        from './EditorTour.jsx';
-import HelpPanel from '../../components/HelpPanel.jsx';
 
 export default function EditorPage() {
   const stageRef     = useRef(null);
@@ -459,9 +458,6 @@ export default function EditorPage() {
 
       {/* Guided tour overlay — spotlights editor UI step-by-step */}
       <EditorTour active={tourActive} onStop={() => setTourActive(false)} />
-
-      {/* Help panel — React replacement for cv-help-panel.js */}
-      <HelpPanel />
 
       {/* Loading / error overlay */}
       {loading && (
