@@ -114,7 +114,7 @@ export default function ReplPane({ syntaxTheme, candidateRef, onReplSplitDrag })
             initialValue=""
             syntaxTheme={syntaxTheme}
             readOnly={false}
-            className="repl-editor"
+            className="editor repl"
           />
         </div>
       </section>
@@ -144,7 +144,7 @@ export default function ReplPane({ syntaxTheme, candidateRef, onReplSplitDrag })
           </div>
         </div>
         <div className="pane-body">
-          <pre className="repl-output-pre">
+          <pre className="repl-output">
             <code id="replOutputCode">{output}</code>
           </pre>
         </div>

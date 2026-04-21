@@ -492,13 +492,26 @@ export default function MenuPage() {
           }}
           onContinue={() => {
             setConformShow(false);
+            const info = oldcodeinfo || {};
+            const savedCode =
+              info.lastUserCode ??
+              info.LastUserCode ??
+              info.userCode ??
+              info.UserCode ??
+              info.code ??
+              info.Code ??
+              '';
+            const savedSecs =
+              info.totalSeconds ?? info.TotalSeconds ?? 0;
+            const savedRuns =
+              info.runCount ?? info.RunCount ?? 0;
             navigate(codingRoute, {
               state: {
                 item: selectedItem,
-                initialTimeInSeconds: oldcodeinfo?.totalSeconds || 0,
+                initialTimeInSeconds: savedSecs,
                 isStartFresh: false,
-                useroldcode: oldcodeinfo?.lastUserCode || '',
-                totalRunCount: oldcodeinfo?.runCount || 0,
+                useroldcode: savedCode,
+                totalRunCount: savedRuns,
               },
             });
           }}

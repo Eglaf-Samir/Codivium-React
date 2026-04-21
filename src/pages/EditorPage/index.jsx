@@ -124,9 +124,14 @@ export default function EditorPage() {
       setAllTestsPassed(false);
     }
 
-    const useroldcode = location?.state?.useroldcode;
-    if (!isStartFresh && useroldcode && candidateRef.current?.setValue) {
-      candidateRef.current.setValue(useroldcode);
+    // Seed the candidate editor. Prefer resumed useroldcode when the user
+    // chose "Continue Where I Left Off"; otherwise fall back to the scaffold.
+    const st = location?.state || {};
+    const useroldcode =
+      st.useroldcode ?? st.UserOldCode ?? st.userOldCode ?? st.lastUserCode ?? '';
+    const seed = !isStartFresh && useroldcode ? useroldcode : (exercise.codeScaffold || '');
+    if (candidateRef.current?.setValue) {
+      candidateRef.current.setValue(seed);
     }
   }, [exercise?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 

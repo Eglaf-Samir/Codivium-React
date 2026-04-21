@@ -78,16 +78,24 @@ export default function RightPane({
 
   const solutionLocked = locks.isLocked('solution');
 
-  // Populate editors when exercise loads
+  // Populate the read-only Suggested Solution when exercise loads.
+  // Candidate editor seeding is owned by EditorPage so it can pick between
+  // the scaffold and a resumed useroldcode without racing with this effect.
   useEffect(() => {
     if (!exercise) return;
-    if (exercise.codeScaffold && candidateRef?.current) {
-      candidateRef.current.setValue(exercise.codeScaffold);
-    }
     if (exercise.suggestedSolution && solutionRef.current) {
       solutionRef.current.setValue(exercise.suggestedSolution);
     }
   }, [exercise?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When a new test run completes, surface the Result tab automatically so the
+  // user sees output. When a new submission starts (testResults cleared) while
+  // the Result tab is active, fall back to Candidate Solution so the tab can
+  // disappear cleanly.
+  useEffect(() => {
+    if (testResults) setActiveTab('result');
+    else setActiveTab(prev => (prev === 'result' ? 'candidate' : prev));
+  }, [testResults]);
 
   const handleSolutionTabClick = useCallback(() => {
     if (solutionLocked) {
@@ -138,6 +146,26 @@ export default function RightPane({
               <span className="cv-tab-lock" aria-label="Locked">{LOCK_SVG}</span>
             )}
           </button>
+          {testResults && (
+            <button
+              id="tab-right-result"
+              role="tab"
+              type="button"
+              className={`tab-btn${activeTab === 'result' ? ' active' : ''}`}
+              aria-selected={activeTab === 'result'}
+              aria-controls="panel-right-result"
+              tabIndex={activeTab === 'result' ? 0 : -1}
+              onClick={() => setActiveTab('result')}
+            >
+              Result
+              <span
+                className={`cv-tab-badge ${testResults.accepted ? 'cv-badge-pass' : 'cv-badge-fail'}`}
+                aria-label={testResults.accepted ? 'All tests passed' : 'Some tests failed'}
+              >
+                {testResults.testsPassed}/{testResults.testsTotal}
+              </span>
+            </button>
+          )}
           {showSolTooltip && solutionLocked && createPortal(
             <SolutionLockTooltip
               anchorRef={solutionTabRef}
@@ -197,20 +225,6 @@ export default function RightPane({
             syntaxTheme={syntaxTheme}
             readOnly={false}
           />
-
-          {/* Test results */}
-          {testResults && (
-            <div className="cv-test-results" id="testResults" aria-live="polite" aria-atomic="false">
-              <p className={`cv-test-summary ${testResults.accepted ? 'cv-test-pass' : 'cv-test-fail'}`} id="testSummary">
-                {testResults.testsPassed} / {testResults.testsTotal} test{testResults.testsTotal !== 1 ? 's' : ''} passed
-              </p>
-              <ul className="cv-test-list" id="testCaseList">
-                {testResults.testResults?.map((r, i) => (
-                  <TestResultItem key={r.name ?? i} result={r} index={i} />
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
 
         {/* Suggested Solution panel */}
@@ -231,6 +245,30 @@ export default function RightPane({
             readOnly
           />
         </div>
+
+        {/* Result panel — only rendered while results exist */}
+        {testResults && (
+          <div
+            id="panel-right-result"
+            role="tabpanel"
+            aria-labelledby="tab-right-result"
+            className={`tab-panel${activeTab === 'result' ? ' active' : ''}`}
+            data-pane="right" data-panel="result"
+            hidden={activeTab !== 'result' || undefined}
+          >
+            <h2 className="pane-title sr-only">Result</h2>
+            <div className="cv-test-results" id="testResults" aria-live="polite" aria-atomic="false">
+              <p className={`cv-test-summary ${testResults.accepted ? 'cv-test-pass' : 'cv-test-fail'}`} id="testSummary">
+                {testResults.testsPassed} / {testResults.testsTotal} test{testResults.testsTotal !== 1 ? 's' : ''} passed
+              </p>
+              <ul className="cv-test-list" id="testCaseList">
+                {testResults.testResults?.map((r, i) => (
+                  <TestResultItem key={r.name ?? i} result={r} index={i} />
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

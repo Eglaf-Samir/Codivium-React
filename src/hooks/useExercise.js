@@ -18,12 +18,25 @@ function sanitizeHtml(html) {
     .replace(/\son\w+='[^']*'/gi, '');
 }
 
-export function renderMd(text) {
+// Heuristic: treat input as HTML if it starts with a tag, contains a block-level
+// HTML tag, or is explicitly flagged. marked.parse() mangles raw HTML tables,
+// so we skip it for HTML content and just sanitize.
+function looksLikeHtml(s) {
+  const t = String(s).trim();
+  if (!t) return false;
+  if (/^<[a-zA-Z!]/.test(t)) return true;
+  return /<(table|thead|tbody|tr|td|th|div|section|article|ul|ol|p|pre|h[1-6])\b/i.test(t);
+}
+
+export function renderMd(text, opts) {
   if (!text) return '';
+  const str = String(text);
+  const forceHtml = !!(opts && opts.isHtml);
   try {
-    return sanitizeHtml(marked.parse(String(text)));
+    if (forceHtml || looksLikeHtml(str)) return sanitizeHtml(str);
+    return sanitizeHtml(marked.parse(str));
   } catch (_) {
-    return `<pre>${String(text).replace(/</g, '&lt;')}</pre>`;
+    return `<pre>${str.replace(/</g, '&lt;')}</pre>`;
   }
 }
 

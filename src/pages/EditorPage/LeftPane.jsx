@@ -176,7 +176,7 @@ export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNo
             <path d="M12 8v4l3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
             <circle cx="12" cy="7" r="0.5" fill="currentColor"/>
           </svg>
-          Take a Tour
+          Explore the Editor
         </button>
       </div>
 
@@ -202,7 +202,7 @@ export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNo
                 )}
                 {exercise.problemStatement && (
                   <div className="pane-lead"
-                    dangerouslySetInnerHTML={{ __html: renderMd(exercise.problemStatement) }} />
+                    dangerouslySetInnerHTML={{ __html: renderMd(exercise.problemStatement, { isHtml: exercise.isInstructionHtml }) }} />
                 )}
                 {exercise.priorAttempts > 0 && (
                   <p className="cv-prior-info">
@@ -244,7 +244,7 @@ export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNo
           data-pane="left" data-panel="tutorial"
           hidden={activeTab !== 'tutorial' || undefined}>
           {exercise?.miniTutorial
-            ? <div id="miniTutorialContent" dangerouslySetInnerHTML={{ __html: renderMd(exercise.miniTutorial) }} />
+            ? <div id="miniTutorialContent" dangerouslySetInnerHTML={{ __html: renderMd(exercise.miniTutorial, { isHtml: exercise.isTutorialHtml }) }} />
             : <p className="hint-note">No tutorial provided.</p>
           }
         </div>

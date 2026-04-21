@@ -3591,3 +3591,33 @@ html[data-theme="frost"] .mini-btn:hover { background: #DCEBF7 !important; borde
 html[data-theme="glacier-slate"] .pane-lead { color: #18222C !important; }
 html[data-theme="frost"] .pane-lead { color: #16202A !important; }
 html[data-theme="parchment"] .pane-lead { color: rgba(8,10,20,0.82) !important; }
+
+/* ── Ace editor: fill the slot and let Ace paint its own background so the
+   theme shows correctly.                                                   */
+.editor-slot .ace_editor {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0;
+}
+
+/* ── Paste-blocked toast shown by EditorSlot when user pastes into the
+   candidate editor (paste is disabled on purpose).                        */
+.cv-paste-block {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(220, 38, 38, 0.95);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: cvPasteFade 200ms ease;
+}
+@keyframes cvPasteFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

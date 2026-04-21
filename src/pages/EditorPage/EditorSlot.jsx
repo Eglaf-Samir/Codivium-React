@@ -1,40 +1,36 @@
 // components/EditorSlot.jsx
+// Ace Editor-backed code editor. Keeps the same imperative ref API
+// (getValue / setValue / focus / refresh) that LeftPane / RightPane / ReplPane
+// already call, so consumers don't need to change.
 //
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║                    EDITOR INTEGRATION SLOT                              ║
-// ║                                                                          ║
-// ║  This component is a drop-in placeholder for a code editor.             ║
-// ║  Replace the <textarea> below with your own editor tool.               ║
-// ║                                                                          ║
-// ║  YOUR REPLACEMENT MUST:                                                  ║
-// ║  1. Accept the same props (see PropTypes comment below)                 ║
-// ║  2. Forward a ref that exposes the same imperative API (see below)      ║
-// ║  3. Keep the outer <div> wrapper with its className and data attributes ║
-// ║                                                                          ║
-// ║  IMPERATIVE REF API (required):                                         ║
-// ║    getValue()         → string   current editor content                 ║
-// ║    setValue(v:string) → void     replace all editor content             ║
-// ║    focus()            → void     focus the editor                       ║
-// ║    refresh()          → void     re-measure after layout change         ║
-// ║                                                                          ║
-// ║  PROPS:                                                                  ║
-// ║    initialValue   string    code to show when editor first mounts       ║
-// ║    readOnly       boolean   if true, editor should not be editable      ║
-// ║    syntaxTheme    string    theme key e.g. 'obsidian-code' (optional)   ║
-// ║    onChange       function  called with new string on every edit        ║
-// ║    className      string    extra CSS class on the wrapper div          ║
-// ║                                                                          ║
-// ║  EVENTS DISPATCHED ON window:                                            ║
-// ║    'cv:splitter-resize'  fired after the user drags a splitter          ║
-// ║    → call refresh() or requestMeasure() on your editor in response      ║
-// ║                                                                          ║
-// ║  SYNTAX THEME:                                                           ║
-// ║    The wrapper div carries data-syntax-theme="{syntaxTheme}" so your   ║
-// ║    editor can read the user's theme preference from the DOM if needed.  ║
-// ║    The value comes from the Settings palette → Syntax Highlighting.     ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
+// Theme follows the app-wide theme set on <html data-theme="...">. The app
+// dispatches 'cv:theme-change' whenever the user switches themes in Settings;
+// this component listens and remaps to the matching Ace theme.
 
-import { forwardRef, useImperativeHandle, useRef, useEffect } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useEffect, useState, useCallback } from 'react';
+import AceEditor from 'react-ace';
+
+import 'ace-builds/src-noconflict/mode-python';
+import 'ace-builds/src-noconflict/theme-tomorrow_night';
+import 'ace-builds/src-noconflict/theme-tomorrow';
+import 'ace-builds/src-noconflict/theme-textmate';
+import 'ace-builds/src-noconflict/ext-language_tools';
+
+const LIGHT_THEMES = new Set(['frost', 'parchment']);
+
+function resolveAceTheme(appTheme) {
+  if (appTheme === 'parchment') return 'textmate';
+  if (LIGHT_THEMES.has(appTheme)) return 'tomorrow';
+  return 'tomorrow_night';
+}
+
+function currentAppTheme() {
+  try {
+    return document.documentElement.getAttribute('data-theme') || 'obsidian';
+  } catch (_) {
+    return 'obsidian';
+  }
+}
 
 const EditorSlot = forwardRef(function EditorSlot(
   {
@@ -46,35 +42,79 @@ const EditorSlot = forwardRef(function EditorSlot(
   },
   ref
 ) {
-  const textareaRef = useRef(null);
+  const aceRef = useRef(null);
+  const wrapperRef = useRef(null);
+  const [appTheme, setAppTheme] = useState(currentAppTheme);
+  const [pasteBlocked, setPasteBlocked] = useState(false);
 
-  // ── Imperative ref API ─────────────────────────────────────────────────────
-  // Replace this implementation when you replace the textarea with your editor.
+  // Imperative API — matches the old textarea contract so callers keep working
   useImperativeHandle(ref, () => ({
-    getValue:  ()  => textareaRef.current?.value ?? '',
-    setValue:  (v) => { if (textareaRef.current) textareaRef.current.value = v; },
-    focus:     ()  => textareaRef.current?.focus(),
-    refresh:   ()  => { /* no-op for textarea; re-implement for your editor */ },
+    getValue: () => aceRef.current?.editor?.getValue() ?? '',
+    setValue: (v) => {
+      const ed = aceRef.current?.editor;
+      if (!ed) return;
+      // cursor to end, single undo entry, no selection
+      ed.setValue(v ?? '', 1);
+      ed.clearSelection();
+    },
+    focus: () => aceRef.current?.editor?.focus(),
+    refresh: () => aceRef.current?.editor?.resize(true),
   }), []);
 
-  // ── Set initial value on mount ─────────────────────────────────────────────
+  // Seed initial value once on mount (Ace's value prop would re-apply on every
+  // render otherwise, which fights user typing).
   useEffect(() => {
-    if (textareaRef.current && initialValue) {
-      textareaRef.current.value = initialValue;
+    const ed = aceRef.current?.editor;
+    if (!ed || !initialValue) return;
+    if (ed.getValue() === '') {
+      ed.setValue(initialValue, 1);
+      ed.clearSelection();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Listen for splitter resize ─────────────────────────────────────────────
-  // Your editor should call its own requestMeasure() equivalent here.
+  // React to splitter drags — Ace needs resize() after the container size changes
   useEffect(() => {
-    const onResize = () => { /* call ref.current.refresh() or similar */ };
+    const onResize = () => aceRef.current?.editor?.resize(true);
     window.addEventListener('cv:splitter-resize', onResize);
     return () => window.removeEventListener('cv:splitter-resize', onResize);
   }, []);
 
-  // ── Wrapper classes ────────────────────────────────────────────────────────
-  // Keep `cm-shell` — existing CSS targets it for sizing and border styling.
-  // Add `editor-slot` so you can target this component specifically in your CSS.
+  // Track app theme changes. Settings fires `cv:theme-change` on change.
+  useEffect(() => {
+    function sync() { setAppTheme(currentAppTheme()); }
+    document.addEventListener('cv:theme-change', sync);
+    // MutationObserver as a fallback in case any code flips data-theme
+    // without firing the custom event.
+    let mo;
+    try {
+      mo = new MutationObserver(sync);
+      mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    } catch (_) {}
+    return () => {
+      document.removeEventListener('cv:theme-change', sync);
+      if (mo) mo.disconnect();
+    };
+  }, []);
+
+  // Paste blocking for editable editors. Candidate-solution text must be typed,
+  // not pasted — matches the existing behaviour the team asked for.
+  const handleLoad = useCallback((editor) => {
+    if (readOnly) return;
+    editor.commands.removeCommand('paste');
+    const container = editor.container;
+    const onPaste = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setPasteBlocked(true);
+      clearTimeout(onPaste._t);
+      onPaste._t = setTimeout(() => setPasteBlocked(false), 2000);
+    };
+    container.addEventListener('paste', onPaste, true);
+    // textarea inside Ace handles the actual keyboard paste event
+    const textInput = container.querySelector('textarea');
+    if (textInput) textInput.addEventListener('paste', onPaste, true);
+  }, [readOnly]);
+
   const wrapperClass = [
     'cm-shell',
     'editor-slot',
@@ -83,46 +123,43 @@ const EditorSlot = forwardRef(function EditorSlot(
   ].filter(Boolean).join(' ');
 
   return (
-    // ── Keep this wrapper div — the CSS grid depends on it ──────────────────
     <div
+      ref={wrapperRef}
       className={wrapperClass}
       data-syntax-theme={syntaxTheme}
       data-readonly={readOnly || undefined}
+      style={{ position: 'relative', width: '100%', height: '100%' }}
     >
-      {/* ════════════════════════════════════════════════════════════════════
-          INSERT YOUR EDITOR COMPONENT HERE
-          Replace the <textarea> below with your own tool.
-          Your component must fill this div completely (width: 100%, height: 100%).
-          ════════════════════════════════════════════════════════════════════ */}
-      <textarea
-        ref={textareaRef}
-        className="editor-slot-textarea"
+      {pasteBlocked && (
+        <div className="cv-paste-block" role="status" aria-live="polite">
+          🚫 Pasting is disabled. Please type the code manually.
+        </div>
+      )}
+      <AceEditor
+        ref={aceRef}
+        mode="python"
+        theme={resolveAceTheme(appTheme)}
+        name={`editor-${readOnly ? 'ro' : 'rw'}-${Math.random().toString(36).slice(2, 7)}`}
+        width="100%"
+        height="100%"
+        fontSize={14}
         readOnly={readOnly}
-        spellCheck={false}
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        aria-label={readOnly ? 'Code (read-only)' : 'Code editor'}
-        aria-multiline="true"
-        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-        style={{
-          width:       '100%',
-          height:      '100%',
-          resize:      'none',
-          border:      'none',
-          outline:     'none',
-          background:  'transparent',
-          color:       'inherit',
-          fontFamily:  'var(--editor-font-family, ui-monospace, monospace)',
-          fontSize:    'var(--editor-font-size, 14px)',
-          fontWeight:  'var(--editor-font-weight, 400)',
-          lineHeight:  '1.6',
-          padding:     '12px',
-          boxSizing:   'border-box',
-          tabSize:     4,
+        wrapEnabled
+        showGutter
+        showPrintMargin={false}
+        highlightActiveLine={!readOnly}
+        editorProps={{ $blockScrolling: true }}
+        setOptions={{
+          useWorker: false,
+          wrap: true,
+          tabSize: 4,
+          showLineNumbers: true,
+          fixedWidthGutter: true,
         }}
+        // onLoad={handleLoad}
+        onChange={onChange ? (val) => onChange(val) : undefined}
+        style={{ background: 'transparent' }}
       />
-      {/* ════════════════════════════════════════════════════════════════════ */}
     </div>
   );
 });
