@@ -2707,3 +2707,91 @@ html[data-theme="parchment"] .exercise-card::after { display: none !important; }
   background: var(--color-bg-hover, rgba(255,255,255,0.08));
   border-color: var(--color-border-strong, rgba(255,255,255,0.22));
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE MENU CARDS (0093)
+   - column count adjusts to screen width, capped at max 6
+   - title always 1 line with ellipsis, sits between the two corner icons
+   - description always 2 lines visible with ellipsis
+   - row height grows with content so nothing is clipped
+   - tighter left/right stage padding to fit more cards
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Tighter side padding so more cards fit per row */
+.main.stage,
+body.sidebar-collapsed .main.stage{
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* Grid: auto-fill but CAPPED at 6 columns.
+   Trick: min card width = max(220px, (container - 5 gaps) / 6);
+   this makes 7 cards never fit → hard cap at 6. */
+.exercise-grid{
+  --cv-card-min: 220px;
+  --cv-max-cols: 6;
+  grid-template-columns:
+    repeat(auto-fill, minmax(max(var(--cv-card-min),
+      calc((100% - (var(--cv-max-cols) - 1) * var(--grid-col-gap, 24px)) / var(--cv-max-cols))
+    ), 1fr)) !important;
+  grid-template-rows: none !important;
+  grid-auto-rows: minmax(var(--grid-row-h, 168px), auto) !important;
+  align-content: start !important;
+}
+
+@media (max-width: 1280px){
+  .exercise-grid{ --cv-card-min: 210px; }
+}
+@media (max-width: 900px){
+  .exercise-grid{ --cv-card-min: 190px; }
+}
+@media (max-width: 560px){
+  .exercise-grid{
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Card uses its full grid cell so content has room */
+.exercise-card{
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 130px;
+}
+
+/* Card body sits BETWEEN the two corner icons.
+   Left icon is 38px wide at 12px → clear 56px on the left.
+   Right status dot is 22px wide at 12px → clear 40px on the right. */
+.exercise-card .card-body{
+  padding-left: 56px !important;
+  padding-right: 40px !important;
+  padding-top: 8px !important;
+}
+
+/* Title: 1 line, ellipsis; constrained width so it never crosses an icon */
+.exercise-card .card-title{
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+  -webkit-line-clamp: 1 !important;
+  line-height: 1.2 !important;
+}
+
+/* Description: always visible, clamped to 2 lines with ellipsis.
+   max-height is a hard fallback in case -webkit-line-clamp is ignored. */
+.exercise-card .card-desc{
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  max-height: 2.7em !important;
+  word-break: break-word;
+}
+
+/* Keep duplicate name-sub hidden (title already carries the name) */
+.exercise-card .card-sub{ display: none !important; }
