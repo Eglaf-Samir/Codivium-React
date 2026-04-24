@@ -1273,7 +1273,7 @@ body[data-page="article"] .bm-preview{
   display: none;
   pointer-events: none;
   transform: translate3d(0,0,0);
-  will-change: transform, opacity;
+  /* PERF: will-change removed from hidden tooltip — see articles.css note */
   opacity: 0;
   transition: opacity 140ms ease;
 }
@@ -1317,8 +1317,10 @@ body[data-page="article"] .bm-modal.is-open{ display: block; }
 body[data-page="article"] .bm-modal .modal-overlay{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(2px);
+  /* PERF: backdrop-filter: blur(2px) removed — same reason as articles.css.
+     Even a 2px blur forces a full compositor snapshot of the page behind the
+     overlay on open. Slightly higher opacity keeps the modal feel intact. */
+  background: rgba(0,0,0,0.68);
 }
 
 body[data-page="article"] .bm-modal .modal-panel{
@@ -1930,93 +1932,5 @@ body[data-page="article"] .wm-pos-5{ --wm-scale:0.75; left:25%; top:63%; }
 body[data-page="article"] .wm-pos-6{ --wm-scale:0.50; left:84%; top:76%; }
 body[data-page="article"] .wm-pos-7{ --wm-scale:0.25; left:72%; top:88%; }
 body[data-page="article"] .bm-read-plain{ text-decoration: none; }
-
-/* ── Responsive: Tablet (≤ 860px) ──────────────────────────────────────── */
-@media (max-width: 860px) {
-  body[data-page="article"] .stage{
-    padding-left: 14px !important;
-    padding-right: 14px !important;
-  }
-  body[data-page="article"] .sidebar{
-    display: none !important;
-  }
-  body[data-page="article"] .stage-shell{
-    margin-left: 0 !important;
-    width: 100% !important;
-  }
-  body[data-page="article"] .filter-drawer{
-    width: calc(100% - 24px);
-  }
-  body[data-page="article"] .ap-shell{
-    padding: 0 4px;
-  }
-  body[data-page="article"] .ap-reading{
-    max-width: 100%;
-    font-size: 16px;
-  }
-  body[data-page="article"] .ap-scroll{
-    max-height: calc(100vh - 200px);
-  }
-}
-
-/* ── Responsive: Mobile (≤ 600px) ──────────────────────────────────────── */
-@media (max-width: 600px) {
-  body[data-page="article"] .stage{
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-  }
-  body[data-page="article"] .filter-drawer{
-    width: calc(100% - 16px);
-    border-radius: 12px;
-  }
-  body[data-page="article"] .ap-shell{
-    padding: 0 2px;
-  }
-  body[data-page="article"] .ap-reading{
-    font-size: 15px;
-    line-height: 1.65;
-  }
-  body[data-page="article"] .ap-reading h1{
-    font-size: clamp(20px, 5.5vw, 28px) !important;
-  }
-  body[data-page="article"] .ap-reading h2{
-    font-size: clamp(17px, 4.5vw, 22px) !important;
-  }
-  body[data-page="article"] .ap-reading h3{
-    font-size: clamp(15px, 4vw, 18px) !important;
-  }
-  body[data-page="article"] .ap-reading pre{
-    font-size: 13px;
-    padding: 10px 12px;
-    border-radius: 10px;
-  }
-  body[data-page="article"] .ap-reading p{
-    margin-bottom: 1em;
-  }
-  body[data-page="article"] .ap-scroll{
-    max-height: calc(100vh - 160px);
-  }
-  body[data-page="article"] .bm-panel{
-    border-radius: 16px !important;
-  }
-}
-
-/* ── Responsive: Extra-small (≤ 400px) ─────────────────────────────────── */
-@media (max-width: 400px) {
-  body[data-page="article"] .stage{
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
-  body[data-page="article"] .ap-reading{
-    font-size: 14px;
-  }
-  body[data-page="article"] .ap-reading h1{
-    font-size: clamp(18px, 6vw, 24px) !important;
-  }
-  body[data-page="article"] .filter-drawer select{
-    min-width: 100px;
-    font-size: 10px;
-  }
-}
 
 .cube-symbol-small{font-size:18px;letter-spacing:0.06em;}

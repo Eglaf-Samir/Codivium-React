@@ -71,7 +71,7 @@ body[data-page="landing"]{
       position:relative;
     }
 
-    body[data-page="landing"] #section1{ background: var(--panel-1); min-height: 50vh; padding-top: 118px; }
+    body[data-page="landing"] #section1{ background: var(--panel-1); min-height: 50vh; padding-top: 0px; }
     body[data-page="landing"] #section2{ background: var(--panel-2); color: var(--text-dark); }
     body[data-page="landing"] #section2b{ background: var(--panel-2b); color: var(--text-dark); padding-top: 42px; }
     body[data-page="landing"] #section3{ background: var(--panel-3); }

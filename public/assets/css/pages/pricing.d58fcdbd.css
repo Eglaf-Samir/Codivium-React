@@ -335,64 +335,6 @@ body[data-page="pricing"] .features{
       width: 100%; }
     }
 
-    /* ── Tablet (≤ 768px) ──────────────────────────────────────────────── */
-    @media (max-width: 768px) {
-      body[data-page="pricing"] .wrap{
-        padding: calc(36px + var(--topbar-h)) 14px 48px;
-      }
-      body[data-page="pricing"] h1{
-        font-size: clamp(22px, 5.5vw, 34px);
-      }
-      body[data-page="pricing"] .card{
-        padding: 14px 14px 12px;
-        width: min(560px, 100%);
-      }
-      body[data-page="pricing"] .billing{
-        grid-template-columns: 1fr;
-        border-radius: 16px;
-        padding: 6px;
-      }
-      body[data-page="pricing"] .bill-pill span{
-        padding: 8px 10px;
-      }
-      body[data-page="pricing"] .amount{
-        font-size: 34px;
-      }
-      body[data-page="pricing"] .select-btn{
-        width: 100%;
-      }
-    }
-
-    /* ── Mobile (≤ 480px) ──────────────────────────────────────────────── */
-    @media (max-width: 480px) {
-      body[data-page="pricing"] .wrap{
-        padding: calc(24px + var(--topbar-h)) 10px 36px;
-      }
-      body[data-page="pricing"] h1{
-        font-size: clamp(18px, 6vw, 26px);
-      }
-      body[data-page="pricing"] .sub{
-        font-size: 13px;
-      }
-      body[data-page="pricing"] .card{
-        padding: 12px 12px 10px;
-        border-radius: 14px !important;
-      }
-      body[data-page="pricing"] .plan h2{
-        font-size: 14px !important;
-      }
-      body[data-page="pricing"] .amount{
-        font-size: 28px;
-      }
-      body[data-page="pricing"] .features li{
-        font-size: 12px;
-      }
-      body[data-page="pricing"] .select-btn{
-        padding: 10px 14px;
-        font-size: 12px;
-      }
-    }
-
     @media  (prefers-reduced-motion: reduce){
       body[data-page="pricing"] .card, body[data-page="pricing"] .select-btn{ transition: none; }
     }

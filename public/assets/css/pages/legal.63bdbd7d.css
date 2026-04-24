@@ -62,51 +62,6 @@ body[data-page="legal"] .footer-bar{
 }
 }
 
-/* ── Responsive: Mobile (≤ 768px) ──────────────────────────────────────── */
-@media (max-width: 768px) {
-  body[data-page="legal"] .legal-wrap{
-    margin: calc(var(--cv-topbar-h) + 20px) auto 40px;
-    padding: 0 14px;
-  }
-  body[data-page="legal"] .legal-card{
-    padding: 18px 18px 14px;
-    border-radius: 14px;
-  }
-  body[data-page="legal"] .legal-card h1{
-    font-size: clamp(20px, 5vw, 28px);
-  }
-  body[data-page="legal"] .legal-card h2{
-    font-size: clamp(16px, 4vw, 20px);
-  }
-  body[data-page="legal"] .legal-card h3{
-    font-size: clamp(14px, 3.5vw, 17px);
-  }
-  body[data-page="legal"] .legal-card nav ul{
-    gap: 8px;
-  }
-  body[data-page="legal"] .footer-bar{
-    padding: 14px 14px 0;
-    font-size: 12px;
-  }
-}
-
-/* ── Responsive: Extra-small (≤ 480px) ─────────────────────────────────── */
-@media (max-width: 480px) {
-  body[data-page="legal"] .legal-wrap{
-    padding: 0 10px;
-    margin-top: calc(var(--cv-topbar-h) + 12px);
-  }
-  body[data-page="legal"] .legal-card{
-    padding: 14px 14px 12px;
-    border-radius: 12px;
-  }
-  body[data-page="legal"] .legal-card p,
-  body[data-page="legal"] .legal-card li{
-    font-size: 14px;
-    line-height: 1.6;
-  }
-}
-
 .cube-symbol-small{font-size:18px;letter-spacing:0.06em;}
 
 
