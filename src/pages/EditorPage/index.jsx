@@ -295,6 +295,45 @@ export default function EditorPage() {
       }
 
       setSubmitStatus({ type: 'success', message: 'Submission successful!' });
+
+      // Backend (UserInterviewRunTimeLogApiController.InterViewSubmission /
+      // DeliberatePracticeSubmission) returns the full list of this user's
+      // submissions for this exercise — sorted by insertion order. Map it into
+      // the shape FeedbackModal's TimeChart / AttemptsChart already understand.
+      const submissions = Array.isArray(response.data) ? response.data : [];
+      const pick = (obj, ...keys) => {
+        for (const k of keys) {
+          if (obj && obj[k] != null) return obj[k];
+        }
+        return 0;
+      };
+      const history = submissions.map(s => ({
+        timeToSuccessSeconds: Number(pick(s, 'executionTime', 'ExecutionTime')) || 0,
+        attempts:             Number(pick(s, 'runCount', 'RunCount')) || 0,
+        createdAt:            pick(s, 'createdAt', 'CreatedAt'),
+      }));
+
+      const isFirstSolve = history.length <= 1;
+      const first  = history[0];
+      const latest = history[history.length - 1];
+
+      // Improvement % vs first attempt — negative = better (less time / fewer runs).
+      const pctChange = (oldV, newV) =>
+        !oldV ? 0 : ((newV - oldV) / oldV) * 100;
+
+      const deltas = !isFirstSolve && first && latest
+        ? {
+            timeToSuccess: pctChange(first.timeToSuccessSeconds, latest.timeToSuccessSeconds),
+            attempts:      pctChange(first.attempts, latest.attempts),
+          }
+        : null;
+
+      const current = latest || { timeToSuccessSeconds: totalSecs, attempts: attemptCount };
+
+      const insightText = isFirstSolve
+        ? 'Nice work — first time solving this exercise.'
+        : `You've completed this exercise ${history.length} times. Keep refining.`;
+
       if (feedbackRef.current?.show) {
         feedbackRef.current.show({
           exerciseId: exercise.id,
@@ -304,14 +343,14 @@ export default function EditorPage() {
           testsPassed: (exercise.unitTests || []).length,
           testsTotal: (exercise.unitTests || []).length,
           returnMenuUrl: `/menu?track=${encodeURIComponent(track)}`,
-          current: { timeToSuccessSeconds: totalSecs, attempts: attemptCount },
-          insightText: 'Nice work — exercise submitted.',
+          current,
+          insightText,
           chips: [],
           nextSuggestion: '',
           performanceTier: null,
-          isFirstSolve: true,
-          history: [],
-          deltas: null,
+          isFirstSolve,
+          history,
+          deltas,
           // Used by the modal's "Try Again" button to reset and re-enter the
           // same exercise via the same route the user came from.
           item,
