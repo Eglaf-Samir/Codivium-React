@@ -4,8 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
-import { useTimer }    from '../../hooks/useTimer.js';
-import { useLocks }    from '../../hooks/useLocks.js';
+import { useTimer } from '../../hooks/useTimer.js';
+import { useLocks } from '../../hooks/useLocks.js';
 import { useExercise } from '../../hooks/useExercise.js';
 import { useSplitters } from '../../hooks/useSplitter.js';
 import { useSettings } from '../../hooks/useSettings.js';
@@ -21,27 +21,28 @@ import {
   SaveDeliberatePracticeSession,
 } from '../../api/deliberatePractice/apideliberatepractice';
 
-import Timer              from './Timer.jsx';
-import WorkspaceControls  from './WorkspaceControls.jsx';
-import LeftPane           from './LeftPane.jsx';
-import RightPane          from './RightPane.jsx';
-import ReplPane           from './ReplPane.jsx';
-import SettingsPalette    from './SettingsPalette.jsx';
-import FeedbackModal     from './FeedbackModal.jsx';
-import EditorTour        from './EditorTour.jsx';
+import Timer from './Timer.jsx';
+import WorkspaceControls from './WorkspaceControls.jsx';
+import LeftPane from './LeftPane.jsx';
+import RightPane from './RightPane.jsx';
+import ReplPane from './ReplPane.jsx';
+import SettingsPalette from './SettingsPalette.jsx';
+import FeedbackModal from './FeedbackModal.jsx';
+import EditorTour from './EditorTour.jsx';
+import CodeSubmitConfirmation from './CodeSubmitConfirmation.jsx';
 
 export default function EditorPage() {
-  const stageRef     = useRef(null);
+  const stageRef = useRef(null);
   const workspaceRef = useRef(null);
-  const candidateRef   = useRef(null);   // imperative ref into EditorSlot (candidate)
-  const feedbackRef    = useRef(null);   // imperative ref into FeedbackModal
+  const candidateRef = useRef(null);   // imperative ref into EditorSlot (candidate)
+  const feedbackRef = useRef(null);   // imperative ref into FeedbackModal
 
   // ── Attempt-first note ─────────────────────────────────────────────────────
   const [attemptNoteSeen, setAttemptNoteSeen] = React.useState(() => {
     try { return localStorage.getItem('cv_attempt_note_seen') === '1'; } catch (_) { return false; }
   });
   const handleDismissNote = React.useCallback(() => {
-    try { localStorage.setItem('cv_attempt_note_seen', '1'); } catch (_) {}
+    try { localStorage.setItem('cv_attempt_note_seen', '1'); } catch (_) { }
     setAttemptNoteSeen(true);
   }, []);
 
@@ -49,7 +50,7 @@ export default function EditorPage() {
   const location = useLocation();
 
   // ── Core hooks ─────────────────────────────────────────────────────────────
-  const timer    = useTimer();
+  const timer = useTimer();
   const settings = useSettings(stageRef);
   const { exercise, loading, error, reload, item, track } = useExercise();
 
@@ -61,9 +62,9 @@ export default function EditorPage() {
     useSplitters(workspaceRef);
 
   // ── Layout state ───────────────────────────────────────────────────────────
-  const [focusMode,   setFocusMode]   = useState('default');
+  const [focusMode, setFocusMode] = useState('default');
   const [replVisible, setReplVisible] = useState(true);
-  const [tourActive,  setTourActive]  = useState(false);
+  const [tourActive, setTourActive] = useState(false);
 
   // ── Remove loading placeholder on mount ──────────────────────────────────
   useEffect(() => {
@@ -88,18 +89,18 @@ export default function EditorPage() {
 
   // Apply focus-mode body classes (CSS drives the layout from these)
   useEffect(() => {
-    document.body.classList.toggle('focus-editor',       focusMode === 'editor');
+    document.body.classList.toggle('focus-editor', focusMode === 'editor');
     document.body.classList.toggle('focus-instructions', focusMode === 'instructions');
-    document.body.classList.toggle('repl-collapsed',     !replVisible);
+    document.body.classList.toggle('repl-collapsed', !replVisible);
     return () => {
       document.body.classList.remove('focus-editor', 'focus-instructions', 'repl-collapsed');
     };
   }, [focusMode, replVisible]);
 
   // ── Submission state ───────────────────────────────────────────────────────
-  const [submitting,   setSubmitting]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);   // { type, message }
-  const [testResults,  setTestResults]  = useState(null);
+  const [testResults, setTestResults] = useState(null);
   const [attemptCount, setAttemptCount] = useState(
     () => Number(location?.state?.totalRunCount) || 0,
   );
@@ -107,7 +108,7 @@ export default function EditorPage() {
     () => (location?.state?.isStartFresh ?? true),
   );
   const [lastRunOutput, setLastRunOutput] = useState(null);
-  const [allTestsPassed, setAllTestsPassed] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const initialOffsetRef = useRef(Number(location?.state?.initialTimeInSeconds) || 0);
 
   // Reset per-exercise state when exercise changes + preload useroldcode if continuing
@@ -121,7 +122,7 @@ export default function EditorPage() {
       locks.resetForExercise();
       setTestResults(null);
       setSubmitStatus(null);
-      setAllTestsPassed(false);
+      setShowSubmitConfirm(false);
     }
 
     // Seed the candidate editor. Prefer resumed useroldcode when the user
@@ -205,7 +206,6 @@ export default function EditorPage() {
       const totalErrors = response.data.totalErrorTestCount ?? failedIds.length;
       const totalTests = (exercise.unitTests || []).length;
       const passed = Math.max(0, totalTests - failedIds.length);
-
       const mapped = {
         accepted: failedIds.length === 0 && totalErrors === 0,
         testsPassed: passed,
@@ -217,19 +217,20 @@ export default function EditorPage() {
           return {
             name: u.name || `test_${u.id}`,
             status: failed ? 'fail' : 'pass',
-            input: out.input || '',
-            expected: out.expected || '',
-            got: out.actual || out.got || '',
+            input: out.unitTestDescription || '',
+            expected: out.expectedOutput || '',
+            got: out.actualOutput || '',
           };
         }),
       };
       setTestResults(mapped);
 
       if (mapped.accepted) {
-        setAllTestsPassed(true);
-        setSubmitStatus({ type: 'success', message: 'All tests passed! Click Submit again to finalise.' });
+        // Surface the confirmation modal instead of asking the user to click
+        // the header button a second time.
+        setSubmitStatus(null);
+        setShowSubmitConfirm(true);
       } else {
-        setAllTestsPassed(false);
         setSubmitStatus({
           type: 'fail',
           message: `${mapped.testsPassed} / ${mapped.testsTotal} tests passed — keep going.`,
@@ -261,19 +262,19 @@ export default function EditorPage() {
       const body =
         track === 'interview'
           ? {
-              ExecutionId: lastRunOutput.id,
-              ExecutionTime: totalSecs,
-              InterviewPreprationId: item.id,
-              UserId: Userid,
-              RunCount: attemptCount,
-            }
+            ExecutionId: lastRunOutput.id,
+            ExecutionTime: totalSecs,
+            InterviewPreprationId: item.id,
+            UserId: Userid,
+            RunCount: attemptCount,
+          }
           : {
-              ExecutionId: lastRunOutput.id,
-              ExecutionTime: totalSecs,
-              deliberatePracticePreprationId: item.id,
-              UserId: Userid,
-              RunCount: attemptCount,
-            };
+            ExecutionId: lastRunOutput.id,
+            ExecutionTime: totalSecs,
+            deliberatePracticePreprationId: item.id,
+            UserId: Userid,
+            RunCount: attemptCount,
+          };
 
       const response = await submitApi(JSON.stringify(body));
       setSubmitting(false);
@@ -311,6 +312,10 @@ export default function EditorPage() {
           isFirstSolve: true,
           history: [],
           deltas: null,
+          // Used by the modal's "Try Again" button to reset and re-enter the
+          // same exercise via the same route the user came from.
+          item,
+          editorRoute: location.pathname,
         });
       }
     } catch (err) {
@@ -320,13 +325,22 @@ export default function EditorPage() {
         message: `Submission error: ${err?.message || 'Unknown error'}`,
       });
     }
-  }, [lastRunOutput, item, track, attemptCount, timer, exercise, navigate]);
+  }, [lastRunOutput, item, track, attemptCount, timer, exercise, navigate, location.pathname]);
 
-  // Single button handler: runs tests first; once all pass, next click finalises.
+  // The header button now only runs the tests. Final submission is gated by
+  // the CodeSubmitConfirmation modal that appears after a passing run.
   const handleSubmit = useCallback(() => {
-    if (allTestsPassed) handleFinalSubmit();
-    else handleRunCode();
-  }, [allTestsPassed, handleFinalSubmit, handleRunCode]);
+    handleRunCode();
+  }, [handleRunCode]);
+
+  const confirmFinalSubmit = useCallback(() => {
+    setShowSubmitConfirm(false);
+    handleFinalSubmit();
+  }, [handleFinalSubmit]);
+
+  const cancelFinalSubmit = useCallback(() => {
+    setShowSubmitConfirm(false);
+  }, []);
 
   // ── Save session on unmount (best-effort) ──
   useEffect(() => {
@@ -405,6 +419,7 @@ export default function EditorPage() {
             <LeftPane
               exercise={exercise}
               locks={locks}
+              elapsedSeconds={timer.elapsedSeconds}
               attemptNoteSeen={attemptNoteSeen}
               onDismissNote={handleDismissNote}
               onLearnMore={() => window.CodiviumHelp?.openAttemptModal()}
@@ -431,6 +446,7 @@ export default function EditorPage() {
               submitStatus={submitStatus}
               attemptCount={attemptCount}
               testResults={testResults}
+              elapsedSeconds={timer.elapsedSeconds}
             />
           </div>
 
@@ -460,6 +476,13 @@ export default function EditorPage() {
 
       {/* Feedback modal — React replacement for feedback.js */}
       <FeedbackModal ref={feedbackRef} />
+
+      {/* Pre-submission confirmation — appears when all unit tests pass */}
+      <CodeSubmitConfirmation
+        showConfirm={showSubmitConfirm}
+        onSubmitCode={confirmFinalSubmit}
+        handleClose={cancelFinalSubmit}
+      />
 
       {/* Guided tour overlay — spotlights editor UI step-by-step */}
       <EditorTour active={tourActive} onStop={() => setTourActive(false)} />

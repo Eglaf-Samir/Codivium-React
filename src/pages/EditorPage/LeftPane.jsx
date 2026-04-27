@@ -5,15 +5,34 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { renderMd } from '../../hooks/useExercise.js';
 import { AttemptFirstNote } from './HelpPanel.jsx';
+import { HtmlPreview } from './HtmlPreview.jsx';
 
 const LOCK_SVG = (
   <svg viewBox="0 0 24 24" fill="none" className="cv-tab-lock-svg" aria-hidden="true">
-    <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="2"/>
-    <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
 
-function LockTooltip({ why, onForceUnlock, anchorRef }) {
+function unlockMsg(cfg, key, elapsedSeconds, submissionCount) {
+  const c = cfg && cfg[key];
+  if (!c) return null;
+  const secsLeft = Math.max(0, c.minutes * 60 - elapsedSeconds);
+  const attLeft  = Math.max(0, c.attempts - submissionCount);
+  const parts = [];
+  if (secsLeft > 0) {
+    const m = Math.floor(secsLeft / 60);
+    const s = secsLeft % 60;
+    parts.push(m > 0 ? `${m}m ${s}s` : `${s}s`);
+  }
+  if (attLeft > 0 && !(c.attempts === 1 && submissionCount === 0 && key === 'tests')) {
+    parts.push(`${attLeft} submission${attLeft !== 1 ? 's' : ''}`);
+  }
+  if (parts.length === 0) return 'Unlocking shortly…';
+  return `Unlocks in: ${parts.join(' or ')}`;
+}
+
+function LockTooltip({ why, onForceUnlock, onClose, anchorRef, lockKey, locks, elapsedSeconds }) {
   const [pos, setPos] = React.useState({ top: 0, left: 0 });
 
   // Position below the anchor button using a portal so it is never
@@ -23,6 +42,10 @@ function LockTooltip({ why, onForceUnlock, anchorRef }) {
     const r = anchorRef.current.getBoundingClientRect();
     setPos({ top: r.bottom + 6, left: r.left });
   }, [anchorRef]);
+
+  const whenMsg = locks && lockKey
+    ? unlockMsg(locks.cfg, lockKey, elapsedSeconds || 0, locks.submissionCount || 0)
+    : null;
 
   return createPortal(
     <div
@@ -35,8 +58,11 @@ function LockTooltip({ why, onForceUnlock, anchorRef }) {
         zIndex: 9999,
       }}
     >
-      <p className="cv-lock-why">{why}</p>
-      <button className="cv-lock-force-btn" type="button" onClick={onForceUnlock}>
+      <button className="cv-lt-close" type="button" aria-label="Close" onClick={onClose}>&#x2715;</button>
+      <div className="cv-lt-title">Locked</div>
+      <p className="cv-lt-why">{why}</p>
+      {whenMsg && <div className="cv-lt-when">{whenMsg}</div>}
+      <button className="cv-lt-unlock" type="button" onClick={onForceUnlock}>
         Unlock anyway
       </button>
     </div>,
@@ -88,7 +114,7 @@ function UnitTests({ source }) {
 
 
 // Extracted into its own component so useRef is stable per tab slot
-function TabWrapper({ tab, active, locked, showTooltip, locks, onTabClick, onForceUnlock }) {
+function TabWrapper({ tab, active, locked, showTooltip, locks, elapsedSeconds, onTabClick, onForceUnlock, onCloseTooltip }) {
   const btnRef = useRef(null);
   return (
     <div className="tab-btn-wrapper">
@@ -111,22 +137,26 @@ function TabWrapper({ tab, active, locked, showTooltip, locks, onTabClick, onFor
         <LockTooltip
           why={locks.WHY[tab.lockKey]}
           anchorRef={btnRef}
+          lockKey={tab.lockKey}
+          locks={locks}
+          elapsedSeconds={elapsedSeconds}
           onForceUnlock={() => onForceUnlock(tab.key)}
+          onClose={onCloseTooltip}
         />
       )}
     </div>
   );
 }
 
-export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNote, onLearnMore, onTourStart }) {
+export default function LeftPane({ exercise, locks, elapsedSeconds, attemptNoteSeen, onDismissNote, onLearnMore, onTourStart }) {
   const [activeTab, setActiveTab] = useState('req');
   const [lockTooltip, setLockTooltip] = useState(null); // key of open tooltip
 
   const tabs = [
-    { key: 'req',      label: 'Requirements', lockKey: null },
-    { key: 'hints',    label: 'Hints',        lockKey: 'hints' },
-    { key: 'tests',    label: 'Unit Tests',   lockKey: 'tests' },
-    { key: 'tutorial', label: 'Mini Tutorial',lockKey: 'tutorial' },
+    { key: 'req', label: 'Requirements', lockKey: null },
+    { key: 'hints', label: 'Hints', lockKey: 'hints' },
+    { key: 'tests', label: 'Unit Tests', lockKey: 'tests' },
+    { key: 'tutorial', label: 'Mini Tutorial', lockKey: 'tutorial' },
   ];
 
   const handleTabClick = useCallback((tab) => {
@@ -158,8 +188,10 @@ export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNo
               locked={locked}
               showTooltip={lockTooltip === tab.key}
               locks={locks}
+              elapsedSeconds={elapsedSeconds}
               onTabClick={handleTabClick}
               onForceUnlock={handleForceUnlock}
+              onCloseTooltip={() => setLockTooltip(null)}
             />
           );
         })}
@@ -172,9 +204,9 @@ export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNo
           onClick={onTourStart}
         >
           <svg viewBox="0 0 24 24" fill="none" width="13" height="13" className="tour-btn-ico" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8"/>
-            <path d="M12 8v4l3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-            <circle cx="12" cy="7" r="0.5" fill="currentColor"/>
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M12 8v4l3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            <circle cx="12" cy="7" r="0.5" fill="currentColor" />
           </svg>
           Explore the Editor
         </button>
@@ -195,7 +227,7 @@ export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNo
                 {exercise.name && <h2 className="pane-title">{exercise.name}</h2>}
                 {(exercise.category || exercise.difficulty) && (
                   <div className="cv-exercise-meta">
-                    {exercise.category   && <span className="pill pill-level">{exercise.category}</span>}
+                    {exercise.category && <span className="pill pill-level">{exercise.category}</span>}
                     {exercise.difficulty && <span className="pill">{exercise.difficulty.charAt(0).toUpperCase() + exercise.difficulty.slice(1)}</span>}
                     {exercise.testsTotal && <span className="pill">{exercise.testsTotal} tests</span>}
                   </div>
@@ -208,7 +240,7 @@ export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNo
                   <p className="cv-prior-info">
                     Prior attempts: {exercise.priorAttempts}
                     {exercise.bestPriorScore != null && ` — best: ${exercise.bestPriorScore}%`}
-                    {exercise.lastSolvedAt  && ` — last: ${exercise.lastSolvedAt}`}
+                    {exercise.lastSolvedAt && ` — last: ${exercise.lastSolvedAt}`}
                   </p>
                 )}
               </>
@@ -244,7 +276,9 @@ export default function LeftPane({ exercise, locks, attemptNoteSeen, onDismissNo
           data-pane="left" data-panel="tutorial"
           hidden={activeTab !== 'tutorial' || undefined}>
           {exercise?.miniTutorial
-            ? <div id="miniTutorialContent" dangerouslySetInnerHTML={{ __html: renderMd(exercise.miniTutorial, { isHtml: exercise.isTutorialHtml }) }} />
+            ? (exercise.isTutorialHtml
+                ? <div id="miniTutorialContent"><HtmlPreview html={exercise.miniTutorial} /></div>
+                : <div id="miniTutorialContent" dangerouslySetInnerHTML={{ __html: renderMd(exercise.miniTutorial) }} />)
             : <p className="hint-note">No tutorial provided.</p>
           }
         </div>

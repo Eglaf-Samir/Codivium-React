@@ -12,7 +12,23 @@ const LOCK_SVG = (
   </svg>
 );
 
-function SolutionLockTooltip({ anchorRef, why, onForceUnlock, onClose }) {
+function unlockMsg(cfg, key, elapsedSeconds, submissionCount) {
+  const c = cfg && cfg[key];
+  if (!c) return null;
+  const secsLeft = Math.max(0, c.minutes * 60 - elapsedSeconds);
+  const attLeft  = Math.max(0, c.attempts - submissionCount);
+  const parts = [];
+  if (secsLeft > 0) {
+    const m = Math.floor(secsLeft / 60);
+    const s = secsLeft % 60;
+    parts.push(m > 0 ? `${m}m ${s}s` : `${s}s`);
+  }
+  if (attLeft > 0) parts.push(`${attLeft} submission${attLeft !== 1 ? 's' : ''}`);
+  if (parts.length === 0) return 'Unlocking shortly…';
+  return `Unlocks in: ${parts.join(' or ')}`;
+}
+
+function SolutionLockTooltip({ anchorRef, why, onForceUnlock, onClose, locks, elapsedSeconds }) {
   const [pos, setPos] = React.useState({ top: 0, left: 0 });
   React.useEffect(() => {
     if (!anchorRef?.current) return;
@@ -27,16 +43,23 @@ function SolutionLockTooltip({ anchorRef, why, onForceUnlock, onClose }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  const whenMsg = locks
+    ? unlockMsg(locks.cfg, 'solution', elapsedSeconds || 0, locks.submissionCount || 0)
+    : null;
+
   return (
     <div
       className="cv-lock-tooltip"
       role="tooltip"
       style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999 }}
     >
-      <p className="cv-lock-why">
+      <button className="cv-lt-close" type="button" aria-label="Close" onClick={onClose}>&#x2715;</button>
+      <div className="cv-lt-title">Locked</div>
+      <p className="cv-lt-why">
         {why || 'The suggested solution is locked temporarily to encourage problem-solving first.'}
       </p>
-      <button className="cv-lock-force-btn" type="button" onClick={onForceUnlock}>
+      {whenMsg && <div className="cv-lt-when">{whenMsg}</div>}
+      <button className="cv-lt-unlock" type="button" onClick={onForceUnlock}>
         Unlock anyway
       </button>
     </div>
@@ -57,7 +80,7 @@ function TestResultItem({ result, index }) {
       </div>
       {!pass && (
         <>
-          <div className="cv-test-row"><span className="cv-tr-key">Input:</span><code>{result.input}</code></div>
+          <div className="cv-test-row"><span className="cv-tr-key">Unit Test Description:</span><code>{result.input}</code></div>
           <div className="cv-test-row"><span className="cv-tr-key">Expected:</span><code>{result.expected}</code></div>
           <div className="cv-test-row"><span className="cv-tr-key">Got:</span><code className="cv-got">{result.got}</code></div>
         </>
@@ -70,6 +93,7 @@ export default function RightPane({
   exercise, locks, syntaxTheme,
   candidateRef,    // forwarded ref to candidate editor
   onSubmit, submitting, submitStatus, attemptCount, testResults,
+  elapsedSeconds,
 }) {
   const [activeTab, setActiveTab] = useState('candidate');
   const solutionRef       = useRef(null);
@@ -170,6 +194,8 @@ export default function RightPane({
             <SolutionLockTooltip
               anchorRef={solutionTabRef}
               why={locks.WHY?.solution}
+              locks={locks}
+              elapsedSeconds={elapsedSeconds}
               onForceUnlock={handleSolForceUnlock}
               onClose={() => setShowSolTooltip(false)}
             />,
