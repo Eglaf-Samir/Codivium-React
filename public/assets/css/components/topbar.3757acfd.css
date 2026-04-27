@@ -154,8 +154,11 @@
 .navlinks a{ font-family: var(--serif); }
 
 /* === CVD-WEB-0012 compositor stability (reduces intermittent transform jitter) === */
+/* PERF: will-change: transform removed from .navlinks a and .cta — these are
+   static navigation links with no scroll-driven animation. Promoting every nav
+   link to its own compositor layer gained nothing and wasted GPU memory. */
 .navlinks a, .cta{
-  will-change: transform;
+  /* will-change intentionally absent */
 }
 
 /* === CVD-WEB-0013 no-transform-transition (eliminates rare hover-load flicker) === */
@@ -240,62 +243,5 @@
 .topbar .navlinks{ display:flex; align-items:center; }
 .topbar .navlinks a{ display:inline-flex; align-items:center; line-height:1; padding-top:0 !important; padding-bottom:0 !important; }
 .topbar .navlinks a{ border-bottom:1px solid transparent; }
-
-
-/* ── Responsive: Small desktop / Tablet (≤ 900px) ───────────────────────── */
-@media (max-width: 900px) {
-  .brand-name{
-    font-size: clamp(18px, 3.5vw, 28px);
-  }
-  .topbar{
-    padding: 10px 16px;
-  }
-  .navlinks{
-    gap: 10px;
-  }
-  .navlinks a{
-    font-size: 13px;
-    padding: 8px 8px;
-  }
 }
 
-/* ── Responsive: Mobile (≤ 640px) ───────────────────────────────────────── */
-@media (max-width: 640px) {
-  body:not(.cv-app) .topbar{
-    padding: 0 12px;
-    height: 54px;
-  }
-  body:not(.cv-app){
-    --topbar-h: 54px;
-    --cv-topbar-h: 54px;
-  }
-  .brand-name{
-    font-size: clamp(14px, 4.5vw, 20px);
-  }
-  .brand{
-    gap: 12px;
-  }
-  /* Nav is hidden at this size via responsive.css — topbar shows brand only */
-}
-
-/* ── Responsive: Extra small (≤ 400px) ─────────────────────────────────── */
-@media (max-width: 400px) {
-  body:not(.cv-app) .topbar{
-    padding: 0 10px;
-    height: 50px;
-  }
-  body:not(.cv-app){
-    --topbar-h: 50px;
-    --cv-topbar-h: 50px;
-  }
-  .brand-name{
-    font-size: 14px;
-  }
-  .brand{
-    gap: 8px;
-  }
-}
-
-
-
-} /* end @layer components */

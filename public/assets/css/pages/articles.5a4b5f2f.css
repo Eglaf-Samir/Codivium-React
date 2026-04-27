@@ -1192,7 +1192,6 @@ body[data-page="articles"] .blog-scroll{
   z-index: 2;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  margin: 0 auto;
 }
 body[data-page="articles"] .blog-scroll::-webkit-scrollbar{ width:0; height:0; }
 
@@ -1565,7 +1564,9 @@ body[data-page="articles"] .bm-preview{
   display: none;
   pointer-events: none;
   transform: translate3d(0,0,0);
-  will-change: transform, opacity;
+  /* PERF: will-change removed from hidden tooltip. Browsers should not promote
+     display:none elements but some allocate the layer eagerly on parse.
+     The fade-in (140ms) is fast enough without a pre-promoted layer. */
   opacity: 0;
   transition: opacity 140ms ease;
 }
@@ -1609,8 +1610,11 @@ body[data-page="articles"] .bm-modal.is-open{ display: block; }
 body[data-page="articles"] .bm-modal .modal-overlay{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(2px);
+  /* PERF: backdrop-filter: blur(2px) removed — even a 2px blur forces a full
+     compositor snapshot of the page behind the overlay. At 55% black opacity
+     the underlying content is already obscured; the blur added nothing visible.
+     Compensate with a slightly higher opacity to keep the modal feel. */
+  background: rgba(0,0,0,0.68);
 }
 
 body[data-page="articles"] .bm-modal .modal-panel{
@@ -2306,95 +2310,5 @@ body[data-page="articles"]{ font-family: "Noto Serif", serif !important; }
 }
 
 body[data-page="articles"] .bm-spacer{ height: 5mm; }
-
-/* ── Responsive: Tablet (≤ 860px) ──────────────────────────────────────── */
-@media (max-width: 860px) {
-  body[data-page="articles"] .stage{
-    padding-left: 14px !important;
-    padding-right: 14px !important;
-  }
-  body[data-page="articles"] .sidebar{
-    display: none !important;
-  }
-  body[data-page="articles"] .stage-shell{
-    margin-left: 0 !important;
-  }
-  body[data-page="articles"] .filter-drawer{
-    width: calc(100% - 24px);
-  }
-  body[data-page="articles"] .filter-left{
-    gap: 8px;
-    padding: 0 8px;
-    flex-wrap: wrap;
-  }
-  body[data-page="articles"] .filter-drawer select{
-    min-width: 160px;
-  }
-}
-
-/* ── Responsive: Mobile (≤ 600px) ──────────────────────────────────────── */
-@media (max-width: 600px) {
-  body[data-page="articles"] .stage{
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-  }
-  body[data-page="articles"] .filter-drawer{
-    width: calc(100% - 16px);
-    border-radius: 12px;
-  }
-  body[data-page="articles"] .filter-left{
-    gap: 6px;
-    padding: 0 6px;
-  }
-  body[data-page="articles"] .filter-drawer select{
-    min-width: 130px;
-    font-size: 10px;
-  }
-  body[data-page="articles"] .bm-panel{
-    border-radius: 16px !important;
-  }
-  body[data-page="articles"] .bm-listing{
-    border-radius: 16px;
-    padding: 10px 10px 6px;
-  }
-  body[data-page="articles"] .bm-item{
-    border-radius: 12px !important;
-  }
-  /* Side links */
-  body[data-page="articles"] .side-link{
-    padding: 12px 12px;
-    gap: 12px;
-  }
-  body[data-page="articles"] .side-label{
-    font-size: 13px;
-  }
-  body[data-page="articles"] .side-ico{
-    width: 34px;
-    height: 34px;
-    border-radius: 12px;
-  }
-  body[data-page="articles"] .side-ico svg{
-    width: 20px;
-    height: 20px;
-  }
-  /* Collapse toggle */
-  body[data-page="articles"] .collapse-toggle{
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-  }
-}
-
-/* ── Responsive: Extra-small (≤ 400px) ─────────────────────────────────── */
-@media (max-width: 400px) {
-  body[data-page="articles"] .stage{
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
-  body[data-page="articles"] .filter-drawer select{
-    min-width: 110px;
-    padding: 0 24px 0 8px;
-  }
-}
 
 .cube-symbol-small{font-size:18px;letter-spacing:0.06em;}

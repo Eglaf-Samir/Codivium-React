@@ -43,6 +43,16 @@ function RequireAuth({ children }) {
   return children;
 }
 
+// Forces EditorPage to remount on a new attempt or a new exercise so timer,
+// code, and REPL state reset cleanly (e.g. "Try Again" from the feedback modal).
+function KeyedEditorPage() {
+  const loc = useLocation();
+  const k =
+    loc.state?.attemptKey ??
+    `${loc.pathname}:${loc.state?.item?.id || loc.state?.item?.excerciseId || ''}`;
+  return <EditorPage key={k} />;
+}
+
 // ── App route wrapper ────────────────────────────────────────────
 function AppRoute({ component: Component, bodyClass = '' }) {
   const location = useLocation();
@@ -115,9 +125,9 @@ export default function App() {
       {/* ── APP PAGES ── */}
       <Route path="/adaptive-practice" element={<RequireAuth><AppRoute component={AdaptivePage} bodyClass="drawer-collapsed" /></RequireAuth>} />
       <Route path="/menu"              element={<RequireAuth><AppRoute component={MenuPage}      bodyClass="drawer-collapsed" /></RequireAuth>} />
-      <Route path="/editor"            element={<RequireAuth><AppRoute component={EditorPage}    bodyClass="drawer-collapsed" /></RequireAuth>} />
-      <Route path="/interview/CodingQue"          element={<RequireAuth><AppRoute component={EditorPage} bodyClass="drawer-collapsed" /></RequireAuth>} />
-      <Route path="/DeliberatePractice/CodingQue" element={<RequireAuth><AppRoute component={EditorPage} bodyClass="drawer-collapsed" /></RequireAuth>} />
+      <Route path="/editor"            element={<RequireAuth><AppRoute component={KeyedEditorPage} bodyClass="drawer-collapsed" /></RequireAuth>} />
+      <Route path="/interview/CodingQue"          element={<RequireAuth><AppRoute component={KeyedEditorPage} bodyClass="drawer-collapsed" /></RequireAuth>} />
+      <Route path="/DeliberatePractice/CodingQue" element={<RequireAuth><AppRoute component={KeyedEditorPage} bodyClass="drawer-collapsed" /></RequireAuth>} />
       <Route path="/mcq"               element={<RequireAuth><AppRoute component={McqSetupPage}  bodyClass="mcq-parent" /></RequireAuth>} />
       <Route path="/mcq/quiz"          element={<RequireAuth><AppRoute component={McqQuizPage}   bodyClass="mcq-quiz" /></RequireAuth>} />
       <Route path="/insights"          element={<RequireAuth><AppRoute key="insights" component={InsightsPage} bodyClass="drawer-collapsed" /></RequireAuth>} />

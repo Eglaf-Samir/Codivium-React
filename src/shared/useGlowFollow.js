@@ -1,36 +1,32 @@
-// src/shared/useGlowFollow.js
-// Replaces the initGlowFollow() function from global.js.
-// Wire the golden cursor-follow ring effect onto all .glow-follow elements
-// that exist in the React component tree AFTER mount.
-//
-// Usage (in any page component or layout):
-//   import { useGlowFollow } from '../shared/useGlowFollow.js';
-//   useGlowFollow();   // call at top-level, no args needed
-
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 function bindGlowFollow(root = document) {
-  root.querySelectorAll('.glow-follow').forEach(card => {
+  root.querySelectorAll(".glow-follow").forEach((card) => {
     if (card.__cvGlowBound) return;
     card.__cvGlowBound = true;
 
-    let raf = null, lastE = null;
+    let raf = null,
+      lastE = null;
 
-    card.addEventListener('pointermove', (e) => {
-      lastE = e;
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = null;
-        if (!lastE) return;
-        const r = card.getBoundingClientRect();
-        card.style.setProperty('--mx', (lastE.clientX - r.left) + 'px');
-        card.style.setProperty('--my', (lastE.clientY - r.top)  + 'px');
-      });
-    }, { passive: true });
+    card.addEventListener(
+      "pointermove",
+      (e) => {
+        lastE = e;
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = null;
+          if (!lastE) return;
+          const r = card.getBoundingClientRect();
+          card.style.setProperty("--mx", lastE.clientX - r.left + "px");
+          card.style.setProperty("--my", lastE.clientY - r.top + "px");
+        });
+      },
+      { passive: true },
+    );
 
-    card.addEventListener('pointerleave', () => {
-      card.style.removeProperty('--mx');
-      card.style.removeProperty('--my');
+    card.addEventListener("pointerleave", () => {
+      card.style.removeProperty("--mx");
+      card.style.removeProperty("--my");
     });
   });
 }
@@ -46,7 +42,10 @@ export function useGlowFollow() {
     let rafId = null;
     const mo = new MutationObserver(() => {
       if (rafId) return;
-      rafId = requestAnimationFrame(() => { rafId = null; bindGlowFollow(); });
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        bindGlowFollow();
+      });
     });
     mo.observe(document.body, { childList: true, subtree: true });
     return () => {

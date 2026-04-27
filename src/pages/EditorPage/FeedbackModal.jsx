@@ -301,15 +301,45 @@ function Modal({ result, onHide }) {
               Return to Menu
             </button>
             <button className="fb-btn gold" type="button" onClick={() => {
-              const targetId  = result.nextExerciseId || result.exerciseId || '';
-              const from      = result.returnMenuUrl
-                ? encodeURIComponent(
-                    result.returnMenuUrl
-                      .replace(/menu-page\.html/, '/menu')
-                      .replace(/mcq-parent\.html/, '/mcq')
-                  )
-                : '';
-              navigate(`/editor?id=${encodeURIComponent(targetId)}${from ? `&from=${from}` : ''}`);
+              if (result.nextExerciseId) {
+                // Try Next Exercise: keep existing URL-based navigation
+                const from = result.returnMenuUrl
+                  ? encodeURIComponent(
+                      result.returnMenuUrl
+                        .replace(/menu-page\.html/, '/menu')
+                        .replace(/mcq-parent\.html/, '/mcq')
+                    )
+                  : '';
+                navigate(
+                  `/editor?id=${encodeURIComponent(result.nextExerciseId)}${from ? `&from=${from}` : ''}`,
+                );
+                onHide();
+                return;
+              }
+
+              // Try Again: re-enter the same exercise via the route the user
+              // came from, mirroring MenuPage's navigateFresh state shape.
+              // attemptKey drives KeyedEditorPage to remount the workspace,
+              // resetting timer / code / REPL / submit state.
+              if (result.item) {
+                const route = result.editorRoute || '/editor';
+                navigate(route, {
+                  state: {
+                    item: result.item,
+                    oldcode: null,
+                    isStartFresh: true,
+                    initialTimeInSeconds: 0,
+                    attemptKey: Date.now(),
+                  },
+                });
+                onHide();
+                return;
+              }
+
+              // No item context — fall back to menu so the user can re-enter.
+              const fallback = result.returnMenuUrl || '/menu';
+              navTo(fallback);
+              onHide();
             }}>
               {result.nextExerciseId ? 'Try Next Exercise' : 'Try Again'}
             </button>

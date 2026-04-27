@@ -1,38 +1,357 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Topbar from "../components/Topbar";
 import { Link } from "react-router-dom";
-function Landing() {
+
+const CARDS = [
+    { index: 0, isTitleCard: true },
+    {
+        index: 1, heading: 'Practice',
+        intro: <><strong>One training surface.</strong> Timed pressure, deliberate drills — and fast verification.</>,
+        body: <>
+            <p className="cfx-s4-gap">Train the way elite performance is built: attempt first, execute under constraints, validate instantly, then refine. Codivium supports both <em>interview-grade questions</em> and <em>micro-challenges</em> in the same environment — so your workflow stays consistent while your skill compounds.</p>
+            <ul className="cfx-s4-bullets">
+                <li><strong>Editor built for flow</strong>: stay locked on the solution, not the tooling.</li>
+                <li><strong>Unit tests that mirror evaluation</strong>: instant pass/fail signal, including edge cases.</li>
+                <li><strong>REPL for rapid iteration</strong>: validate assumptions, debug with intent, move faster.</li>
+                <li><strong>Mini performance snapshot on pass</strong>: attempts-to-success, time-to-completion, and a trend view on repeat runs.</li>
+            </ul>
+            <p className="cfx-s4-gap cfx-s4-muted">Result: you're not just "done" — you're improving with measurable signal.</p>
+        </>,
+        imgSrc: '/assets/img/panel1_editor.jpg',
+        imgWebp: '/assets/img/panel1_editor.webp',
+        imgAlt: 'Codivium editor', imgW: 2887, imgH: 1139,
+    },
+    {
+        index: 2, heading: 'Review',
+        intro: <><strong>Every completion becomes signal.</strong> Don't just finish — improve.</>,
+        body: <>
+            <p className="cfx-s4-gap">The moment you pass, Codivium shows a clean performance readout — and it tracks improvement across repeat attempts on the <em>same</em> exercise. Deliberate practice is driven by feedback: your first completion becomes the baseline, and every revisit shows whether you're getting sharper.</p>
+            <ul className="cfx-s4-bullets">
+                <li><strong>Multi-attempt success</strong>: captures how many submissions it took to reach a full pass.</li>
+                <li><strong>Repeat-attempt trends</strong>: compare performance across your 2nd, 3rd, 8th attempt — and beyond.</li>
+                <li><strong>Time + run-count charts</strong>: see speed and efficiency improving across attempts.</li>
+                <li><strong>Improvement summary</strong>: a compact before/after since your first completion.</li>
+            </ul>
+            <p className="cfx-s4-gap cfx-s4-muted">Result: objective proof of mastery forming — not vibes, not streaks.</p>
+        </>,
+        imgSrc: '/assets/img/panel2_feedback.jpg',
+        imgWebp: '/assets/img/panel2_feedback.webp',
+        imgAlt: 'Codivium review feedback', imgW: 1050, imgH: 781,
+    },
+    {
+        index: 3, heading: 'Diagnose',
+        intro: <><strong>MCQs that expose real gaps — not trivia.</strong></>,
+        body: <>
+            <p className="cfx-s4-gap">Coding interviews don't only test writing code. They test whether your fundamentals are strong enough to make the right decisions quickly — under pressure. Codivium uses retrieval-first concept checks to surface fragile understanding before it costs you in a timed solve.</p>
+            <ul className="cfx-s4-bullets">
+                <li><strong>Interview-relevant concept checks</strong>: complexity, data structures, Python gotchas, and reasoning.</li>
+                <li><strong>Immediate feedback</strong>: know what you got wrong and why, right when it matters.</li>
+                <li><strong>Stronger fundamentals, fewer mistakes</strong>: fix gaps that cause avoidable failures.</li>
+                <li><strong>Built for momentum</strong>: quick sessions that pair perfectly with coding drills.</li>
+            </ul>
+            <p className="cfx-s4-gap cfx-s4-muted">Sharpen fundamentals so your coding speed and accuracy improve together.</p>
+        </>,
+        imgSrc: '/assets/img/panel3_mcq.jpg',
+        imgWebp: '/assets/img/panel3_mcq.webp',
+        imgAlt: 'Codivium MCQ diagnosis', imgW: 1563, imgH: 1200,
+    },
+    {
+        index: 4, heading: 'Measure',
+        intro: <><strong>Your training, measured. Your weaknesses, obvious.</strong></>,
+        body: <>
+            <p className="cfx-s4-gap">Most people practice blindly. Codivium turns every attempt into signal: what you're strong at, what's holding you back, and what to train next. Your dashboard is built for data-driven deliberate practice — it recommends the next drill and provides CTAs that jump you straight into it.</p>
+            <ul className="cfx-s4-bullets">
+                <li><strong>Performance trends over time</strong>: see improvement you can trust — not vibes, not streaks.</li>
+                <li><strong>Topic-level visibility</strong>: pinpoint exactly where you're leaking points across patterns and categories.</li>
+                <li><strong>Attempt analytics</strong>: track accuracy and consistency across sessions.</li>
+                <li><strong>Clear direction</strong>: convert results into the next best practice target — what to train next and why.</li>
+            </ul>
+            <p className="cfx-s4-gap cfx-s4-muted">Stop guessing. Start training with precision.</p>
+        </>,
+        imgSrc: '/assets/img/panel4_dashboard.jpg',
+        imgWebp: '/assets/img/panel4_dashboard.webp',
+        imgAlt: 'Codivium dashboard analytics', imgW: 2694, imgH: 1150,
+    },
+    {
+        index: 5, heading: 'Refine',
+        intro: <><strong>Precision guidance — exactly when it matters.</strong></>,
+        body: <>
+            <p className="cfx-s4-gap">Every Codivium exercise is paired with a short, high-signal tutorial designed for the moment you're working. <strong>Interview coding challenges</strong> include <strong>Mini Tutorials</strong> (end-to-end strategy and execution). <strong>Micro-challenges</strong> include <strong>Micro Tutorials</strong> (atomic drills that sharpen one mental model at a time).</p>
+            <ul className="cfx-s4-bullets">
+                <li><strong>Exercise-specific, not generic</strong>: the exact technique stack required for <em>this</em> problem.</li>
+                <li><strong>Elite clarity, zero fluff</strong>: crisp explanation, clean reasoning, no filler.</li>
+                <li><strong>Built for immediate execution</strong>: learn → apply → ship.</li>
+                <li><strong>Format-matched support</strong>: Mini Tutorials for interview challenges; Micro Tutorials for micro-challenges.</li>
+            </ul>
+            <p className="cfx-s4-gap cfx-s4-muted">Platform promise: Codivium will endeavour to ensure every exercise includes the appropriate tutorial.</p>
+        </>,
+        imgSrc: '/assets/img/panel5_minitutorial.jpg',
+        imgWebp: '/assets/img/panel5_minitutorial.webp',
+        imgAlt: 'Codivium tutorial guidance', imgW: 1320, imgH: 1132,
+    },
+];
+
+const SNAP_THRESHOLD = 0.10;
+
+function getCardClass(idx, current, total) {
+    if (idx === current) return 'cfx-s4-card is-active';
+    if (idx === current - 1) return 'cfx-s4-card is-prev';
+    if (idx === current + 1) return 'cfx-s4-card is-next';
+    if (idx < current) return 'cfx-s4-card is-far-left';
+    return 'cfx-s4-card is-far-right';
+}
+
+function useCoverflowScroll(spacerRef, stageRef, panelCount) {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
     useEffect(() => {
-        document.body.setAttribute("data-page", "landing");
+        const spacer = spacerRef.current;
+        const stage = stageRef.current;
+        if (!spacer || !stage) return;
 
-        const loadScript = (src) => {
-            return new Promise((resolve) => {
-                const script = document.createElement("script");
-                script.src = src;
-                script.defer = true;
-                script.onload = resolve;
-                document.body.appendChild(script);
-            });
-        };
+        const scrollRoot = document.scrollingElement || document.documentElement;
 
-        let isMounted = true;
+        // Cached layout values — only updated on resize, never on scroll
+        let cachedSpacerHeight = 0;
+        let cachedSectionStart = 0;
 
-        (async () => {
-            await loadScript("/assets/js/landing/landing.bundle.1b3e87c7.js");
-            await loadScript("/assets/js/landing/section4-init.js");
-            await loadScript("/assets/js/cv-cube.08d05a23.js");
-        })();
+        function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+        function getScrollTop() {
+            return scrollRoot ? scrollRoot.scrollTop : (window.scrollY || 0);
+        }
+
+        function recalc() {
+            const stepScroll = Math.max(72, Math.round(window.innerHeight * 0.22));
+            const requiredHeight = Math.max(
+                Math.round(window.innerHeight * 1.12),
+                Math.round(window.innerHeight + (panelCount - 1) * stepScroll)
+            );
+            spacer.style.height = `${requiredHeight}px`;
+            cachedSpacerHeight = spacer.offsetHeight;
+            cachedSectionStart = getScrollTop() + spacer.getBoundingClientRect().top;
+        }
+
+        function progressToIndex(progress) {
+            if (panelCount <= 1) return 0;
+            const raw = clamp(progress, 0, 1) * (panelCount - 1);
+            const base = Math.floor(raw);
+            const frac = raw - base;
+            return clamp(base + (frac >= SNAP_THRESHOLD ? 1 : 0), 0, panelCount - 1);
+        }
+
+        function updateFromScroll() {
+            const total = Math.max(1, cachedSpacerHeight - window.innerHeight);
+            const scrolled = clamp(getScrollTop() - cachedSectionStart, 0, total);
+            const progress = total > 0 ? scrolled / total : 0;
+            setCurrentIndex(progressToIndex(progress));
+            // data-step for CSS counter
+            stage.setAttribute('data-step', String(progressToIndex(progress)));
+        }
+
+        let ticking = false;
+        function onScroll() {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => { updateFromScroll(); ticking = false; });
+        }
+        function onResize() { recalc(); updateFromScroll(); }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onResize, { passive: true });
+
+        recalc();
+        updateFromScroll();
 
         return () => {
-            document.body.removeAttribute("data-page");
-            document.querySelectorAll("script[src*='assets/js']").forEach(s => s.remove());
-            isMounted = false;
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onResize);
         };
+    }, [spacerRef, stageRef, panelCount]);
+
+    return currentIndex;
+}
+
+// ─── Flow arrow hooks for section 2b ──────────────────────────────────────
+function useFlowArrows(sectionRef) {
+    useEffect(() => {
+        const section = sectionRef.current;
+        if (!section) return;
+
+        const svgMain = section.querySelector('#flowArrowSvg');
+        const svgSpecial = section.querySelector('#flowSpecialArrow');
+        const pathSpecial = section.querySelector('#flowSpecialPath');
+        const steps = section.querySelector('.flow-steps');
+        const topMicro = section.querySelector('.flow-topmicro');
+        const iconCards = Array.from(section.querySelectorAll('.flow-step .flow-iconcard')).slice(0, 5);
+        const sideWins = Array.from(section.querySelectorAll('.flow-step .flow-sidewin')).slice(0, 5);
+        const icon1 = section.querySelector('.flow-iconcard');
+        const micro2 = section.querySelector('.flow-sidecard');
+
+        if (!svgMain || !steps) return;
+
+        let pathPool = [];
+        let pending = false;
+        let inView = true;
+
+        function resetPaths() {
+            pathPool.forEach(p => { if (p.parentNode === svgMain) svgMain.removeChild(p); });
+        }
+        function usePath(i, d) {
+            let p = pathPool[i];
+            if (!p) {
+                p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                p.setAttribute('class', 'flow-arrowpath');
+                p.setAttribute('marker-end', 'url(#flowArrowHeadGold)');
+                pathPool[i] = p;
+            }
+            p.setAttribute('d', d);
+            svgMain.appendChild(p);
+        }
+
+        function drawMain() {
+            const s = svgMain.getBoundingClientRect();
+            const w = Math.max(1, s.width);
+            const h = Math.max(1, s.height);
+            svgMain.setAttribute('viewBox', `0 0 ${w} ${h}`);
+            resetPaths();
+            let pi = 0;
+
+            const xMid = r => (r.left - s.left) + r.width / 2;
+            const yMid = r => (r.top - s.top) + r.height / 2;
+            const xL = r => r.left - s.left;
+            const xR = r => (r.left - s.left) + r.width;
+            const yTop = r => r.top - s.top;
+            const yBot = r => (r.top - s.top) + r.height;
+
+            if (topMicro && iconCards[0]) {
+                const a = topMicro.getBoundingClientRect();
+                const b = iconCards[0].getBoundingClientRect();
+                usePath(pi++, `M ${xMid(b)} ${yBot(a)} V ${yTop(b)}`);
+            }
+            for (let i = 0; i < Math.min(iconCards.length, sideWins.length); i++) {
+                const icon = iconCards[i].getBoundingClientRect();
+                const win = sideWins[i].getBoundingClientRect();
+                const y = yMid(win);
+                if (win.right <= icon.left) {
+                    usePath(pi++, `M ${xR(win)} ${y} H ${xL(icon)}`);
+                } else if (win.left >= icon.right) {
+                    usePath(pi++, `M ${xL(win)} ${y} H ${xR(icon)}`);
+                }
+            }
+            for (let i = 0; i < iconCards.length - 1; i++) {
+                const a = iconCards[i].getBoundingClientRect();
+                const b = iconCards[i + 1].getBoundingClientRect();
+                usePath(pi++, `M ${xMid(a)} ${yBot(a)} V ${yTop(b)}`);
+            }
+        }
+
+        function drawSpecial() {
+            if (!svgSpecial || !pathSpecial || !icon1 || !micro2) return;
+            const box = steps.getBoundingClientRect();
+            const a = icon1.getBoundingClientRect();
+            const b = micro2.getBoundingClientRect();
+            const w = Math.max(1, box.width);
+            const h = Math.max(1, box.height);
+            svgSpecial.setAttribute('viewBox', `0 0 ${w} ${h}`);
+            const x1 = a.left - box.left;
+            const y1 = (a.top - box.top) + a.height / 2;
+            const x2 = (b.left - box.left) + b.width / 2;
+            const y2 = (b.top - box.top) + b.height / 2;
+            pathSpecial.setAttribute('d', `M ${x1} ${y1} H ${x2} V ${y2}`);
+        }
+
+        function schedule() {
+            if (pending) return;
+            pending = true;
+            requestAnimationFrame(() => { pending = false; drawMain(); drawSpecial(); });
+        }
+
+        // IntersectionObserver — only draw when visible
+        let io;
+        if ('IntersectionObserver' in window) {
+            io = new IntersectionObserver(entries => {
+                inView = entries.some(e => e.isIntersecting);
+                if (inView) schedule();
+            }, { root: null, threshold: 0.01 });
+            io.observe(section);
+        }
+
+        // ResizeObserver — redraw when layout changes
+        const ro = new ResizeObserver(() => { if (inView) schedule(); });
+        ro.observe(steps);
+        if (topMicro) ro.observe(topMicro);
+        iconCards.forEach(el => ro.observe(el));
+        sideWins.forEach(el => ro.observe(el));
+
+        const onResize = () => { if (inView) schedule(); };
+        window.addEventListener('resize', onResize, { passive: true });
+
+        schedule();
+        setTimeout(() => { if (inView) schedule(); }, 140);
+        setTimeout(() => { if (inView) schedule(); }, 320);
+
+        return () => {
+            window.removeEventListener('resize', onResize);
+            ro.disconnect();
+            if (io) io.disconnect();
+        };
+    }, [sectionRef]);
+}
+
+function Landing() {
+    // useEffect(() => {
+    //     document.body.setAttribute("data-page", "landing");
+
+    //     const loadScript = (src) => {
+    //         return new Promise((resolve) => {
+    //             const script = document.createElement("script");
+    //             script.src = src;
+    //             script.defer = true;
+    //             script.onload = resolve;
+    //             document.body.appendChild(script);
+    //         });
+    //     };
+
+    //     let isMounted = true;
+
+    //     (async () => {
+    //         await loadScript("/assets/js/landing/landing.bundle.1b3e87c7.js");
+    //         await loadScript("/assets/js/landing/section4-init.js");
+    //     })();
+
+    //     return () => {
+    //         document.body.removeAttribute("data-page");
+    //         document.querySelectorAll("script[src*='assets/js']").forEach(s => s.remove());
+    //         isMounted = false;
+    //     };
+    // }, []);
+
+    
+    useEffect(() => {
+        document.body.setAttribute('data-page', 'landing');
+        return () => document.body.removeAttribute('data-page');
     }, []);
+
+    const spacerRef = useRef(null);
+    const stageRef = useRef(null);
+    const s2bRef = useRef(null);
+
+    const panelCount = CARDS.length;
+    const currentIndex = useCoverflowScroll(spacerRef, stageRef, panelCount);
+    useFlowArrows(s2bRef);
+
     return (
         <>
+            <style>{`.skip-link{position:absolute;top:-100px;left:0;background:#f6d58a;color:#05070c;padding:8px 16px;font-family:serif;font-size:14px;z-index:10000;border-radius:0 0 4px 0}.skip-link:focus{top:0}`}</style>
+            <a className="skip-link" href="#mainContent">Skip to main content</a>
+            <noscript>
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', background: '#1a1a2e', color: '#f6d58a', textAlign: 'center', padding: '14px 20px', zIndex: 9999, fontFamily: 'serif', fontSize: '14px' }}>
+                    JavaScript is required for this page. Please enable JavaScript in your browser settings.
+                </div>
+            </noscript>
             <Topbar />
-            <main role="main" id="mainContent">
+            <main role="main" id="mainContent" data-page="landing">
+
                 <section id="section1">
                     <div className="section-inner">
                         <div className="hero-grid">
@@ -57,6 +376,7 @@ function Landing() {
                         </div>
                     </div>
                 </section>
+
                 <section id="section2">
                     <div className="section-inner">
                         <div className="section-title">
@@ -155,7 +475,8 @@ function Landing() {
                         </div>
                     </div>
                 </section>
-                <section id="section2b">
+
+                <section id="section2b" ref={s2bRef}>
                     <div className="section-inner">
                         <div className="howitworks-title">
                             <h2>How does it work?</h2>
@@ -318,6 +639,7 @@ function Landing() {
                         <div className="q-attrib">Aristotle · <em>Nicomachean Ethics</em> (Book II)</div>
                     </div>
                 </section>
+
                 <section id="section3">
                     <div className="section-inner">
                         <h2>Codivium Content Mindmap</h2>
@@ -325,144 +647,52 @@ function Landing() {
                         <iframe className="constellation-frame" src="/assets/components/codivium-constellation/constellation-embed.html" title="Codivium constellation"></iframe>
                     </div>
                 </section>
+
                 <section className="cfx-s4 cfx-s4--interactive" id="showcaseCoverflow">
-                    <div className="cfx-s4-spacer" id="cfxS4Spacer">
+                    <div className="cfx-s4-spacer" id="cfxS4Spacer" ref={spacerRef}>
                         <div className="cfx-s4-sticky">
                             <div className="cfx-s4-shell">
                                 <div className="cfx-s4-stage-wrap">
-                                    <div aria-live="off" className="cfx-s4-stage" id="cfxS4Stage"><article className="cfx-s4-card is-active" data-index="0">
-                                        <div className="cfx-s4-card__inner cfx-s4-card__inner--title">
-                                            <div className="cfx-s4-titleOnly">
-                                                <div className="cfx-s4-titleOnly__text">The Codivium Training Arc</div>
-                                            </div>
-                                        </div>
-                                    </article>
-                                        <article className="cfx-s4-card is-next" data-index="1">
-                                            <div className="cfx-s4-card__inner">
-                                                <div className="cfx-s4-copy">
-                                                    <h2>Practice</h2>
-                                                    <p><strong>One training surface.</strong> Timed pressure, deliberate drills — and fast verification.</p>
-                                                    <p className="cfx-s4-gap">Train the way elite performance is built: attempt first, execute under constraints, validate instantly, then refine. Codivium supports both <em>interview-grade questions</em> and <em>micro-challenges</em> in the same environment — so your workflow stays consistent while your skill compounds.</p>
-                                                    <ul className="cfx-s4-bullets">
-                                                        <li><strong>Editor built for flow</strong>: stay locked on the solution, not the tooling.</li>
-                                                        <li><strong>Unit tests that mirror evaluation</strong>: instant pass/fail signal, including edge cases.</li>
-                                                        <li><strong>REPL for rapid iteration</strong>: validate assumptions, debug with intent, move faster.</li>
-                                                        <li><strong>Mini performance snapshot on pass</strong>: attempts-to-success, time-to-completion, and a trend view on repeat runs.</li>
-                                                    </ul>
-                                                    <p className="cfx-s4-gap cfx-s4-muted">Result: you’re not just “done” — you’re improving with measurable signal.</p>
-                                                </div>
-                                                <div className="cfx-s4-media">
-                                                    <div className="cfx-s4-image">
-                                                        <picture>
-                                                            <source srcSet="/assets/img/panel1_editor.webp" type="image/webp" />
-                                                            <img alt="Codivium editor" decoding="async" height="1139" loading="lazy" src="/assets/img/panel1_editor.jpg" width="2887" />
-                                                        </picture>
+                                    <div aria-live="off" className="cfx-s4-stage" id="cfxS4Stage"
+                                        ref={stageRef} data-step={String(currentIndex)}>
+                                        {CARDS.map(card => (
+                                            <article key={card.index}
+                                                className={getCardClass(card.index, currentIndex, panelCount)}
+                                                data-index={card.index}>
+                                                {card.isTitleCard ? (
+                                                    <div className="cfx-s4-card__inner cfx-s4-card__inner--title">
+                                                        <div className="cfx-s4-titleOnly">
+                                                            <div className="cfx-s4-titleOnly__text">The Codivium Training Arc</div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                                        </article>
-                                        <article className="cfx-s4-card is-far-right" data-index="2">
-                                            <div className="cfx-s4-card__inner">
-                                                <div className="cfx-s4-copy">
-                                                    <h2>Review</h2>
-                                                    <p><strong>Every completion becomes signal.</strong> Don’t just finish — improve.</p>
-                                                    <p className="cfx-s4-gap">The moment you pass, Codivium shows a clean performance readout — and it tracks improvement across repeat attempts on the <em>same</em> exercise. Deliberate practice is driven by feedback: your first completion becomes the baseline, and every revisit shows whether you’re getting sharper — and how.</p>
-                                                    <ul className="cfx-s4-bullets">
-                                                        <li><strong>Multi-attempt success</strong>: captures how many submissions it took to reach a full pass.</li>
-                                                        <li><strong>Repeat-attempt trends</strong>: compare performance across your 2nd, 3rd, 8th attempt — and beyond.</li>
-                                                        <li><strong>Time + run-count charts</strong>: see speed and efficiency improving across attempts.</li>
-                                                        <li><strong>Improvement summary</strong>: a compact before/after since your first completion.</li>
-                                                    </ul>
-                                                    <p className="cfx-s4-gap cfx-s4-muted">Result: objective proof of mastery forming — not vibes, not streaks.</p>
-                                                </div>
-                                                <div className="cfx-s4-media">
-                                                    <div className="cfx-s4-image">
-                                                        <picture>
-                                                            <source srcSet="/assets/img/panel2_feedback.webp" type="image/webp" />
-                                                            <img alt="Codivium review feedback" decoding="async" height="781" loading="lazy" src="/assets/img/panel2_feedback.jpg" width="1050" />
-                                                        </picture>
+                                                ) : (
+                                                    <div className="cfx-s4-card__inner">
+                                                        <div className="cfx-s4-copy">
+                                                            <h2>{card.heading}</h2>
+                                                            <p>{card.intro}</p>
+                                                            {card.body}
+                                                        </div>
+                                                        <div className="cfx-s4-media">
+                                                            <div className={`cfx-s4-image${card.index === 5 ? ' cfx-s4-image--final' : ''}`}>
+                                                                <picture>
+                                                                    <source srcSet={card.imgWebp} type="image/webp" />
+                                                                    <img alt={card.imgAlt} decoding="async"
+                                                                        height={card.imgH} loading="lazy"
+                                                                        src={card.imgSrc} width={card.imgW} />
+                                                                </picture>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                                        </article>
-                                        <article className="cfx-s4-card is-far-right" data-index="3">
-                                            <div className="cfx-s4-card__inner">
-                                                <div className="cfx-s4-copy">
-                                                    <h2>Diagnose</h2>
-                                                    <p><strong>MCQs that expose real gaps — not trivia.</strong></p>
-                                                    <p className="cfx-s4-gap">Coding interviews don’t only test writing code. They test whether your fundamentals are strong enough to make the right decisions quickly — under pressure. Codivium uses retrieval-first concept checks to surface fragile understanding before it costs you in a timed solve.</p>
-                                                    <ul className="cfx-s4-bullets">
-                                                        <li><strong>Interview-relevant concept checks</strong>: complexity, data structures, Python gotchas, and reasoning.</li>
-                                                        <li><strong>Immediate feedback</strong>: know what you got wrong and why, right when it matters.</li>
-                                                        <li><strong>Stronger fundamentals, fewer mistakes</strong>: fix gaps that cause avoidable failures.</li>
-                                                        <li><strong>Built for momentum</strong>: quick sessions that pair perfectly with coding drills.</li>
-                                                    </ul>
-                                                    <p className="cfx-s4-gap cfx-s4-muted">Sharpen fundamentals so your coding speed and accuracy improve together.</p>
-                                                </div>
-                                                <div className="cfx-s4-media">
-                                                    <div className="cfx-s4-image">
-                                                        <picture>
-                                                            <source srcSet="/assets/img/panel3_mcq.webp" type="image/webp" />
-                                                            <img alt="Codivium MCQ diagnosis" decoding="async" height="1200" loading="lazy" src="/assets/img/panel3_mcq.jpg" width="1563" />
-                                                        </picture>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </article>
-                                        <article className="cfx-s4-card is-far-right" data-index="4">
-                                            <div className="cfx-s4-card__inner">
-                                                <div className="cfx-s4-copy">
-                                                    <h2>Measure</h2>
-                                                    <p><strong>Your training, measured. Your weaknesses, obvious.</strong></p>
-                                                    <p className="cfx-s4-gap">Most people practice blindly. Codivium turns every attempt into signal: what you’re strong at, what’s holding you back, and what to train next. Your dashboard is built for data-driven deliberate practice — it recommends the next drill and provides CTAs that jump you straight into it.</p>
-                                                    <ul className="cfx-s4-bullets">
-                                                        <li><strong>Performance trends over time</strong>: see improvement you can trust — not vibes, not streaks.</li>
-                                                        <li><strong>Topic-level visibility</strong>: pinpoint exactly where you’re leaking points across patterns and categories.</li>
-                                                        <li><strong>Attempt analytics</strong>: track accuracy and consistency across sessions.</li>
-                                                        <li><strong>Clear direction</strong>: convert results into the next best practice target — what to train next and why.</li>
-                                                    </ul>
-                                                    <p className="cfx-s4-gap cfx-s4-muted">Stop guessing. Start training with precision.</p>
-                                                </div>
-                                                <div className="cfx-s4-media">
-                                                    <div className="cfx-s4-image">
-                                                        <picture>
-                                                            <source srcSet="/assets/img/panel4_dashboard.webp" type="image/webp" />
-                                                            <img alt="Codivium dashboard analytics" decoding="async" height="1150" loading="lazy" src="/assets/img/panel4_dashboard.jpg" width="2694" />
-                                                        </picture>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </article>
-                                        <article className="cfx-s4-card is-far-right" data-index="5">
-                                            <div className="cfx-s4-card__inner">
-                                                <div className="cfx-s4-copy">
-                                                    <h2>Refine</h2>
-                                                    <p><strong>Precision guidance — exactly when it matters.</strong></p>
-                                                    <p className="cfx-s4-gap">Every Codivium exercise is paired with a short, high-signal tutorial designed for the moment you’re working — not “someday when you watch a course.” <strong>Interview coding challenges</strong> include <strong>Mini Tutorials</strong> (end-to-end strategy and execution). <strong>Micro-challenges</strong> include <strong>Micro Tutorials</strong> (atomic drills that sharpen one mental model at a time).</p>
-                                                    <ul className="cfx-s4-bullets">
-                                                        <li><strong>Exercise-specific, not generic</strong>: the exact technique stack required for <em>this</em> problem.</li>
-                                                        <li><strong>Elite clarity, zero fluff</strong>: crisp explanation, clean reasoning, no filler.</li>
-                                                        <li><strong>Built for immediate execution</strong>: learn → apply → ship.</li>
-                                                        <li><strong>Format-matched support</strong>: Mini Tutorials for interview challenges; Micro Tutorials for micro-challenges.</li>
-                                                    </ul>
-                                                    <p className="cfx-s4-gap cfx-s4-muted">Platform promise: Codivium will endeavour to ensure every exercise includes the appropriate tutorial (Mini or Micro).</p>
-                                                </div>
-                                                <div className="cfx-s4-media">
-                                                    <div className="cfx-s4-image cfx-s4-image--final">
-                                                        <picture>
-                                                            <source srcSet="/assets/img/panel5_minitutorial.webp" type="image/webp" />
-                                                            <img alt="Codivium tutorial guidance" decoding="async" height="1132" loading="lazy" src="/assets/img/panel5_minitutorial.jpg" width="1320" />
-                                                        </picture>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </article>
+                                                )}
+                                            </article>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
+
                 <section id="section5">
                     <div className="section-inner">
                         <h2>Ready to Begin Your Journey To Elite Mastery?</h2>
@@ -493,6 +723,7 @@ function Landing() {
                         </div>
                     </div>
                 </section>
+
                 <section id="section6">
                     <div className="footer-inner">
                         <div className="footer-left">
