@@ -479,6 +479,9 @@ export default function EditorPage() {
               exercise={exercise}
               locks={locks}
               syntaxTheme={settings.syntaxTheme}
+              editorFontSize={settings.editorFontSize}
+              editorFontFamily={settings.editorFontFamily}
+              editorBold={settings.editorBold}
               candidateRef={candidateRef}
               onSubmit={handleSubmit}
               submitting={submitting}
@@ -505,7 +508,11 @@ export default function EditorPage() {
           {/* ── REPL ── */}
           {replVisible && (
             <ReplPane
-              syntaxTheme={settings.syntaxTheme}
+              // REPL gets its own syntax theme, not the editor's. Settings
+              // changes on the Code Editor sub-tab can't leak into REPL.
+              syntaxTheme={settings.replSyntaxTheme}
+              replFontSize={settings.replFontSize}
+              replFontFamily={settings.replFontFamily}
               candidateRef={candidateRef}
               onReplSplitDrag={onReplSplitDrag}
             />

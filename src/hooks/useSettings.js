@@ -2,9 +2,11 @@
 // Manages all editor/workspace settings that live in localStorage.
 // Applies CSS custom properties to the stage element when settings change.
 import { useState, useEffect, useCallback } from 'react';
+import { applyEditorSyntaxPalette, applyReplSyntaxPalette } from '../data/syntaxPalettes.js';
 
 const KEYS = {
   syntaxTheme:      'cv_syntax_theme',
+  replSyntaxTheme:  'cv_repl_syntax_theme',
   editorFontSize:   'cv_editor_font_size',
   editorFontFamily: 'cv_editor_font_family',
   editorBold:       'cv_editor_bold',
@@ -44,6 +46,7 @@ const FONT_MAP = {
 
 export function useSettings(stageRef) {
   const [syntaxTheme,      setSyntaxTheme]      = useState(() => get(KEYS.syntaxTheme, 'obsidian-code'));
+  const [replSyntaxTheme,  setReplSyntaxTheme]  = useState(() => get(KEYS.replSyntaxTheme, 'obsidian-code'));
   const [editorFontSize,   setEditorFontSize]   = useState(() => get(KEYS.editorFontSize, '14px'));
   const [editorFontFamily, setEditorFontFamily] = useState(() => get(KEYS.editorFontFamily, 'system-mono'));
   const [editorBold,       setEditorBold]       = useState(() => get(KEYS.editorBold, '0') === '1');
@@ -101,12 +104,20 @@ export function useSettings(stageRef) {
     // Glass
     stage.classList.toggle('glass-off', !glassOn);
 
-  }, [stageRef, editorFontSize, editorFontFamily, editorBold, wsTheme, glassOn,
-      leftFontFamily, leftFontSize, leftBold, testsFontFamily, testsFontSize,
-      replFontFamily, replFontSize]);
+    // Syntax palettes — kept independent so editor settings can't bleed
+    // into REPL surfaces. Editor → `--syn-*`, REPL → `--repl-syn-*`.
+    stage.setAttribute('data-syntax-theme', syntaxTheme);
+    stage.setAttribute('data-repl-syntax-theme', replSyntaxTheme);
+    applyEditorSyntaxPalette(stage, syntaxTheme);
+    applyReplSyntaxPalette(stage, replSyntaxTheme);
+
+  }, [stageRef, syntaxTheme, replSyntaxTheme, editorFontSize, editorFontFamily, editorBold,
+      wsTheme, glassOn, leftFontFamily, leftFontSize, leftBold,
+      testsFontFamily, testsFontSize, replFontFamily, replFontSize]);
 
   const apply = useCallback((vals) => {
     if (vals.syntaxTheme      !== undefined) { setSyntaxTheme(vals.syntaxTheme);           set(KEYS.syntaxTheme, vals.syntaxTheme); }
+    if (vals.replSyntaxTheme  !== undefined) { setReplSyntaxTheme(vals.replSyntaxTheme);   set(KEYS.replSyntaxTheme, vals.replSyntaxTheme); }
     if (vals.editorFontSize   !== undefined) { setEditorFontSize(vals.editorFontSize);     set(KEYS.editorFontSize, vals.editorFontSize); }
     if (vals.editorFontFamily !== undefined) { setEditorFontFamily(vals.editorFontFamily); set(KEYS.editorFontFamily, vals.editorFontFamily); }
     if (vals.editorBold       !== undefined) { setEditorBold(vals.editorBold);             set(KEYS.editorBold, vals.editorBold ? '1' : '0'); }
@@ -125,7 +136,8 @@ export function useSettings(stageRef) {
   }, []);
 
   return {
-    syntaxTheme, editorFontSize, editorFontFamily, editorBold,
+    syntaxTheme, replSyntaxTheme,
+    editorFontSize, editorFontFamily, editorBold,
     wsTheme, glassOn, paletteThemed, globalTheme,
     leftFontFamily, leftFontSize, leftBold,
     testsFontFamily, testsFontSize, testsBold,

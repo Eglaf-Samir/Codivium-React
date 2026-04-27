@@ -11,6 +11,7 @@
 @import './help-panel.css';
 @import './exercise-menu.css';
 @import './editor.css';
+@import './ace-syntax-overrides.css';
 @import './feedback.css';
 @import './adaptive.css';
 @import './onboarding-tour.css';
