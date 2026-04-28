@@ -158,7 +158,7 @@
 
     /* Timer toggle/widget flex order — replaces inline style="order:N" */
     .cv-timer-widget{ order: 1; }
-    .cv-timer-toggle{ order: 2; transform: translateX(50px); }
+    .cv-timer-toggle{ order: 2; }
 
     /* Tour button icon margin */
     .tour-btn-ico { margin-right: 4px; }
@@ -2232,7 +2232,7 @@ overflow-x: hidden;
       display: flex;
       flex-direction: row;
       align-items: flex-start;
-      gap: 4px;
+      gap: 6px;
       pointer-events: auto;
       user-select: none;
     }
@@ -2244,34 +2244,30 @@ overflow-x: hidden;
       border-radius: 0;
       border: 1px solid rgba(255,255,255,0.10);
       background: rgba(255,255,255,0.05);
-      color: rgba(245,245,252,0.55);
+      color: rgba(245,245,252,0.85);
       display: grid;
       place-items: center;
       cursor: pointer;
       transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
       flex-shrink: 0;
-      align-self: flex-start;
-      margin-top: 33px;  /* widget padding(8) + face_half(36) - toggle_half(11) = 33px: aligns with 3-9 line */
+      opacity: 1;
+      margin-top: 29px; /* aligns with the clock face vertical centre */
     }
     .cv-timer-toggle:hover {
-      color: rgba(246,213,138,0.90);
-      border-color: rgba(246,213,138,0.35);
-      /* No scale — it conflicts with translateX and causes flicker */
+      color: rgba(246,213,138,0.95);
+      border-color: rgba(246,213,138,0.45);
     }
     .cv-timer-toggle svg { width: 13px; height: 13px; }
 
     .cv-timer-widget {
-      /* Curved face: bright top arc fades to deep base */
       background: transparent;
-      /* Thick raised border — multiple rings */
       border: none;
       border-radius: 0;
-      
-      padding: 8px 8px 6px;
-      display: flex; flex-direction: column;
-      align-items: center; gap: 6px;
-      
-      
+      padding: 4px 0 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
       transition: opacity 240ms ease, transform 240ms ease;
     }
 
@@ -2281,7 +2277,8 @@ overflow-x: hidden;
       pointer-events: none;
     }
 
-    .cv-timer-face { width: 72px; height: 72px; border-radius: 0; transform: translateX(50px); }
+    .cv-timer-svg { width: 72px; height: 72px; display: block; }
+    .cv-timer-face { width: 72px; height: 72px; border-radius: 0; }
 
     .cv-timer-digital {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -2290,7 +2287,7 @@ overflow-x: hidden;
       color: rgba(246,213,138,0.95);
       text-shadow: 0 0 12px rgba(246,213,138,0.22);
       line-height: 1;
-      transform: translateX(50px);
+      text-align: center;
     }
 
     /* ===== Tab lock system ===== */
@@ -2686,8 +2683,7 @@ overflow-x: hidden;
     .ws-controls:hover, .ws-controls:focus-within { opacity: 1; }
 
     /* Timer: mute when not hovered */
-    .cv-timer { opacity: 0.75; transition: opacity 200ms ease; }
-    .cv-timer:hover, .cv-timer:focus-within { opacity: 1; }
+    .cv-timer { opacity: 1; }
 
     /* Settings palette trigger — consistent secondary affordance */
     .palette-trigger {
