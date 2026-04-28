@@ -227,8 +227,12 @@
 }
 
 #cvHelpSidebarBtn .sb-ico-help {
-  width: 22px;
-  height: 22px;
+  /* Inherit the 40x40 box, dark background and border from .side-ico (which
+     this span also carries) so the help icon sits inside its container with
+     the same breathing room as the other nav icons. Previously this rule
+     forced 22x22, but `.side-ico svg` renders the SVG at 24x24 — the icon
+     ended up overflowing its own background, especially noticeable when
+     the sidebar collapsed and the icon became the only visible affordance. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -319,7 +323,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  /* Same sidebar-aware insets as .fb-overlay so the help modal centres in
+     the content column rather than under the sidebar. --content-left tracks
+     the current sidebar width (collapsed/expanded/mobile). */
+  padding: calc(var(--topbar-h, 82px) + 20px) 20px 20px calc(var(--content-left, var(--sidebar-w, 264px)) + 20px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
@@ -441,7 +448,15 @@
   background: rgba(255,215,100,0.98);
 }
 
-/* Collapsed sidebar — hide text labels */
+/* Collapsed sidebar — hide text labels and centre the icon. The default
+   layout uses left-biased padding (10px 8px 10px 12px) for the
+   icon-then-label flex row; without this override the icon stayed pinned
+   to the left when the label disappeared. */
 .sidebar-collapsed #cvHelpSidebarBtn .sb-label-help {
   display: none;
+}
+.sidebar-collapsed #cvHelpSidebarBtn {
+  justify-content: center;
+  padding: 10px 8px;
+  gap: 0;
 }

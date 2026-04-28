@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useEditorLeaveGuard } from '../hooks/useEditorLeaveGuard';
 import { isLoggedIn } from '../utils/auth';
 
 const NAV_LINKS = [
@@ -14,6 +15,8 @@ export default function Topbar({ onMenuOpen }) {
   const location = useLocation();
   const isEditor = location.pathname === '/editor';
   const loggedIn = isLoggedIn();
+  // Confirms before leaving the editor so the user doesn't lose unsaved code.
+  const { onLinkClick } = useEditorLeaveGuard();
 
   return (
     <div className="topbar" role="navigation" aria-label="Primary">
@@ -27,7 +30,13 @@ export default function Topbar({ onMenuOpen }) {
       </button>
 
       {/* Brand */}
-      <Link className="brand" to="/adaptive-practice" aria-label="Codivium Home" id="brandLogo">
+      <Link
+        className="brand"
+        to="/adaptive-practice"
+        aria-label="Codivium Home"
+        id="brandLogo"
+        onClick={(e) => onLinkClick(e, '/adaptive-practice')}
+      >
         <div className="brand-mark cv-cube" aria-hidden="true">
           <div className="cube-wrap">
             <div className="cube3d" id="brandCube">
@@ -61,14 +70,17 @@ export default function Topbar({ onMenuOpen }) {
       )} */}
       <nav className="navlinks">
 
-        <NavLink to="/" end className={({ isActive }) =>
-          isActive ? "active" : ""
-        }>
+        <NavLink
+          to="/" end
+          onClick={(e) => onLinkClick(e, '/')}
+          className={({ isActive }) => (isActive ? "active" : "")}
+        >
           Home
         </NavLink>
 
         <NavLink
           to="/articles"
+          onClick={(e) => onLinkClick(e, '/articles')}
           className={() =>
             location.pathname === "/articles" || location.pathname === "/article"
               ? "active"
@@ -78,41 +90,53 @@ export default function Topbar({ onMenuOpen }) {
           Articles
         </NavLink>
 
-        <NavLink to="/pricing" className={({ isActive }) =>
-          isActive ? "active" : ""
-        }>
+        <NavLink
+          to="/pricing"
+          onClick={(e) => onLinkClick(e, '/pricing')}
+          className={({ isActive }) => (isActive ? "active" : "")}
+        >
           Prices
         </NavLink>
 
-        <NavLink to="/contact" className={({ isActive }) =>
-          isActive ? "active" : ""
-        }>
+        <NavLink
+          to="/contact"
+          onClick={(e) => onLinkClick(e, '/contact')}
+          className={({ isActive }) => (isActive ? "active" : "")}
+        >
           Contact
         </NavLink>
 
-        <NavLink to="/faq" className={({ isActive }) =>
-          isActive ? "active" : ""
-        }>
+        <NavLink
+          to="/faq"
+          onClick={(e) => onLinkClick(e, '/faq')}
+          className={({ isActive }) => (isActive ? "active" : "")}
+        >
           FAQ
         </NavLink>
 
         {loggedIn ? (
-          <NavLink to="/adaptive-practice" className={({ isActive }) =>
-            isActive ? "nav-login active" : "nav-login"
-          }>
+          <NavLink
+            to="/adaptive-practice"
+            onClick={(e) => onLinkClick(e, '/adaptive-practice')}
+            className={({ isActive }) => (isActive ? "nav-login active" : "nav-login")}
+          >
             Dashboard
           </NavLink>
         ) : (
           <>
-            <NavLink to="/join" className={({ isActive }) =>
-              isActive ? "nav-join active" : "nav-join"
-            }>
+            <NavLink
+              to="/join"
+              onClick={(e) => onLinkClick(e, '/join')}
+              className={({ isActive }) => (isActive ? "nav-join active" : "nav-join")}
+            >
               Join
             </NavLink>
 
-            <NavLink to="/login" className={({ isActive }) =>
-              isActive ? "nav-login active" : "nav-login"
-            }>
+            <NavLink
+              to="/login"
+              onClick={(e) => onLinkClick(e, '/login')}
+              className={({ isActive }) => (isActive ? "nav-login active" : "nav-login")}
+            >
               Login
             </NavLink>
           </>

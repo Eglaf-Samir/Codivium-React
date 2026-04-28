@@ -3,6 +3,7 @@ export const getalldeliberatepractic = 'api/v1/deliberatepractice/deliberateprac
 export const checkDeliberatepracticeUserCode = 'api/v1/deliberatepractice/CheckDeliberatepracticeUserCode?UserID=';
 export const getExerciseDetails = 'api/v1/deliberatepractice/GetExerciseDetails?id=';
 export const executedeliberatepracticeUserCode = 'api/v1/deliberatepractice/executedeliberatepracticeUserCode';
+export const executedeliberatepracticeUserCodeStream = 'api/v1/deliberatepractice/executedeliberatepracticeUserCodeStream';
 //used end user
 
 

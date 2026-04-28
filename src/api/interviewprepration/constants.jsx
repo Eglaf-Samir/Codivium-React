@@ -3,6 +3,7 @@ export const getallinterviewpreprationfiltering = 'api/v1/interviewprepration/al
 export const getallInterviewPreprationbyadmin = 'api/v1/interviewprepration/allUnitTestByadmin';
 export const getallInterviewPreprationinerdetails = 'api/v1/interviewprepration/GetExerciseDetails?id=';
 export const paythonoutput= 'api/v1/interviewprepration/ExecuteUserCode';
+export const paythonoutputstream= 'api/v1/interviewprepration/ExecuteUserCodeStream';
 export const noncodingoutput= 'api/v1/userInterviewRuntimeLog/ExecuteNonCoding';
 export const userTimelogandoutput= 'api/v1/userInterviewRuntimeLog/ExecuteRuntimelogCoding';
 export const submitUserInterViewPrepration='api/v1/userInterviewRuntimeLog/InterViewSubmission'

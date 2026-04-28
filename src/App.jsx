@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout    from './components/Layout.jsx';
 import PublicWrapper from './components/PublicWrapper.jsx';
+import { LeaveConfirmProvider } from './context/LeaveConfirmContext.jsx';
 import { isLoggedIn } from './utils/auth.js';
 
 // App pages
@@ -108,6 +109,7 @@ function PubRoute({ component: Component, page, title }) {
 
 export default function App() {
   return (
+    <LeaveConfirmProvider>
     <Routes>
       {/* ── PUBLIC PAGES ── */}
       <Route path="/"                element={<PubRoute component={Landing}        page="landing"         title="Become Python Pro" />} />
@@ -143,5 +145,6 @@ export default function App() {
       <Route path="/codivium_insights_embedded.html"  element={<Navigate to="/insights" replace />} />
       <Route path="*"                                 element={<Navigate to="/adaptive-practice" replace />} />
     </Routes>
+    </LeaveConfirmProvider>
   );
 }

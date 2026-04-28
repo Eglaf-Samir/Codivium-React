@@ -12,11 +12,13 @@ import { useSettings } from '../../hooks/useSettings.js';
 
 import {
   CreateOutput as InterviewCreateOutput,
+  CreateOutputStream as InterviewCreateOutputStream,
   SubmitUserInterViewPrepration as SubmitInterviewFinal,
   SaveInterviewPreparationSession,
 } from '../../api/interviewprepration/apiinterviewprepration';
 import {
   CreateOutput as DeliberateCreateOutput,
+  CreateOutputStream as DeliberateCreateOutputStream,
   SubmitUserInterViewPrepration as SubmitDeliberateFinal,
   SaveDeliberatePracticeSession,
 } from '../../api/deliberatePractice/apideliberatepractice';
@@ -50,7 +52,11 @@ export default function EditorPage() {
   const location = useLocation();
 
   // ── Core hooks ─────────────────────────────────────────────────────────────
-  const timer = useTimer();
+  // Resume seconds carried in via WelcomeBackModal's "Continue where I left
+  // off" — useTimer starts the display at that value so the user sees the
+  // accumulated time, not 0:00.
+  const resumeSeconds = Number(location?.state?.initialTimeInSeconds) || 0;
+  const timer = useTimer({ initialSeconds: resumeSeconds });
   const settings = useSettings(stageRef);
   const { exercise, loading, error, reload, item, track } = useExercise();
 
@@ -109,7 +115,26 @@ export default function EditorPage() {
   );
   const [lastRunOutput, setLastRunOutput] = useState(null);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
-  const initialOffsetRef = useRef(Number(location?.state?.initialTimeInSeconds) || 0);
+  // Distinguishes Run-Code (backend executes the suite) from Final-Submit
+  // (backend just saves + builds feedback). Only the former should cycle
+  // through unit-test names in the status indicator.
+  const [runningTests, setRunningTests] = useState(false);
+  // initialOffsetRef is kept around for any future surface that wants a
+  // resume baseline distinct from the running total. The save / submit /
+  // run paths now read timer.elapsedSeconds directly because useTimer is
+  // seeded with the resume value above.
+  const initialOffsetRef = useRef(resumeSeconds);
+  // Keeps the latest editor contents in sync via the EditorSlot onChange
+  // callback. The unmount-time session save reads from this ref because the
+  // candidate editor's imperative ref (candidateRef.current.getValue) is
+  // already null by the time React runs the parent cleanup — children
+  // unmount first, leaving Ace's instance destroyed.
+  const codeBufferRef = useRef('');
+
+  // Run-progress is now driven by NDJSON events streamed from the backend
+  // (`progress` per test start, `testResult` per finish, `complete` at end).
+  // The handler in handleRunCode wires those events into setSubmitStatus
+  // directly — no client-side cycling needed.
 
   // Reset per-exercise state when exercise changes + preload useroldcode if continuing
   useEffect(() => {
@@ -134,6 +159,9 @@ export default function EditorPage() {
     if (candidateRef.current?.setValue) {
       candidateRef.current.setValue(seed);
     }
+    // Mirror the seed into the buffer ref so an unmount that fires before
+    // the user types anything still saves something useful.
+    codeBufferRef.current = seed;
   }, [exercise?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Run Code: calls CreateOutput (executes user code against unit tests) ──
@@ -153,10 +181,12 @@ export default function EditorPage() {
     const newCount = attemptCount + 1;
     setAttemptCount(newCount);
     setSubmitting(true);
+    setRunningTests(true);
     setTestResults(null);
-    setSubmitStatus({ type: 'running', message: 'Running tests…' });
+    // The cycling useEffect (driven by runningTests) populates submitStatus
+    // with per-test progress, so no static "Running tests…" line is needed.
 
-    const totalSecs = timer.elapsedSeconds + initialOffsetRef.current;
+    const totalSecs = timer.elapsedSeconds;
 
     try {
       let body;
@@ -171,7 +201,7 @@ export default function EditorPage() {
           interviewPreprationId: item.id,
           userId: Userid,
         };
-        runApi = InterviewCreateOutput;
+        runApi = InterviewCreateOutputStream;
       } else {
         body = {
           Id: item.deliberatePracticeid,
@@ -182,11 +212,35 @@ export default function EditorPage() {
           deliberatePracticePreprationId: item.id,
           userId: Userid,
         };
-        runApi = DeliberateCreateOutput;
+        runApi = DeliberateCreateOutputStream;
       }
 
-      const response = await runApi(JSON.stringify(body));
+      // Real per-test progress: backend streams { type: progress/testResult/complete }
+      // events as the Python harness runs each unit test. We surface the
+      // currently-running test name to the user the moment it starts, then
+      // flip to a brief "Test N/M ..." line after it finishes — that flicker
+      // is what makes progress feel real rather than estimated.
+      const onStreamEvent = (evt) => {
+        if (!evt) return;
+        if (evt.type === 'progress') {
+          const label = evt.name || `test_${evt.index}`;
+          setSubmitStatus({
+            type: 'running',
+            message: `Running test ${evt.index} / ${evt.total}: ${label}`,
+          });
+        } else if (evt.type === 'testResult') {
+          const verb = evt.passed ? '✓' : '✗';
+          const label = evt.name || `test_${evt.index}`;
+          setSubmitStatus({
+            type: 'running',
+            message: `${verb} ${evt.index} / ${evt.total}: ${label}`,
+          });
+        }
+      };
+
+      const response = await runApi(JSON.stringify(body), onStreamEvent);
       setSubmitting(false);
+      setRunningTests(false);
 
       if (!response || response.status !== 200 || !response.data) {
         if (response?.status === 401) {
@@ -206,6 +260,9 @@ export default function EditorPage() {
       const totalErrors = response.data.totalErrorTestCount ?? failedIds.length;
       const totalTests = (exercise.unitTests || []).length;
       const passed = Math.max(0, totalTests - failedIds.length);
+      // Treat the Python harness's "<unknown>" placeholder as a missing value
+      // so the failure row can fall back to the error message instead.
+      const cleanOutput = (s) => (s && s !== '<unknown>' ? s : '');
       const mapped = {
         accepted: failedIds.length === 0 && totalErrors === 0,
         testsPassed: passed,
@@ -218,8 +275,9 @@ export default function EditorPage() {
             name: u.name || `test_${u.id}`,
             status: failed ? 'fail' : 'pass',
             input: out.unitTestDescription || '',
-            expected: out.expectedOutput || '',
-            got: out.actualOutput || '',
+            expected: cleanOutput(out.expectedOutput),
+            got: cleanOutput(out.actualOutput),
+            error: out.errorMessage || '',
           };
         }),
       };
@@ -238,6 +296,7 @@ export default function EditorPage() {
       }
     } catch (err) {
       setSubmitting(false);
+      setRunningTests(false);
       setSubmitStatus({
         type: 'error',
         message: `Run error: ${err?.message || 'Unknown error'} — please try again.`,
@@ -252,7 +311,7 @@ export default function EditorPage() {
       return;
     }
     const Userid = localStorage.getItem('Userid');
-    const totalSecs = timer.elapsedSeconds + initialOffsetRef.current;
+    const totalSecs = timer.elapsedSeconds;
     setSubmitting(true);
     setSubmitStatus({ type: 'running', message: 'Submitting…' });
 
@@ -296,61 +355,54 @@ export default function EditorPage() {
 
       setSubmitStatus({ type: 'success', message: 'Submission successful!' });
 
-      // Backend (UserInterviewRunTimeLogApiController.InterViewSubmission /
-      // DeliberatePracticeSubmission) returns the full list of this user's
-      // submissions for this exercise — sorted by insertion order. Map it into
-      // the shape FeedbackModal's TimeChart / AttemptsChart already understand.
-      const submissions = Array.isArray(response.data) ? response.data : [];
-      const pick = (obj, ...keys) => {
-        for (const k of keys) {
-          if (obj && obj[k] != null) return obj[k];
-        }
-        return 0;
+      // Backend now returns the v1.2.1 Feedback Modal Integration Contract
+      // shape: { accepted, testsPassed, testsTotal, testResults, feedback }.
+      // Every field shown in the modal is pre-computed server-side — chips,
+      // insightText, tiers, deltas, history, next-exercise. The frontend
+      // only routes those values into the modal payload.
+      const data = response.data || {};
+      const fb = data.feedback || {};
+      const history = Array.isArray(fb.history) ? fb.history : [];
+
+      // The modal's MetricCard components read session metrics off `current`
+      // (timeToFirstAttemptSecs, bestPreSuccessPercent, avgIterationSeconds in
+      // addition to timeToSuccessSeconds + attempts). Pass them all here so
+      // the secondary-metrics row populates instead of showing "—".
+      // Prefer the backend-derived attempt count: it comes from the run-log
+      // table and is consistent with bestPreSuccess / timeToFirstAttempt /
+      // avgIteration. The local attemptCount can drift on resumed sessions.
+      const current = {
+        timeToSuccessSeconds: totalSecs,
+        attempts: fb.attempts ?? attemptCount,
+        timeToFirstAttemptSecs: fb.timeToFirstAttemptSecs ?? null,
+        bestPreSuccessPercent: fb.bestPreSuccessPercent ?? null,
+        avgIterationSeconds: fb.avgIterationSeconds ?? null,
       };
-      const history = submissions.map(s => ({
-        timeToSuccessSeconds: Number(pick(s, 'executionTime', 'ExecutionTime')) || 0,
-        attempts:             Number(pick(s, 'runCount', 'RunCount')) || 0,
-        createdAt:            pick(s, 'createdAt', 'CreatedAt'),
-      }));
-
-      const isFirstSolve = history.length <= 1;
-      const first  = history[0];
-      const latest = history[history.length - 1];
-
-      // Improvement % vs first attempt — negative = better (less time / fewer runs).
-      const pctChange = (oldV, newV) =>
-        !oldV ? 0 : ((newV - oldV) / oldV) * 100;
-
-      const deltas = !isFirstSolve && first && latest
-        ? {
-            timeToSuccess: pctChange(first.timeToSuccessSeconds, latest.timeToSuccessSeconds),
-            attempts:      pctChange(first.attempts, latest.attempts),
-          }
-        : null;
-
-      const current = latest || { timeToSuccessSeconds: totalSecs, attempts: attemptCount };
-
-      const insightText = isFirstSolve
-        ? 'Nice work — first time solving this exercise.'
-        : `You've completed this exercise ${history.length} times. Keep refining.`;
 
       if (feedbackRef.current?.show) {
         feedbackRef.current.show({
           exerciseId: exercise.id,
-          exerciseName: exercise.name,
-          category: exercise.category,
-          difficulty: exercise.difficulty,
-          testsPassed: (exercise.unitTests || []).length,
-          testsTotal: (exercise.unitTests || []).length,
+          exerciseName: fb.exerciseName || exercise.name,
+          category: fb.category || exercise.category,
+          difficulty: fb.difficulty || exercise.difficulty,
+          testsPassed: data.testsPassed ?? (exercise.unitTests || []).length,
+          testsTotal:  data.testsTotal  ?? (exercise.unitTests || []).length,
           returnMenuUrl: `/menu?track=${encodeURIComponent(track)}`,
           current,
-          insightText,
-          chips: [],
-          nextSuggestion: '',
+          insightText:    fb.insightText    || '',
+          chips:          fb.chips          || [],
+          nextSuggestion: fb.nextSuggestion || '',
+          attemptTier:    fb.attemptTier    || null,
+          speedTier:      fb.speedTier      || null,
           performanceTier: null,
-          isFirstSolve,
+          isFirstSolve:   !!fb.isFirstSolve,
           history,
-          deltas,
+          deltas:         fb.deltas || null,
+          // Backend still computes a next-exercise recommendation but we keep
+          // the footer CTA as plain "Try Again" — drop it from the modal payload
+          // so the button always re-enters the current exercise.
+          nextExerciseId:   null,
+          nextExerciseName: null,
           // Used by the modal's "Try Again" button to reset and re-enter the
           // same exercise via the same route the user came from.
           item,
@@ -387,8 +439,13 @@ export default function EditorPage() {
       if (!item) return;
       const Userid = localStorage.getItem('Userid');
       if (!Userid) return;
-      const code = candidateRef.current?.getValue?.() ?? '';
-      const totalSecs = timer.elapsedSeconds + initialOffsetRef.current;
+      // Read from the buffer ref — the candidate editor's child unmount
+      // happens before this cleanup, so candidateRef.current.getValue()
+      // returns "" by the time we get here. The buffer is kept in sync via
+      // the EditorSlot onChange callback.
+      const liveCode = candidateRef.current?.getValue?.() ?? '';
+      const code = liveCode || codeBufferRef.current || '';
+      const totalSecs = timer.elapsedSeconds;
       try {
         if (track === 'interview') {
           SaveInterviewPreparationSession({
@@ -402,7 +459,10 @@ export default function EditorPage() {
         } else {
           SaveDeliberatePracticeSession({
             userId: Userid,
-            deliberatePracticeId: item.id,
+            // Backend DTO field is DeliberatePracticePreprationId — earlier
+            // we sent deliberatePracticeId here, which silently bound to
+            // 0 and broke the resume flow for the deliberate-practice track.
+            deliberatePracticePreprationId: item.id,
             lastUserCode: code,
             totalSeconds: totalSecs,
             runCount: attemptCount,
@@ -483,6 +543,7 @@ export default function EditorPage() {
               editorFontFamily={settings.editorFontFamily}
               editorBold={settings.editorBold}
               candidateRef={candidateRef}
+              onCandidateChange={(v) => { codeBufferRef.current = v ?? ''; }}
               onSubmit={handleSubmit}
               submitting={submitting}
               submitStatus={submitStatus}

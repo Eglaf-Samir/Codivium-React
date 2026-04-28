@@ -1,11 +1,68 @@
 import Axios from "axios";
 import {
-    getallInterviewPrepration, getallInterviewPreprationinerdetails, paythonoutput, noncodingoutput, userTimelogandoutput,
+    getallInterviewPrepration, getallInterviewPreprationinerdetails, paythonoutput, paythonoutputstream, noncodingoutput, userTimelogandoutput,
     getcheckusercode, deleteInterviewPrepration, createInterviewPrepration, getInterviewPrepration, updateInterviewPrepration,
     createInterviewPreprationUnitTest, interviewPreprationUnitTestDelete,
     getallInterviewPreprationbyadmin, allUnitTestListbyId, interviewPreprationfileupload, interviewUnitTestfileupload, getallinterviewpreprationfiltering, submitUserInterViewPrepration
 } from './constants'
 import { baseURL } from "../../config";
+
+// Streaming variant of CreateOutput. Reads the NDJSON response body line by
+// line and forwards each event ({type, ...}) to `onEvent`. Resolves with the
+// final `complete` event's `result` (the same object the non-streaming
+// endpoint would have returned). Falls back to throwing if the stream errors.
+export const CreateOutputStream = async (body, onEvent) => {
+    const token = localStorage.getItem('LoginToken');
+    const url = baseURL + paythonoutputstream;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'ngrok-skip-browser-warning': 'true',
+        },
+        body,
+    });
+    if (!res.ok || !res.body) {
+        const text = await res.text().catch(() => '');
+        const err = new Error(`Stream failed (${res.status}): ${text || res.statusText}`);
+        err.status = res.status;
+        throw err;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let finalResult = null;
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, idx).trim();
+            buffer = buffer.slice(idx + 1);
+            if (!line) continue;
+            let evt;
+            try { evt = JSON.parse(line); }
+            catch { continue; }
+            if (evt?.type === 'complete') finalResult = evt.result;
+            try { onEvent && onEvent(evt); } catch (_) { /* keep streaming */ }
+        }
+    }
+    // Drain any trailing partial buffer
+    const tail = buffer.trim();
+    if (tail) {
+        try {
+            const evt = JSON.parse(tail);
+            if (evt?.type === 'complete') finalResult = evt.result;
+            onEvent && onEvent(evt);
+        } catch { /* ignore */ }
+    }
+
+    return { status: 200, data: finalResult };
+};
 
 export const getallInterviewPreprationlist = async () => {
     let token = localStorage.getItem('LoginToken');

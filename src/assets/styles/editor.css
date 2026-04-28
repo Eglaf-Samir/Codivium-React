@@ -1842,7 +1842,11 @@ overflow-x: hidden;
   touch-action: none;
   width: var(--pal-w);
   height: var(--pal-h);
-  left: calc(50% - (var(--pal-w) / 2));
+  /* Centre inside the content column to the right of the sidebar (rather
+     than the full viewport). --content-left tracks the current sidebar
+     width and falls to 0 on mobile, so this collapses to plain centring
+     where the sidebar is hidden. */
+  left: calc(var(--content-left, var(--sidebar-w, 264px)) + (100% - var(--content-left, var(--sidebar-w, 264px)) - var(--pal-w)) / 2);
   top: calc(var(--topbar-h, 82px) + ((100vh - var(--topbar-h, 82px) - var(--pal-h)) / 2));
   border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--pal-border) 70%, transparent);
