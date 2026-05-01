@@ -158,13 +158,27 @@ function useCoverflowScroll(spacerRef, stageRef, panelCount) {
 
         window.addEventListener('scroll', onScroll, { passive: true });
         window.addEventListener('resize', onResize, { passive: true });
+        window.addEventListener('load', onResize);
+
+        // ResizeObserver: re-measure when async CSS injection (PublicWrapper)
+        // changes section layout after initial mount. Without this, cachedSectionStart
+        // captures the pre-CSS position and the scroll math stays wrong for the page's lifetime.
+        const ro = (typeof ResizeObserver !== 'undefined') ? new ResizeObserver(onResize) : null;
+        if (ro) ro.observe(document.documentElement);
 
         recalc();
         updateFromScroll();
+        // Also recalc after a tick in case CSS lands between sync render and now
+        const t1 = setTimeout(onResize, 100);
+        const t2 = setTimeout(onResize, 600);
 
         return () => {
             window.removeEventListener('scroll', onScroll);
             window.removeEventListener('resize', onResize);
+            window.removeEventListener('load', onResize);
+            if (ro) ro.disconnect();
+            clearTimeout(t1);
+            clearTimeout(t2);
         };
     }, [spacerRef, stageRef, panelCount]);
 

@@ -824,6 +824,32 @@ body[data-page="join"] .securepill{
   margin-top: 6px !important;
 }
 
+/* ── Force Cinzel rendering on join page (matches reference look) ─────── */
+body[data-page="join"],
+body[data-page="join"] .top,
+body[data-page="join"] h1,
+body[data-page="join"] .sub,
+body[data-page="join"] .inline-login-link,
+body[data-page="join"] .hint,
+body[data-page="join"] .pw-hint,
+body[data-page="join"] .pw-hint li,
+body[data-page="join"] .pw-hint b,
+body[data-page="join"] .terms-label,
+body[data-page="join"] .checkline a{
+  font-family: "Cinzel", "Noto Serif", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial !important;
+}
+
+/* ── All text uppercase on join page ──────────────────────────────────── */
+body[data-page="join"]{
+  text-transform: uppercase !important;
+}
+/* Keep user-typed values and placeholders as-written */
+body[data-page="join"] input,
+body[data-page="join"] textarea,
+body[data-page="join"] select{
+  text-transform: none !important;
+}
+
 /* ── Responsive: Tablet (≤ 768px) ──────────────────────────────────────── */
 @media (max-width: 768px) {
   body[data-page="join"] .wrap{

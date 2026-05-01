@@ -819,12 +819,15 @@ body.cv-app{
     }
 
 /* ===== Scroll only the windows (grid), keep base background static ===== */
-    html, body{
+    /* Scoped to app pages (body.cv-app) so this doesn't kill scroll on
+       public pages (landing, join, etc.) that share main.css. */
+    html:has(body.cv-app),
+    body.cv-app{
       height: 100%;
       overflow: hidden;
     }
 
-    .stage{
+    body.cv-app .stage{
       overflow: hidden;
     }
 

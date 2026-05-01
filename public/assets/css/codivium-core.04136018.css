@@ -46,7 +46,7 @@
 *{ box-sizing:border-box; }
 html,body{
   font-family: var(--body-serif);
- height:100%; }
+  min-height: 100%; }
 body{
   margin:0;
   background: var(--bg);

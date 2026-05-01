@@ -2,6 +2,11 @@
    Public pages load their own CSS via dynamic <link> injection (useCssLoader hook)
    This prevents @layer conflicts between public site and app platform CSS */
 
+/* Cinzel font @font-face — registers the font globally so the topbar
+   (which uses var(--serif)) renders consistently on every page. App
+   page bodies are explicitly set to sans-serif below to prevent Cinzel
+   from cascading into MCQ/editor content. */
+@import './fonts-public.css';
 @import './base.css';
 @import './logo.css';
 @import './topbar.css';

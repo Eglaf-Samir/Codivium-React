@@ -96,22 +96,19 @@
   font-size: 13px;
 }
 
-body.mcq-parent .divider,
-body.mcq-quiz .divider{
+.divider{
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
   margin: 18px 0;
   opacity: 0.85;
 }
 
-body.mcq-parent .form,
-body.mcq-quiz .form{
+.form{
   display: grid;
   gap: 18px;
 }
 
-body.mcq-parent .label,
-body.mcq-quiz .label{
+.label{
   font-family: var(--font-brand);
   font-weight: 900;
   letter-spacing: 0.10em;
@@ -121,16 +118,14 @@ body.mcq-quiz .label{
   user-select: none;
 }
 
-body.mcq-parent .help,
-body.mcq-quiz .help{
+.help{
   color: var(--color-text-muted);
   font-size: 12px;
   line-height: 1.35;
 }
 
-/* Generic input surface (dark) — MCQ pages only */
-body.mcq-parent .control,
-body.mcq-quiz .control{
+/* Generic input surface (dark) */
+.control{
   border-radius: 16px;
   background:
     radial-gradient(circle at 18% 12%, rgba(255,255,255,0.04), transparent 56%),
@@ -143,8 +138,7 @@ body.mcq-quiz .control{
     0 18px 44px rgba(0,0,0,0.26);
 }
 
-body.mcq-parent .input, body.mcq-parent select.input,
-body.mcq-quiz .input, body.mcq-quiz select.input{
+.input, select.input{
   width: 100%;
   appearance: none;
   -webkit-appearance: none;
@@ -157,8 +151,7 @@ body.mcq-quiz .input, body.mcq-quiz select.input{
   outline: none;
 }
 
-body.mcq-parent .control:focus-within,
-body.mcq-quiz .control:focus-within{
+.control:focus-within{
   border-color: rgba(246, 213, 138, 0.46);
   box-shadow:
     0 0 0 4px rgba(246, 213, 138, 0.14),
@@ -167,9 +160,8 @@ body.mcq-quiz .control:focus-within{
   transform: translateY(-1px);
 }
 
-/* Buttons — MCQ pages only */
-body.mcq-parent .btn,
-body.mcq-quiz .btn{
+/* Buttons */
+.btn{
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -191,15 +183,11 @@ body.mcq-quiz .btn{
   white-space: nowrap;
 }
 
-body.mcq-parent .btn:hover,
-body.mcq-quiz .btn:hover{ transform: translateY(-1px); box-shadow: 0 22px 58px rgba(0,0,0,0.44); filter: drop-shadow(0 0 18px rgba(246,213,138,0.12)); }
-body.mcq-parent .btn:active,
-body.mcq-quiz .btn:active{ transform: translateY(2px); box-shadow: 0 10px 26px rgba(0,0,0,0.34) inset; filter: none; }
-body.mcq-parent .btn[disabled],
-body.mcq-quiz .btn[disabled]{ opacity: 0.62; cursor: not-allowed; transform: none !important; filter: none !important; }
+.btn:hover{ transform: translateY(-1px); box-shadow: 0 22px 58px rgba(0,0,0,0.44); filter: drop-shadow(0 0 18px rgba(246,213,138,0.12)); }
+.btn:active{ transform: translateY(2px); box-shadow: 0 10px 26px rgba(0,0,0,0.34) inset; filter: none; }
+.btn[disabled]{ opacity: 0.62; cursor: not-allowed; transform: none !important; filter: none !important; }
 
-body.mcq-parent .ghost,
-body.mcq-quiz .ghost{
+.ghost{
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -220,10 +208,8 @@ body.mcq-quiz .ghost{
   white-space: nowrap;
 }
 
-body.mcq-parent .ghost:hover,
-body.mcq-quiz .ghost:hover{ transform: translateY(-1px); border-color: var(--color-border-accent-subtle); box-shadow: 0 18px 44px rgba(0,0,0,0.28); }
-body.mcq-parent .ghost:active,
-body.mcq-quiz .ghost:active{ transform: translateY(1px); }
+.ghost:hover{ transform: translateY(-1px); border-color: var(--color-border-accent-subtle); box-shadow: 0 18px 44px rgba(0,0,0,0.28); }
+.ghost:active{ transform: translateY(1px); }
 
 /* Checkbox line */
 .checkline{

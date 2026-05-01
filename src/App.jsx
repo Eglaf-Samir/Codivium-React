@@ -9,8 +9,8 @@ import { isLoggedIn } from './utils/auth.js';
 import AdaptivePage  from './pages/AdaptivePage/index.jsx';
 import MenuPage      from './pages/MenuPage/index.jsx';
 import EditorPage    from './pages/EditorPage/index.jsx';
-import McqSetupPage  from './pages/McqSetupPage.jsx';
-import McqQuizPage   from './pages/McqQuizPage.jsx';
+import McqSetupPage  from './pages/mcq-parent/McqParentPage.jsx';
+import McqQuizPage   from './pages/mcq-quiz/McqQuizPage.jsx';
 import SettingsPage  from './pages/SettingsPage.jsx';
 import InsightsPage  from './pages/InsightsPage.jsx';
 

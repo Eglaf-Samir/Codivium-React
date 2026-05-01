@@ -1616,3 +1616,23 @@ html[data-theme="frost"] .quiz-code-block {
 }
 html[data-theme="glacier-slate"] .quiz-code-block { border-color: #9BABBA !important; }
 html[data-theme="frost"] .quiz-code-block { background: var(--cv-code-bg, #F3F7FB) !important; border-color: #D7E2EC !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Responsive fix for app-shell context (.main is the fixed-height scroll
+   container). Release height locks so the quiz card grows naturally and
+   .main scrolls instead of clipping bottom buttons (Tutorial/View Answer/
+   Submit) at 100% zoom. Scoped to body.cv-app.mcq-quiz only.
+   ───────────────────────────────────────────────────────────────────── */
+body.cv-app.mcq-quiz .page-shell{
+  height: auto !important;
+  min-height: 100%;
+  align-items: flex-start;
+}
+body.cv-app.mcq-quiz .window-large{
+  height: auto !important;
+  min-height: 0;
+}
+body.cv-app.mcq-quiz .window-large .window-pad{
+  height: auto !important;
+  min-height: 0;
+}

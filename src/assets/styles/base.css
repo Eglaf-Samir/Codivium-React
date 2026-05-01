@@ -1202,7 +1202,12 @@ html[data-theme="dark-charcoal"] {
   }
 
 *{ box-sizing: border-box; }
-html, body{ height: 100%; }
+/* Only app pages need html+body locked to viewport (overflow:hidden on body
+   creates an internal scroll container via .main). Public pages must let
+   the window scroll, so html/body height stays auto so the document grows
+   with content and window scroll events fire. */
+html:has(body.cv-app),
+body.cv-app{ height: 100%; }
 
 /* Public pages: html is the scroll container (window scrolls), so window-level
    scroll listeners and position:sticky inside body work as expected.
@@ -1225,9 +1230,11 @@ body.cv-app{
   padding-top: var(--topbar-h, 82px);
 }
 
-/* Public pages: let html scroll; body just clips horizontal overflow. */
+/* Public pages: let html scroll; body just clips horizontal overflow.
+   Use `clip` not `hidden` — `hidden` forces overflow-y to compute as auto,
+   which makes body a scroll container and breaks position:sticky inside it. */
 body:not(.cv-app){
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Skip link: visible on keyboard focus */

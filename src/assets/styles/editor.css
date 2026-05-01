@@ -816,19 +816,30 @@ color: var(--ws-text, rgba(245,245,252,0.92));
       border-radius: 0;
     }
 *{ box-sizing: border-box; }
-    html, body{ height: 100%; }
+    /* Scoped to app pages so editor's overflow:hidden doesn't bleed into
+       public pages (landing, join, etc.) that share main.css. */
+    html:has(body.cv-app),
+    body.cv-app{ height: 100%; }
 
-    body{
+    body.cv-app{
       margin: 0;
       background: var(--bg);
-      
+
       color: var(--text);
-overflow-x: hidden;
+      overflow-x: hidden;
       overflow-y: hidden;
-      font-family: "Cinzel", serif;
+      /* App page body uses sans-serif (matches the original look). The
+         topbar opts into Cinzel via its own var(--serif) rule. */
+      font-family: var(--font-ui, 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif);
       /* reserve space for fixed topbar */
       padding-top: var(--topbar-h, 82px);
       min-height: 100vh;
+
+      /* Topbar variables — codivium-core defines these for public pages but
+         isn't loaded on app pages, so var(--serif) would resolve unset. Set
+         them here so the topbar renders Cinzel consistently across all pages. */
+      --serif: "Cinzel", serif;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
     }
 
     /* ===== Collapsible filter strip (thin) ===== */

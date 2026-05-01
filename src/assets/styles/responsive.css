@@ -124,12 +124,14 @@ body.cv-app .sidebar-handle {
 }
 
 /* ══ PUBLIC PAGES ════════════════════════════════════════════════
-   Public pages (landing, login, join...) use body scroll.
-   Make sure no app CSS interferes.
+   Public pages use window/html scroll, not body scroll. Use
+   `overflow-x: clip` (not `hidden`) so overflow-y stays `visible`;
+   otherwise body becomes a scroll container and breaks
+   position:sticky inside it (e.g. landing page coverflow).
 ═══════════════════════════════════════════════════════════════ */
 body:not(.cv-app) {
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow-x: clip;
+  overflow-y: visible;
   padding-top: 0;
 }
 
