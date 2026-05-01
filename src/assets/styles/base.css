@@ -1204,12 +1204,19 @@ html[data-theme="dark-charcoal"] {
 *{ box-sizing: border-box; }
 html, body{ height: 100%; }
 
+/* Public pages: html is the scroll container (window scrolls), so window-level
+   scroll listeners and position:sticky inside body work as expected.
+   App pages override this via body.cv-app below. */
+html{ overflow-y: scroll; }
+@supports (scrollbar-gutter: stable){
+  html{ overflow-y: auto; scrollbar-gutter: stable; }
+}
+
 body{
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui, 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif);
-  /* overflow controlled per page type — app pages need hidden, public pages need scroll */
 }
 
 /* App pages: body is overflow:hidden, scrolling handled by .main container */
@@ -1218,10 +1225,9 @@ body.cv-app{
   padding-top: var(--topbar-h, 82px);
 }
 
-/* Public pages: normal body scroll */
+/* Public pages: let html scroll; body just clips horizontal overflow. */
 body:not(.cv-app){
   overflow-x: hidden;
-  overflow-y: auto;
 }
 
 /* Skip link: visible on keyboard focus */

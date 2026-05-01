@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useEditorLeaveGuard } from '../hooks/useEditorLeaveGuard';
+import useCube from '../hooks/useCube';
 import { isLoggedIn } from '../utils/auth';
 
 const NAV_LINKS = [
@@ -17,6 +18,8 @@ export default function Topbar({ onMenuOpen }) {
   const loggedIn = isLoggedIn();
   // Confirms before leaving the editor so the user doesn't lose unsaved code.
   const { onLinkClick } = useEditorLeaveGuard();
+  const brandRef = useRef(null);
+  useCube(brandRef);
 
   return (
     <div className="topbar" role="navigation" aria-label="Primary">
@@ -35,6 +38,7 @@ export default function Topbar({ onMenuOpen }) {
         to="/adaptive-practice"
         aria-label="Codivium Home"
         id="brandLogo"
+        ref={brandRef}
         onClick={(e) => onLinkClick(e, '/adaptive-practice')}
       >
         <div className="brand-mark cv-cube" aria-hidden="true">

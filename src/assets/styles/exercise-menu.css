@@ -49,16 +49,10 @@
       --font: "Cinzel", serif;
     }
 
-*{ box-sizing: border-box; }
-    html, body{ height: 100%; }
-body{
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
+/* Scoped to app pages (body.cv-app). On public pages base.css governs body
+   styles, so the menu page's font/overflow no longer leaks globally. */
+body.cv-app{
   font-family: var(--font);
-  height: 100%;
-  overflow: hidden;
-  overflow-x: hidden;
 }
 
 /* (removed menu styles to use source theme) */
