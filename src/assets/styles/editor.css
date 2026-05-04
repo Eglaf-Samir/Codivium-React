@@ -2238,16 +2238,16 @@ color: var(--ws-text, rgba(245,245,252,0.92));
       z-index:1; position:relative;
     }
 
-    /* ===== Elapsed session timer ===== */
+    /* ===== Elapsed session timer (position matched to MCQ quiz page) ===== */
     .cv-timer {
       position: fixed;
       top: 117px;
-      right: calc((40px + 1.9in + 15px - 72px) / 2);
+      right: 18px;
       z-index: 60;
       display: flex;
       flex-direction: row;
       align-items: flex-start;
-      gap: 6px;
+      gap: 4px;
       pointer-events: auto;
       user-select: none;
     }

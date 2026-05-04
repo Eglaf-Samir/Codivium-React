@@ -7,9 +7,19 @@ import {
 } from './components/QuizComponents.jsx';
 import McqTour, { useMcqTour } from '../mcq-shared/McqTour.jsx';
 import { useGlowFollow } from '../mcq-shared/useGlowFollow.js';
+import { useCssLoader } from '../../hooks/useCssLoader.js';
+
+// MCQ CSS files have unscoped selectors that would collide with other pages.
+// Inject them only while this route is mounted.
+const MCQ_CSS = [
+  '/assets/css/components/mcq/mcq-forms.css',
+  '/assets/css/components/mcq/mcq-quiz.css',
+];
 
 export default function McqQuizPage() {
+  useCssLoader(MCQ_CSS);
   useGlowFollow();
+
   const tourState = useMcqTour({ onParent: false });
   const { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart } = useQuiz();
   const { phase, questions, index, settings } = state;

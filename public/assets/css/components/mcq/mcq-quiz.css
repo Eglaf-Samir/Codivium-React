@@ -1636,3 +1636,25 @@ body.cv-app.mcq-quiz .window-large .window-pad{
   height: auto !important;
   min-height: 0;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Make quiz content fill the available width after the sidebar so the
+   question card and option cells aren't squashed into the left half.
+   Sidebar stays visible; .main keeps its natural sidebar offset.
+   Scoped to body.cv-app.mcq-quiz so other pages aren't affected.
+   ───────────────────────────────────────────────────────────────────── */
+body.cv-app.mcq-quiz .page-shell{
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+body.cv-app.mcq-quiz .quiz-stage{
+  width: 100%;
+}
+body.cv-app.mcq-quiz #quizCard,
+body.cv-app.mcq-quiz .window-large{
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+

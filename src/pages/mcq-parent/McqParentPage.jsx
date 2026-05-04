@@ -8,6 +8,16 @@ import SummaryRail    from './components/SummaryRail.jsx';
 import InfoRail       from './components/InfoRail.jsx';
 import McqTour, { useMcqTour } from '../mcq-shared/McqTour.jsx';
 import { useGlowFollow } from '../mcq-shared/useGlowFollow.js';
+import { useCssLoader } from '../../hooks/useCssLoader.js';
+
+// MCQ CSS files have unscoped selectors (.card, .input, .divider, etc.) that
+// would collide with other pages if imported globally. Inject them only
+// while this route is mounted; useCssLoader removes them on unmount.
+const MCQ_CSS = [
+  '/assets/css/components/mcq/mcq-forms.css',
+  '/assets/css/components/mcq/mcq-parent.css',
+  '/assets/css/components/mcq/mcq-setup-overrides.css',
+];
 
 const QUIZ_URL = window.__CODIVIUM_MCQ_QUIZ_URL__ || '/mcq/quiz';
 
@@ -25,6 +35,7 @@ function safeRedirect(url) {
 }
 
 export default function McqParentPage() {
+  useCssLoader(MCQ_CSS);
   useGlowFollow();
   const tourState = useMcqTour({ onParent: true });
   const { categories, loading, error } = useCategories();

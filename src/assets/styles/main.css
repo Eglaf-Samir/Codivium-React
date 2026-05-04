@@ -20,10 +20,11 @@
 @import './feedback.css';
 @import './adaptive.css';
 @import './onboarding-tour.css';
-@import './mcq-forms.css';
-@import './mcq-parent.css';
-@import './mcq-quiz.css';
-@import './mcq-setup-overrides.css';
+/* MCQ CSS files (mcq-forms/parent/quiz/setup-overrides) are NOT imported here.
+   They have unscoped class selectors (.card, .input, .divider, .btn, .ghost,
+   etc.) that collide with public pages like Contact. They are now loaded
+   dynamically by McqParentPage / McqQuizPage via useCssLoader so they only
+   affect the MCQ routes. Files live at public/assets/css/components/mcq/. */
 @import './settings.css';
 @import './dashboard-base.css';
 @import './dashboard-chrome.css';
