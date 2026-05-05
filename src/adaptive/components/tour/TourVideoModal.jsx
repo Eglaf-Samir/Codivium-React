@@ -1,6 +1,7 @@
+// src/adaptive/components/tour/TourVideoModal.jsx
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { VIDEO_CONTENT } from './tourSteps.js';
+import { VIDEO_CONTENT } from '../../data/tourSteps.js';
 
 export default function TourVideoModal({ videoKey, onClose }) {
   if (!videoKey) return null;

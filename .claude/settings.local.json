@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"D:/Praveen/codivium_production/src/adaptive\" 2>&1; echo ---; ls \"d:/github/Codivium-React/src/pages/AdaptivePage\" 2>&1)",
+      "Read(//d/Praveen/codivium_production/src/adaptive/**)",
+      "Bash(xargs grep -h \"^import.*from\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\Praveen\\\\codivium_production\\\\src\\\\adaptive\\\\\" -Recurse -File | Select-Object FullName)",
+      "Bash(find \"D:/Praveen/codivium_production/assets/components/adaptive/\" -type f 2>/dev/null)",
+      "Read(//d/Praveen/codivium_production/assets/components/adaptive/**)",
+      "Read(//d/Praveen/codivium_production/src/**)",
+      "Bash(cp \"D:/Praveen/codivium_production/src/shared/fetch.js\" \"d:/github/Codivium-React/src/shared/fetch.js\")",
+      "Bash(cp -r \"D:/Praveen/codivium_production/src/adaptive\" \"d:/github/Codivium-React/src/adaptive\")",
+      "Bash(cp \"D:/Praveen/codivium_production/assets/components/adaptive/adaptive-practice.css\" \"d:/github/Codivium-React/src/assets/styles/adaptive.css\")",
+      "Bash(cp \"D:/Praveen/codivium_production/assets/components/adaptive/onboarding-tour.css\" \"d:/github/Codivium-React/src/assets/styles/onboarding-tour.css\")",
+      "Bash(rm -rf \"d:/github/Codivium-React/src/pages/AdaptivePage\")",
+      "Bash(rm -f \"d:/github/Codivium-React/src/hooks/useAdaptiveState.js\" \"d:/github/Codivium-React/src/hooks/useTourState.js\" \"d:/github/Codivium-React/src/hooks/useSpotlight.js\" \"d:/github/Codivium-React/src/hooks/adaptiveRouting.js\" \"d:/github/Codivium-React/src/hooks/adaptiveTemplates.js\" \"d:/github/Codivium-React/src/hooks/adaptiveUtils.js\")",
+      "Bash(grep -rln \"^\\\\.btn\\\\s*[\\\\{,]\\\\|^\\\\s\\\\+\\\\.btn\\\\s*\\\\{\" \"D:/Praveen/codivium_production/assets\" 2>/dev/null | head -5)",
+      "Read(//d/Praveen/codivium_production/assets/**)"
+    ]
+  }
+}

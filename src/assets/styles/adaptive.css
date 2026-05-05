@@ -21,6 +21,8 @@
 
 /* ── Page header ── */
 .ap-header { margin-bottom: 28px; max-width: 1136px; margin-left: auto; margin-right: auto; }
+/* Orientation mode: center header over the 739px form column */
+.ap-header--orient { max-width: 739px; }
 .ap-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .ap-kicker {
   font-family: var(--font-brand);
@@ -129,7 +131,7 @@ h1.ap-title, .ap-title {
     linear-gradient(180deg, rgba(255,255,255,0.030), rgba(0,0,0,0.20)),
     var(--surface);
   border: 1px solid rgba(255,255,255,0.10);
-  padding: 18px 20px 16px; cursor: pointer;
+  padding: 38px 20px 36px; cursor: pointer;
   position: relative;
   transition: border-color 140ms, transform 140ms var(--ease);
   display: flex; flex-direction: column;
@@ -174,29 +176,37 @@ h1.ap-title, .ap-title {
   border-top: 1px solid rgba(255,255,255,0.07); padding-top: 9px;
   line-height: 1.45; margin-bottom: 10px;
 }
-.ap-alt-cta {
+.ap-alt-cta,
+.btn-alt {
   font-family: var(--font-brand); font-size: 11px; letter-spacing: 0.10em;
   text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px;
   cursor: pointer; padding: 7px 14px;
   border: 1px solid currentColor;
   background: transparent;
-  align-self: flex-start;   /* don't stretch full card width */
+  align-self: flex-start;
+  white-space: normal;        /* allow text to wrap if too long */
+  word-break: break-word;
+  max-width: 100%;            /* never overflow the card */
   transition: background 130ms, gap 130ms;
 }
-.ap-alt-card.teal .ap-alt-cta {
+.ap-alt-card.teal .ap-alt-cta,
+.ap-alt-card.teal .btn-alt {
   color: var(--color-success);
   border-color: rgba(94,200,172,0.35);
 }
-.ap-alt-card.amber .ap-alt-cta {
+.ap-alt-card.amber .ap-alt-cta,
+.ap-alt-card.amber .btn-alt {
   color: rgba(255,192,90,0.82);
   border-color: rgba(255,192,90,0.35);
 }
-.ap-alt-card.teal .ap-alt-cta:hover {
+.ap-alt-card.teal .ap-alt-cta:hover,
+.ap-alt-card.teal .btn-alt:hover {
   background: var(--color-success-subtle);
   border-color: rgba(94,200,172,0.60);
   gap: 8px;
 }
-.ap-alt-card.amber .ap-alt-cta:hover {
+.ap-alt-card.amber .ap-alt-cta:hover,
+.ap-alt-card.amber .btn-alt:hover {
   background: var(--color-warning-subtle);
   border-color: rgba(255,192,90,0.60);
   gap: 8px;
@@ -368,7 +378,11 @@ h1.ap-title, .ap-title {
   max-width: none;
 }
 
-/* .main position is managed globally by base.css (left: sidebar-w-collapsed when collapsed) */
+/* ── Lock main content position — sidebar collapse must not shift the layout ──
+ * mcq-parent.css and mcq-quiz.css do this for their pages. Adaptive page loads
+ * neither, so the rule must live here.
+ */
+body.sidebar-collapsed .main { left: var(--sidebar-w, 264px); }
 
 /* ── Reduced motion ─────────────────────────────────────────────────────────
  * Suppresses hover transforms, evidence bar animation, and ring transitions.
@@ -1046,112 +1060,57 @@ html[data-theme="parchment"] .ap-quality-desc,
 html[data-theme="parchment"] .ap-diag-label,
 html[data-theme="parchment"] .ap-context { color: rgba(14,28,80,0.65) !important; }
 
-/* ══ ADAPTIVE PRACTICE — RESPONSIVE ═══════════════════════════════════════
-   Fills in the gap between 700px (existing) and 1320px (existing).
-   Adds tablet (860px) and mobile (≤600px) specific rules.
-══════════════════════════════════════════════════════════════════════════ */
-
-/* ── Tablet (≤ 1024px) ──────────────────────────────────────────────────── */
-@media (max-width: 1024px) {
-  .adaptive-shell{
-    gap: 22px;
-    max-width: 100%;
-  }
-  .ap-header{
-    padding: 18px 14px 0;
-    max-width: 100%;
-  }
-  .ap-header-row{
-    gap: 12px;
-  }
-  .ap-last-session{
-    flex-shrink: 1;
-    white-space: normal;
-    font-size: 11px;
-    padding: 6px 10px;
-  }
-  .ap-rings-full-span{
-    max-width: 100%;
-    margin-top: 20px;
-  }
+/* ─────────────────────────────────────────────────────────────────────────
+   .btn / .ghost button styling — copied from reference's mcq-forms.css and
+   SCOPED to .adaptive-page so it doesn't bleed into other pages (Contact
+   has its own .btn class with different styling). The adaptive page
+   expects the gold-themed MCQ-style button but mcq-forms.css only loads
+   on MCQ routes, so we duplicate the base rules here under a page scope.
+   ───────────────────────────────────────────────────────────────────── */
+.adaptive-page .btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid rgba(246, 213, 138, 0.42);
+  background: rgba(246, 213, 138, 0.92);
+  color: var(--color-bg-page);
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  font-size: 12px;
+  padding: 13px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 18px 44px rgba(0,0,0,0.34);
+  transition: transform var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease), filter var(--t-med) var(--ease);
+  user-select: none;
+  white-space: nowrap;
 }
+.adaptive-page .btn:hover{ transform: translateY(-1px); box-shadow: 0 22px 58px rgba(0,0,0,0.44); filter: drop-shadow(0 0 18px rgba(246,213,138,0.12)); }
+.adaptive-page .btn:active{ transform: translateY(2px); box-shadow: 0 10px 26px rgba(0,0,0,0.34) inset; filter: none; }
+.adaptive-page .btn[disabled]{ opacity: 0.62; cursor: not-allowed; transform: none !important; filter: none !important; }
 
-/* ── Tablet small / Large mobile (≤ 860px) ──────────────────────────────── */
-@media (max-width: 860px) {
-  .adaptive-shell{
-    grid-template-columns: 1fr;
-    max-width: 100%;
-    gap: 16px;
-  }
-  .adaptive-sidebar-col{
-    display: none;
-  }
-  .ap-header{
-    padding: 14px 12px 0;
-    margin-bottom: 18px;
-  }
-  .ap-header-row{
-    flex-direction: column;
-    gap: 8px;
-  }
-  .ap-title{
-    font-size: clamp(16px, 3.5vw, 22px) !important;
-  }
-  .ap-subtitle{
-    font-size: 12px;
-  }
-  .ap-last-session{
-    align-self: flex-start;
-  }
-  .ap-section-label{
-    font-size: 9px;
-  }
-  .ap-cta-row{
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+.adaptive-page .ghost{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.18);
+  color: var(--color-text-secondary);
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform var(--t-med) var(--ease), border-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
+  user-select: none;
+  white-space: nowrap;
 }
-
-/* ── Mobile (≤ 600px) ───────────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  .ap-header{
-    padding: 10px 10px 0;
-    margin-bottom: 14px;
-  }
-  .ap-title{
-    font-size: clamp(14px, 4.5vw, 18px) !important;
-  }
-  .ap-kicker{
-    font-size: 9px;
-    letter-spacing: 0.12em;
-  }
-  .ap-alt-grid{
-    grid-template-columns: 1fr;
-  }
-  .ap-alt-card{
-    padding: 14px 14px 12px;
-  }
-  .ap-alt-headline{
-    font-size: 13px;
-  }
-  .ap-alt-sub{
-    font-size: 11px;
-  }
-  .ap-sci{
-    padding: 10px 12px;
-  }
-  .ap-sci-text{
-    font-size: 11px;
-  }
-  .ap-cta-row{
-    flex-direction: column;
-    gap: 6px;
-  }
-  .ap-milestone-banner{
-    padding: 10px 12px;
-    font-size: 12px;
-  }
-  .ap-orientation-options{
-    grid-template-columns: 1fr !important;
-  }
-}
+.adaptive-page .ghost:hover{ transform: translateY(-1px); border-color: var(--color-border-accent-subtle); box-shadow: 0 18px 44px rgba(0,0,0,0.28); }
+.adaptive-page .ghost:active{ transform: translateY(1px); }

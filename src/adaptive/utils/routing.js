@@ -1,4 +1,5 @@
-// utils/routing.js — SPA version: all URLs use React Router paths (no .html)
+// utils/routing.js
+// Orientation diagnostic URL builder — mirrors buildOrientationUrl in adaptive-practice.js.
 
 export const ORIENTATION_CONFIG = {
   difficultyMap: {
@@ -7,14 +8,21 @@ export const ORIENTATION_CONFIG = {
     intermediate: 'intermediate',
     advanced:     'advanced',
   },
-  questionCountByTime: { 5: 5, 20: 10, 60: 15 },
+  questionCountByTime: {
+    5:   5,
+    20: 10,
+    60: 15,
+  },
   defaultQuestionCount: 10,
   exploringSession: {
     categoryMode:      'curated',
     categoryCount:      4,
     totalQuestions:    24,
     curatedCategories: [
-      'Language Basics', 'Functions', 'Data Types & Data Structures', 'Performance',
+      'Language Basics',
+      'Functions',
+      'Data Types & Data Structures',
+      'Performance',
     ],
   },
 };
@@ -30,22 +38,27 @@ export function buildOrientationUrl(answers) {
   const difficulty = cfg.difficultyMap[level] || 'basic';
   const count      = cfg.questionCountByTime[time] || cfg.defaultQuestionCount;
 
+  // Persist answers for Phase C continuity
   try {
     localStorage.setItem('cv_adaptive_onboarding', JSON.stringify({
-      goal, level, time, difficulty, count, answeredAt: new Date().toISOString(),
+      goal, level, time, difficulty, count,
+      answeredAt: new Date().toISOString(),
     }));
   } catch (_) {}
 
   if (goal === 'explore') return _buildExploreUrl(difficulty, cfg.exploringSession);
 
+  const base = (typeof window.__adaptiveBase === 'string') ? window.__adaptiveBase : '';
+  if (base) {
+    const demoCats = goal === 'interview'
+      ? 'Arrays,String+Manipulation,Tree+Traversal'
+      : 'Language+Basics,Functions,Data+Types';
+    return `${base}/mcq-parent?categories=${demoCats}&difficulty=${difficulty}&count=10&source=adaptive&orient=true`;
+  }
+
   const track = goal === 'interview' ? 'interview' : 'micro';
   const params = new URLSearchParams({ track, difficulty, source: 'adaptive', orient: 'true' });
-
-  if (goal === 'interview') return `/menu?${params.toString()}`;
-
-  // go to MCQ setup with pre-filled params
-  const mcqParams = new URLSearchParams({ difficulty, count: String(count), source: 'adaptive', orient: 'true' });
-  return `/mcq?${mcqParams.toString()}`;
+  return `/menu?${params.toString()}`;
 }
 
 function _buildExploreUrl(difficulty, cfg) {
@@ -67,19 +80,24 @@ function _buildExploreUrl(difficulty, cfg) {
     source:     'adaptive',
     orient:     'true',
   });
-  return `/mcq?${params.toString()}`;
+  const base = (typeof window.__adaptiveBase === 'string') ? window.__adaptiveBase : '';
+  return `${base}mcq-parent.html?${params.toString()}`;
 }
 
+// Read the onboarding answers from localStorage to determine ghost link destination
 export function getOnboardingGoal() {
   try {
     const raw = localStorage.getItem('cv_adaptive_onboarding');
     if (!raw) return null;
-    return JSON.parse(raw).goal || null;
-  } catch (_) { return null; }
+    const data = JSON.parse(raw);
+    return data.goal || null;
+  } catch (_) {
+    return null;
+  }
 }
 
 export function buildGhostHref(goal) {
   if (goal === 'interview') return '/menu?track=interview';
   if (goal === 'improve' || goal === 'gaps') return '/menu?track=micro';
-  return '/mcq';
+  return '/mcq-parent';
 }

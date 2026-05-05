@@ -1,7 +1,9 @@
+// src/adaptive/components/tour/TourSlide.jsx
 // Renders the content area of a single tour step.
 import React, { useEffect, useRef } from 'react';
 import TourOrientForm from './TourOrientForm.jsx';
 
+// Minimal WAAPI cube spin — matches brand-cube.js behaviour
 function useCubeSpin(ref) {
   useEffect(() => {
     const cube = ref.current;
@@ -81,9 +83,11 @@ function VideoCard({ title, duration, icon, onClick }) {
 export default function TourSlide({ step, stepIndex, totalSteps, formAnswers, onAnswer, onOpenVideo }) {
   return (
     <div className="cvt-slide active">
+      {/* ── Header ── */}
       <div className="cvt-header">
         {step.id === 'welcome' && <Wordmark />}
 
+        {/* Progress pips */}
         <div className="cvt-step-track">
           {Array.from({ length: totalSteps }, (_, i) => (
             <div key={i} className={
@@ -96,13 +100,16 @@ export default function TourSlide({ step, stepIndex, totalSteps, formAnswers, on
           {step.label}&nbsp;·&nbsp;Step {stepIndex + 1} of {totalSteps}
         </div>
 
+        {/* Title — supports <em> via dangerouslySetInnerHTML (static data we own) */}
         <div className="cvt-title"
           dangerouslySetInnerHTML={{ __html: step.title }} />
       </div>
 
+      {/* ── Body ── */}
       <div className="cvt-body">
         <p className="cvt-desc">{step.desc}</p>
 
+        {/* Screenshot */}
         {step.screenshot && (
           <div className="cvt-screenshot" aria-hidden="true">
             <img src={step.screenshot} alt="" loading="eager"
@@ -110,6 +117,7 @@ export default function TourSlide({ step, stepIndex, totalSteps, formAnswers, on
           </div>
         )}
 
+        {/* Fallback illustration for steps without screenshot and no spotlight */}
         {!step.screenshot && !step.spotlight && step.id !== 'final' && (
           <div className="cvt-illustration">
             <div className="cvt-illus-inner">
@@ -119,6 +127,7 @@ export default function TourSlide({ step, stepIndex, totalSteps, formAnswers, on
           </div>
         )}
 
+        {/* Pills */}
         {step.pills?.length > 0 && (
           <div className="cvt-pills">
             {step.pills.map((p, i) => (
@@ -129,6 +138,7 @@ export default function TourSlide({ step, stepIndex, totalSteps, formAnswers, on
           </div>
         )}
 
+        {/* Video cards (final step) */}
         {step.hasVideos && (
           <div className="cvt-videos">
             <VideoCard title="What is a Micro Challenge?" duration="1:45" icon="⚡"
@@ -140,6 +150,7 @@ export default function TourSlide({ step, stepIndex, totalSteps, formAnswers, on
           </div>
         )}
 
+        {/* Orientation form (final step) */}
         {step.id === 'final' && (
           <TourOrientForm answers={formAnswers} onAnswer={onAnswer} />
         )}

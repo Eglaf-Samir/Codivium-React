@@ -6,7 +6,7 @@ import { LeaveConfirmProvider } from './context/LeaveConfirmContext.jsx';
 import { isLoggedIn } from './utils/auth.js';
 
 // App pages
-import AdaptivePage  from './pages/AdaptivePage/index.jsx';
+import AdaptivePage  from './adaptive/AdaptivePage.jsx';
 import MenuPage      from './pages/MenuPage/index.jsx';
 import EditorPage    from './pages/EditorPage/index.jsx';
 import McqSetupPage  from './pages/mcq-parent/McqParentPage.jsx';

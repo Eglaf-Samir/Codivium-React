@@ -3,7 +3,9 @@
 // Fallback chain: window.__adaptiveFixture → API → FIXTURE
 
 import { useState, useEffect } from 'react';
-import { getToken } from './adaptiveUtils.js';
+import { getToken } from '../../shared/fetch.js';
+import { normaliseCategories } from '../utils/adaptive.js';
+import { apiUrl } from '../../shared/fetch.js';
 
 // Default fixture shown when there is no auth token and no window.__adaptiveFixture
 const FIXTURE = {
@@ -38,8 +40,9 @@ export function useAdaptiveState() {
     async function load() {
       // Priority 1: window fixture (demo / testing)
       if (window.__adaptiveFixture) {
+        const fixture = window.__adaptiveFixture;
         if (!cancelled) {
-          setData(window.__adaptiveFixture);
+          setData({ ...fixture, categories: normaliseCategories(fixture.categories) });
           setLoading(false);
         }
         return;
@@ -61,7 +64,7 @@ export function useAdaptiveState() {
       const timeoutId  = setTimeout(() => controller.abort(), 8000);
 
       try {
-        const res = await fetch('/api/user/adaptive-state', {
+        const res = await fetch(apiUrl('/api/user/adaptive-state'), {
           signal:  controller.signal,
           headers: {
             Accept:        'application/json',
@@ -78,7 +81,7 @@ export function useAdaptiveState() {
             throw new Error(`HTTP ${res.status}`);
           } else {
             const json = await res.json();
-            setData(json);
+            setData({ ...json, categories: normaliseCategories(json.categories) });
           }
           setLoading(false);
         }

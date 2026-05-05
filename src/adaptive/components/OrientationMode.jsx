@@ -3,8 +3,8 @@
 // Preserves .ap-orientation-wrap class so onboarding-tour.js spotlight still works.
 
 import React, { useState } from 'react';
-import { buildOrientationUrl } from '../../hooks/adaptiveRouting.js';
-import { useSafeRedirect } from '../../hooks/useSafeRedirect.js';
+import { buildOrientationUrl } from '../utils/routing.js';
+import { safeRedirect } from '../utils/adaptive.js';
 
 const QUESTIONS = [
   {
@@ -12,37 +12,36 @@ const QUESTIONS = [
     label: "What's your main goal right now?",
     options: [
       { value: 'interview', label: 'Prepare for a job interview' },
-      { value: 'improve', label: 'Improve my Python skills' },
-      { value: 'explore', label: 'Explore and learn' },
-      { value: 'gaps', label: 'Fill specific gaps' },
+      { value: 'improve',   label: 'Improve my Python skills'    },
+      { value: 'explore',   label: 'Explore and learn'           },
+      { value: 'gaps',      label: 'Fill specific gaps'          },
     ],
   },
   {
     key: 'level',
     label: 'How comfortable are you with Python?',
     options: [
-      { value: 'beginner', label: 'Just starting out' },
-      { value: 'basic', label: 'Know the basics' },
-      { value: 'intermediate', label: 'Comfortable' },
-      { value: 'advanced', label: 'Advanced' },
+      { value: 'beginner',     label: 'Just starting out' },
+      { value: 'basic',        label: 'Know the basics'   },
+      { value: 'intermediate', label: 'Comfortable'       },
+      { value: 'advanced',     label: 'Advanced'          },
     ],
   },
   {
     key: 'time',
     label: 'How much time do you have right now?',
     options: [
-      { value: '5', label: 'About 5 minutes' },
+      { value: '5',  label: 'About 5 minutes'  },
       { value: '20', label: 'About 20 minutes' },
-      { value: '60', label: 'An hour or more' },
-      { value: '20', label: 'Not sure yet' },
+      { value: '60', label: 'An hour or more'  },
+      { value: '0',  label: 'Not sure yet'     },
     ],
   },
 ];
 
 export default function OrientationMode() {
-  const [answers, setAnswers] = useState({ goal: null, level: null, time: null });
+  const [answers,     setAnswers]     = useState({ goal: null, level: null, time: null });
   const [goalMissing, setGoalMissing] = useState(false);
-  const safeNavigate = useSafeRedirect();
 
   function select(key, value) {
     setAnswers(prev => ({ ...prev, [key]: value }));
@@ -52,17 +51,17 @@ export default function OrientationMode() {
   function handleSubmit() {
     if (!answers.goal) {
       setGoalMissing(true);
-      setTimeout(() => setGoalMissing(false), 1600);
+      setTimeout(() => { if (mountedRef.current) setGoalMissing(false); }, 1600);
       return;
     }
     const url = buildOrientationUrl(answers);
-    safeNavigate(url);
+    safeRedirect(url);
   }
 
   return (
     <div id="apOrientationMode" aria-label="Orientation — new user guidance">
 
-      <div className="ap-header">
+      <div className="ap-header ap-header--orient">
         <div className="ap-kicker">Welcome to Codivium</div>
         <h1 className="ap-title">Let's find your starting point</h1>
         <div className="ap-subtitle">

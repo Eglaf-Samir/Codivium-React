@@ -1,3 +1,4 @@
+// src/adaptive/data/tourSteps.js
 // Step definitions for the onboarding tour.
 // Edit copy, screenshots or pills here without touching any component code.
 
@@ -40,6 +41,7 @@ export const TOUR_STEPS = [
     label: 'Interview Questions',
     title: '<em>Interview Preparation</em>',
     desc: 'Full interview-format coding problems — complete with edge cases, time constraints, and realistic difficulty scaling. Submissions are evaluated against comprehensive unit test suites. Build the skills that matter in real technical interviews.',
+    screenshot: '/images/tour/panel1_editor.webp',
     pills: [
       { icon: '🧩', text: 'Full problem solving' },
       { icon: '✅', text: 'Unit test evaluation' },
@@ -54,6 +56,7 @@ export const TOUR_STEPS = [
     label: 'Micro Challenges',
     title: '<em>Micro Challenges</em>',
     desc: 'The exercise catalogue — every available Micro Challenge, organised by category and difficulty. Pick any card to open the coding editor and attempt it. Each exercise targets one specific skill, making Micro Challenges the fastest way to build coverage across the platform.',
+    screenshot: '/images/tour/menu_page.png',
     pills: [
       { icon: '📋', text: 'Browse by category' },
       { icon: '🏷️', text: 'Filter by difficulty' },
@@ -68,6 +71,7 @@ export const TOUR_STEPS = [
     label: 'MCQ Practice',
     title: '<em>Multiple Choice</em> Practice',
     desc: 'Quiz-format sessions across Language Basics, Functions, Data Types, and more. Each question comes with a detailed explanation and an optional mini-tutorial. Great for building conceptual breadth alongside coding practice.',
+    screenshot: '/images/tour/panel3_mcq.webp',
     pills: [
       { icon: '📝', text: '7 categories' },
       { icon: '🎓', text: '3 difficulty levels' },
@@ -82,6 +86,7 @@ export const TOUR_STEPS = [
     label: 'Feedback',
     title: '<em>Immediate feedback</em> on every submission',
     desc: 'The moment you submit a coding exercise, Codivium runs your code against a complete unit test suite and returns a detailed result: which tests passed, which failed, why, and what to focus on next. No waiting, no ambiguity.',
+    screenshot: '/images/tour/panel2_feedback.webp',
     pills: [
       { icon: '✅', text: 'Live unit test results' },
       { icon: '🔍', text: 'Failure explanations' },
@@ -92,11 +97,12 @@ export const TOUR_STEPS = [
   },
   {
     id: 'insights',
-    spotlight: '[data-section="insights"]',
+    spotlight: '[data-section="dashboard"]',
     icon: '📊',
     label: 'Performance Insights',
     title: 'Track your <em>real progress</em>',
     desc: "As you practice, the Performance Insights dashboard builds a detailed picture of your ability: breadth across categories, depth of mastery, convergence heatmap, time investment, and your Codivium Score. It shows you exactly what to work on next.",
+    screenshot: '/images/tour/panel4_dashboard.webp',
     pills: [
       { icon: '📊', text: 'Codivium Score' },
       { icon: '🗺️', text: 'Breadth tracking' },
@@ -107,11 +113,12 @@ export const TOUR_STEPS = [
   },
   {
     id: 'adaptive',
-    spotlight: '[data-section="adaptive"]',
+    spotlight: '[data-section="home"]',
     icon: '🧠',
     label: 'Adaptive Practice',
     title: 'This page — <em>Adaptive Practice</em>',
     desc: "You're here now. After a few sessions, this page analyses your history and surfaces your single most impactful next action — whether that's a weakness to address, a skill ready to advance, or a gap to cover. It updates every time you practice.",
+    screenshot: '/images/tour/section1Image.webp',
     pills: [
       { icon: '🧠', text: 'AI-driven recommendations' },
       { icon: '📈', text: 'Updates with each session' },

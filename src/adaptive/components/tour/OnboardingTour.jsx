@@ -1,10 +1,11 @@
+// src/adaptive/components/tour/OnboardingTour.jsx
 // Root tour component. Uses createPortal to render above everything.
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { useTourState } from '../../../hooks/useTourState.js';
-import { useSpotlight } from '../../../hooks/useSpotlight.js';
-import TourSlide       from './TourSlide.jsx';
-import TourVideoModal  from './TourVideoModal.jsx';
+import { useTourState }  from '../../hooks/useTourState.js';
+import { useSpotlight }  from '../../hooks/useSpotlight.js';
+import TourSlide         from './TourSlide.jsx';
+import TourVideoModal    from './TourVideoModal.jsx';
 
 export default function OnboardingTour() {
   const tour = useTourState();
@@ -24,13 +25,18 @@ export default function OnboardingTour() {
 
   return createPortal(
     <>
+      {/* ── Dim layer: darkens everything outside the spotlight ── */}
       <div id="cvTourDimLayer" style={spotlight.dimStyle} aria-hidden="true" />
+
+      {/* ── Clear layer: passthrough window inside spotlight hole ── */}
       <div id="cvTourClearLayer" style={spotlight.clearStyle} aria-hidden="true" />
 
+      {/* ── Spotlight ring around the target element ── */}
       {spotlight.ringStyle.display !== 'none' && (
         <div className="cvt-spotlight visible" style={spotlight.ringStyle} aria-hidden="true" />
       )}
 
+      {/* ── Tooltip next to spotlight ── */}
       {spotlight.tipPos && currentStep.spotlight && (
         <div className="cvt-tooltip visible" aria-hidden="true" style={{
           position: 'fixed',
@@ -43,6 +49,7 @@ export default function OnboardingTour() {
         </div>
       )}
 
+      {/* ── Main backdrop ── */}
       <div
         id="cvOnboardingTour"
         className={`cvt-visible${currentStep.spotlight ? ' has-spotlight' : ''}`}
@@ -54,6 +61,7 @@ export default function OnboardingTour() {
         <div className="cvt-scene">
           <div className="cvt-card">
 
+            {/* Slide content */}
             <div id="cvtSlidesWrap">
               <TourSlide
                 step={currentStep}
@@ -65,12 +73,13 @@ export default function OnboardingTour() {
               />
             </div>
 
+            {/* Footer nav */}
             <div className="cvt-footer">
               <button className="cvt-btn cvt-btn-ghost" type="button"
                 id="cvtSkipBtn" onClick={tour.skip}>
                 Skip tour
               </button>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div style={{ display:'flex', gap:10, alignItems:'center' }}>
                 {step > 0 && (
                   <button className="cvt-btn cvt-btn-secondary" type="button"
                     id="cvtBackBtn" onClick={tour.back}>
@@ -88,6 +97,7 @@ export default function OnboardingTour() {
         </div>
       </div>
 
+      {/* ── Video modal ── */}
       <TourVideoModal videoKey={tour.videoKey} onClose={tour.closeVideo} />
     </>,
     document.body

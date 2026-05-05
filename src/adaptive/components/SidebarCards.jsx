@@ -79,7 +79,7 @@ export function SidebarRecent({ recentSessions }) {
         >
           {sessions.map((s, i) => (
             <div
-              key={i}
+              key={`${s.cat}-${i}`}
               className="ap-recent-item"
               role="listitem"
               aria-label={`${s.cat}: ${s.score}`}

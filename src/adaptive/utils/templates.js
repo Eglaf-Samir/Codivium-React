@@ -263,6 +263,46 @@ export const TEMPLATES = {
     },
   ],
 
+  // ── Coding-specific recommendation types ────────────────────────────────────
+  // Headlines and context for these types are built dynamically by
+  // CodiviumAdaptiveEngine.cs using live ring data.
+  // The templates below serve as fallbacks for error states and tour previews
+  // where live data is unavailable.
+
+  coding_near_complete: [
+    {
+      headline: 'You are close to completing this ring — one session finishes it.',
+      context:  'Your ring fill is above 80%. A single focused exercise closes it and unlocks the next stage.',
+      sci:      'Completion of a learning unit produces a stronger consolidation signal than leaving it unfinished.',
+      sciLong:  'The Zeigarnik effect in cognitive psychology shows that incomplete tasks remain more actively held in working memory than completed ones. Finishing the ring clears this cognitive load and signals genuine mastery to the engine.',
+      cta:      'Finish the ring',
+    },
+    {
+      headline: 'So close — one more exercise completes this level.',
+      context:  'Your ring is nearly full. Complete it and lock in that level before moving on.',
+      sci:      'Finishing a level before moving on produces better knowledge retention than switching topics mid-way through.',
+      sciLong:  'Research on task completion shows that fully mastering one level before advancing produces stronger long-term retention than interleaving partially-completed levels. The brain consolidates closed learning units more effectively.',
+      cta:      'Complete this level',
+    },
+  ],
+
+  coding_next_level: [
+    {
+      headline: 'Level complete. The next challenge is ready for you.',
+      context:  'You have finished this difficulty level. Beginning the next one now takes advantage of the active context still in working memory.',
+      sci:      'Starting the next difficulty immediately after completing the current level accelerates early progress — prior schemas are still primed.',
+      sciLong:  'Cognitive load theory explains this: completing a level leaves its mental schemas active and accessible. Beginning the next level while those schemas are primed reduces the initial cognitive effort required and accelerates the learning curve.',
+      cta:      'Start next level',
+    },
+    {
+      headline: 'You have earned the next level. Here it is.',
+      context:  'The current difficulty is done. The next level in this category is now unlocked — begin it before the momentum fades.',
+      sci:      'The optimal moment to advance difficulty is immediately after consolidation — not after a rest period where context is lost.',
+      sciLong:  'Deliberate practice research shows that difficulty should be calibrated continuously to stay just ahead of current capability. A delay between completing one level and beginning the next allows comfort to re-establish — reducing the motivation to advance.',
+      cta:      'Advance to next level',
+    },
+  ],
+
   recovery: [
     {
       headline: "That session was a tough one — and that's useful information.",
@@ -296,4 +336,80 @@ export const TEMPLATES = {
       cta:      'Start the quick diagnostic',
     },
   ],
+  // ── Additional coding-specific recommendation types ───────────────────────
+  // Headlines and context for these types are built dynamically by
+  // CodiviumAdaptiveEngine.cs using live ring data (ring.Attempts,
+  // ring.CodingSessionCount, ring.RawFill).
+  // The templates below serve as fallbacks for error states and tour previews
+  // where live data is unavailable.
+
+  abandonment_spotlight: [
+    {
+      headline: 'You left an exercise unfinished. Go back and close it.',
+      context:  'You started a coding exercise recently but did not get it to pass. Returning now — while the problem is still partly loaded in memory — is significantly more efficient than starting a fresh exercise.',
+      sci:      'Returning to an abandoned problem within days produces faster resolution than starting fresh — the mental context is still partially active.',
+      sciLong:  'Cognitive load theory explains this: the problem representation built during the first attempt is not completely lost. Re-engaging within a few days allows you to reconstruct that representation quickly, whereas waiting longer requires building it from scratch. The effort of abandonment also creates a mild cognitive tension that is resolved by completion.',
+      cta:      'Return to the exercise',
+    },
+    {
+      headline: "An exercise you started is waiting for you.",
+      context:  "You didn't finish your last attempt. Coming back to it directly is faster than picking a new exercise — and more satisfying.",
+      sci:      'The Zeigarnik effect: incomplete tasks remain more actively held in working memory than completed ones, making re-engagement easier than starting afresh.',
+      sciLong:  'Bluma Zeigarnik demonstrated in 1927 that interrupted tasks are recalled significantly better than completed ones. In a coding context, the interrupted problem state — variable names, approach, partial solution — remains more accessible in memory than it would be after days away. This makes returning more efficient, not less.',
+      cta:      'Pick up where you left off',
+    },
+  ],
+
+  coding_depth_gap: [
+    {
+      headline: 'One coding category is significantly behind the others.',
+      context:  'There is a meaningful gap in your coding ring fills. The weakest category is where focused effort returns the most right now.',
+      sci:      'In skill development, overall performance is limited more by the weakest element than by the average of all elements.',
+      sciLong:  "The weakest link principle: in complex, interconnected skills, performance under pressure collapses to the weakest component. A 70% average across categories hides a 40% weak spot that will surface in any applied or interview context. Addressing the gap directly is both the most efficient and the most strategically important move.",
+      cta:      'Work on your weakest coding area',
+    },
+    {
+      headline: "Your coding practice isn't balanced — one area is lagging.",
+      context:  "You've built solid coding rings in some categories but one is falling behind. Balancing across categories produces more robust overall skill.",
+      sci:      'Deliberate practice produces the fastest improvement when effort targets the area of greatest weakness, not the areas already performing well.',
+      sciLong:  "Research on deliberate practice shows that practitioners who disproportionately target their weakest areas improve faster than those who practice evenly. Practicing what you already know produces comfort but minimal measurable growth.",
+      cta:      'Close the coding gap',
+    },
+  ],
+
+  coding_fluency: [
+    {
+      headline: 'Your coding is getting faster. Time to move up a level.',
+      context:  'The number of submissions you need to pass exercises is decreasing. That trend is the clearest signal that you are ready for a harder challenge.',
+      sci:      'Decreasing effort to produce the same output is the most reliable indicator of genuine skill consolidation in procedural domains.',
+      sciLong:  'Unlike declarative knowledge (which can be tested by recall), procedural skill is measured by automaticity — the ability to produce correct output with decreasing conscious effort. A declining submissions-per-exercise trend is the coding equivalent of faster response times in MCQ: it signals that the skill is becoming automatic rather than deliberate.',
+      cta:      'Advance to the next difficulty',
+    },
+    {
+      headline: "You're solving exercises more efficiently. The next level is the right challenge.",
+      context:  'Your recent exercises show a clear improvement in how quickly you reach the solution. Staying at the current difficulty now produces comfort but not growth.',
+      sci:      'Once a skill is consolidated, further practice at the same difficulty produces diminishing returns — the challenge must increase to maintain the learning effect.',
+      sciLong:  'Flow state research (Csikszentmihalyi) and deliberate practice research (Ericsson) both converge on this: optimal learning occurs at the boundary of current capability. Below that boundary is boredom; above it is frustration. Your declining submission count places you below the boundary — the next level is where the optimal zone is.',
+      cta:      'Level up',
+    },
+  ],
+
+  difficulty_calibration: [
+    {
+      headline: 'These coding exercises are harder for you than your other categories.',
+      context:  "You're taking significantly more attempts to pass exercises in this category than in others. This often means the underlying concepts need reinforcing — not more coding practice.",
+      sci:      'Procedural skill built on a weak conceptual foundation is fragile. Reinforcing the concepts first produces more durable and transferable coding fluency.',
+      sciLong:  'Learning science distinguishes declarative knowledge (understanding why something works) from procedural knowledge (being able to do it). When procedural practice is consistently difficult, it is often because declarative understanding is incomplete. Adding more procedural practice on a shaky foundation produces fragile skills that break under novel problems. A targeted MCQ session rebuilds the foundation more efficiently.',
+      cta:      'Reinforce the concepts with MCQ first',
+    },
+    {
+      headline: 'Your submission count suggests the concepts may need consolidating.',
+      context:  "Taking many attempts to pass a coding exercise is useful information — it often points to gaps in the underlying theory rather than lack of coding practice. A short MCQ session may make your next coding attempt significantly easier.",
+      sci:      'High effort on procedural tasks is a diagnostic signal, not just a difficulty measure — it often reveals gaps in the declarative knowledge that the procedure depends on.',
+      sciLong:  "Research on transfer of learning shows that skills developed purely through procedural practice don't transfer well to new contexts. Conceptual knowledge — the why behind the how — is what enables flexible application. This is why students who understand sorting algorithms (conceptually) debug sorting code faster than those who have only written it.",
+      cta:      'Strengthen the foundation with MCQ',
+    },
+  ],
+
+
 };

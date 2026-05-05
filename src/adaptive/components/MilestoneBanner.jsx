@@ -2,7 +2,7 @@
 // Port of renderMilestone(). Picks a milestone template and renders the banner.
 
 import React from 'react';
-import { pickTemplate, fillTemplate } from '../../hooks/adaptiveTemplates.js';
+import { pickTemplate, fillTemplate } from '../utils/templates.js';
 
 export default function MilestoneBanner({ milestone }) {
   if (!milestone) return null;

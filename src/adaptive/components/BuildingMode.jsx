@@ -3,9 +3,8 @@
 // Port of renderBuildingMode(state).
 
 import React, { useEffect, useRef } from 'react';
-import { recordRecommendationChoice } from '../../hooks/adaptiveUtils.js';
-import { BUILDING_MODE_THRESHOLD, getOnboardingGoal, buildGhostHref } from '../../hooks/adaptiveRouting.js';
-import { useSafeRedirect } from '../../hooks/useSafeRedirect.js';
+import { safeRedirect, recordRecommendationChoice } from '../utils/adaptive.js';
+import { BUILDING_MODE_THRESHOLD, getOnboardingGoal, buildGhostHref } from '../utils/routing.js';
 
 export default function BuildingMode({ state }) {
   const fillRef   = useRef(null);
@@ -13,7 +12,6 @@ export default function BuildingMode({ state }) {
   const count     = state.sessionCount || 0;
   const fillPct   = Math.min(100, Math.round((count / threshold) * 100));
   const primary   = state.primary || {};
-  const safeNavigate = useSafeRedirect();
 
   // Animate the profile meter fill after mount
   useEffect(() => {
@@ -31,7 +29,7 @@ export default function BuildingMode({ state }) {
   function handleCta(e) {
     e.preventDefault();
     recordRecommendationChoice(primary.type || 'building_continue');
-    safeNavigate(primary.ctaHref);
+    safeRedirect(primary.ctaHref);
   }
 
   return (
@@ -107,7 +105,7 @@ export default function BuildingMode({ state }) {
           <div className="ap-cta-row">
             <a
               className="btn"
-              href={primary.ctaHref || '/mcq'}
+              href={primary.ctaHref || '/mcq-parent'}
               onClick={handleCta}
             >
               {(primary.ctaLabel || 'Continue') + ' →'}

@@ -1,13 +1,15 @@
+// src/adaptive/hooks/useSpotlight.js
 // Manages the dim-layer / clear-layer hole-punch spotlight system.
 // Returns inline style objects — no imperative DOM manipulation in the caller.
 
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 
-const PAD   = 14;
+const PAD   = 14;    // px around the target element
 const TRANS = 'clip-path 0.45s cubic-bezier(0.23,1,0.32,1)';
 
 function rectFor(selector) {
   if (!selector) return null;
+  // Some selectors are comma-separated alternatives
   for (const s of selector.split(',')) {
     try {
       const el = document.querySelector(s.trim());
@@ -30,13 +32,9 @@ function buildPolygon(r, W, H) {
       `${left}px ${H - bottom}px, ${W - right}px ${H - bottom}px, ` +
       `${W - right}px ${top}px, 0 ${top}px)`
     ),
-    ring: {
-      top: r.top - PAD + 6,
-      left: r.left - PAD + 6,
-      width: r.width + (PAD - 6) * 2,
-      height: r.height + (PAD - 6) * 2,
-    },
-    tip: {
+    ring: { top: r.top - PAD + 6, left: r.left - PAD + 6,
+            width: r.width + (PAD - 6) * 2, height: r.height + (PAD - 6) * 2 },
+    tip:  {
       top:  r.bottom + PAD + 12 > window.innerHeight - 100
               ? r.top - 100 - PAD
               : r.bottom + PAD + 12,
@@ -56,8 +54,10 @@ export function useSpotlight(spotlightSelector, visible) {
     setGeo(buildPolygon(r, window.innerWidth, window.innerHeight));
   }, [visible, spotlightSelector]);
 
+  // Recompute on step change and window resize
   useLayoutEffect(() => {
     compute();
+    // Small delay for DOM to settle after step transition
     const t = setTimeout(compute, 60);
     return () => clearTimeout(t);
   }, [compute]);
@@ -65,6 +65,7 @@ export function useSpotlight(spotlightSelector, visible) {
   useEffect(() => {
     if (!visible) return;
     window.addEventListener('resize', compute);
+    // Observe the target element for size/position changes
     if (spotlightSelector) {
       for (const s of spotlightSelector.split(',')) {
         try {
@@ -96,6 +97,7 @@ export function useSpotlight(spotlightSelector, visible) {
   }
 
   return {
+    // Dim layer: polygon that covers everything EXCEPT the hole
     dimStyle: {
       position: 'fixed', inset: 0, zIndex: 9998,
       background: 'rgba(0,0,0,0.65)',
@@ -103,16 +105,19 @@ export function useSpotlight(spotlightSelector, visible) {
       transition: TRANS,
       pointerEvents: 'none',
     },
+    // Clear layer: inset clip that shows ONLY inside the hole
     clearStyle: {
       position: 'fixed', inset: 0, zIndex: 9997,
       clipPath: `inset(${geo.inset})`,
       transition: TRANS,
       pointerEvents: 'none',
     },
+    // Extra clip-path for the backdrop itself (punches matching hole)
     backdropExtra: {
       clipPath: geo.polygon,
       transition: TRANS,
     },
+    // Spotlight ring around the target
     ringStyle: {
       position: 'fixed',
       top:    geo.ring.top,

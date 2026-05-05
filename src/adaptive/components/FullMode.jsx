@@ -14,6 +14,12 @@ export default function FullMode({ state }) {
   const rafRef      = useRef(0);
   const observerRef = useRef(null);
 
+  // All 14 recommendation types are evaluated server-side in CodiviumAdaptiveEngine.cs.
+  // The server returns the correct primary and alternatives in priority order —
+  // no client-side integration step is needed.
+  const integratedPrimary  = state.primary       || null;
+  const allAlternatives    = state.alternatives   || [];
+
   // Compute subtitle
   const catCount = (state.categories || []).filter(c => c.fill > 0).length;
   const subtitle  = `Based on ${state.sessionCount || 0} session${(state.sessionCount || 0) !== 1 ? 's' : ''} across ${catCount} categor${catCount !== 1 ? 'ies' : 'y'}. Updated with today's activity.`;
@@ -89,10 +95,10 @@ export default function FullMode({ state }) {
           <MilestoneBanner milestone={state.milestone} />
 
           <div className="ap-section-label">Primary recommendation</div>
-          <PrimaryCard primary={state.primary} />
+          <PrimaryCard primary={integratedPrimary} />
 
           <div ref={altGridRef}>
-            <AlternativesGrid alternatives={state.alternatives} />
+            <AlternativesGrid alternatives={allAlternatives} />
           </div>
 
         </div>

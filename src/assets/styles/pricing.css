@@ -74,8 +74,9 @@ body[data-page="pricing"] *{ box-sizing: border-box; }
 
     body[data-page="pricing"] .grid{
       display: grid;
-      grid-template-columns: 1fr;
-      place-items: center;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      justify-content: center;
+      align-items: start;
       gap: 18px;
     }
 

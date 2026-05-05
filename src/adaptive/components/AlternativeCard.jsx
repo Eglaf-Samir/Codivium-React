@@ -2,21 +2,18 @@
 // Port of renderAlternatives(). Renders one alternative recommendation card.
 
 import React from 'react';
-import { recordRecommendationChoice } from '../../hooks/adaptiveUtils.js';
-import { useSafeRedirect } from '../../hooks/useSafeRedirect.js';
+import { safeRedirect, recordRecommendationChoice } from '../utils/adaptive.js';
 
 export default function AlternativeCard({ alt }) {
-  const safeNavigate = useSafeRedirect();
-
   function handleClick(e) {
     e.preventDefault();
     recordRecommendationChoice(alt.typeLabel || alt.type);
-    safeNavigate(alt.href);
+    safeRedirect(alt.href);
   }
 
   return (
     <div
-      className={`ap-alt-card window glow-follow ap-alt-card--${alt.type || 'teal'}`}
+      className={`ap-alt-card window glow-follow ap-alt-card--${alt.style || alt.type || 'teal'}`}
       aria-label={alt.typeLabel}
     >
       <div className="ap-alt-pad">
@@ -45,8 +42,8 @@ export function AlternativesGrid({ alternatives }) {
     <>
       <div className="ap-section-label">Alternatives</div>
       <div className="ap-alt-grid" id="apAltGrid" aria-label="Alternative recommendations">
-        {alternatives.map((alt, i) => (
-          <AlternativeCard key={i} alt={alt} />
+        {alternatives.map((alt) => (
+          <AlternativeCard key={alt.type || alt.headline} alt={alt} />
         ))}
       </div>
     </>

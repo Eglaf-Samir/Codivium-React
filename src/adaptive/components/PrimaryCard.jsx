@@ -2,15 +2,13 @@
 // Port of renderPrimary(). Template engine, evidence bar, science toggle, CTA wiring.
 
 import React, { useState, useEffect, useRef } from 'react';
-import { pickTemplate, fillTemplate } from '../../hooks/adaptiveTemplates.js';
-import { recordRecommendationChoice, recordDismissal } from '../../hooks/adaptiveUtils.js';
-import { useSafeRedirect } from '../../hooks/useSafeRedirect.js';
+import { pickTemplate, fillTemplate } from '../utils/templates.js';
+import { safeRedirect, recordRecommendationChoice, recordDismissal } from '../utils/adaptive.js';
 
 export default function PrimaryCard({ primary }) {
   const [sciExpanded, setSciExpanded] = useState(false);
   const [dismissed,   setDismissed]   = useState(false);
-  const fillRef      = useRef(null);
-  const safeNavigate = useSafeRedirect();
+  const fillRef = useRef(null);
 
   // Template — memoised so it doesn't re-pick on every re-render
   const templateRef = useRef(null);
@@ -45,7 +43,7 @@ export default function PrimaryCard({ primary }) {
   function handleCta(e) {
     e.preventDefault();
     recordRecommendationChoice(primary.type);
-    safeNavigate(primary.ctaHref);
+    safeRedirect(primary.ctaHref);
   }
 
   function handleNotToday() {

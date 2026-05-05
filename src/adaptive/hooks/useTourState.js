@@ -1,7 +1,9 @@
+// src/adaptive/hooks/useTourState.js
 // All tour state and lifecycle logic. No DOM side-effects.
 
 import { useState, useEffect, useCallback } from 'react';
-import { TOUR_STEPS } from '../pages/AdaptivePage/tour/tourSteps.js';
+import { TOUR_STEPS } from '../data/tourSteps.js';
+import { getToken } from '../../shared/fetch.js';
 
 const TOUR_KEY    = 'cv_tour_completed';
 const ONBOARD_KEY = 'cv_adaptive_onboarding';
@@ -14,12 +16,20 @@ function remove(key)   { try { localStorage.removeItem(key);  } catch (_) {} }
 
 function hasCompleted() { return get(TOUR_KEY) === '1'; }
 
+function isNewUser() {
+  try {
+    const token = getToken();
+    return !token;
+  } catch (_) { return true; }
+}
+
 export function useTourState() {
   const [visible,     setVisible]     = useState(false);
   const [step,        setStep]        = useState(0);
   const [formAnswers, setFormAnswers] = useState({});
-  const [videoKey,    setVideoKey]    = useState(null);
+  const [videoKey,    setVideoKey]    = useState(null); // which video modal is open
 
+  // ── Public actions ──────────────────────────────────────────────────────
   const start = useCallback(() => {
     let saved = {};
     try { const raw = get(ONBOARD_KEY); if (raw) saved = JSON.parse(raw); } catch (_) {}
@@ -34,6 +44,7 @@ export function useTourState() {
     document.body.classList.remove('cv-tour-open');
     set(TOUR_KEY, '1');
     if (completed) {
+      // Scroll orientation form into view and pulse it
       setTimeout(() => {
         document.dispatchEvent(new CustomEvent('cv:tour-complete', { detail: {} }));
         const card = document.querySelector('.ap-orientation-card');
@@ -52,7 +63,7 @@ export function useTourState() {
 
   const next = useCallback(() => {
     setStep(s => {
-      if (s >= TOUR_STEPS.length - 1) return s;
+      if (s >= TOUR_STEPS.length - 1) return s; // handled by complete
       return s + 1;
     });
   }, []);
@@ -76,18 +87,19 @@ export function useTourState() {
   const openVideo  = useCallback((key) => setVideoKey(key), []);
   const closeVideo = useCallback(() => setVideoKey(null), []);
 
-  // Auto-start for first-time users (not yet completed/skipped)
+  // ── Auto-start ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (hasCompleted()) return;
+    if (hasCompleted() || !isNewUser()) return;
     const t = setTimeout(() => start(), 900);
     return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Keyboard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!visible) return;
     function onKey(e) {
-      if (e.key === 'Escape')                          { skip(); return; }
-      if (e.key === 'ArrowLeft')                       { back(); return; }
+      if (e.key === 'Escape')                        { skip(); return; }
+      if (e.key === 'ArrowLeft')                     { back(); return; }
       if (e.key === 'ArrowRight' || e.key === 'Enter') {
         if (step === TOUR_STEPS.length - 1) complete();
         else next();
@@ -97,6 +109,7 @@ export function useTourState() {
     return () => document.removeEventListener('keydown', onKey);
   }, [visible, step, skip, back, next, complete]);
 
+  // ── Expose window.CodiviumTour for external callers ───────────────────────
   useEffect(() => {
     window.CodiviumTour = {
       start,
@@ -106,6 +119,7 @@ export function useTourState() {
     };
   }, [start, dismiss]);
 
+  // ── Show/hide trigger button based on show_tour_btn pref ──────────────────
   useEffect(() => {
     function applyPref() {
       const btn = document.getElementById('cvTourTriggerBtn');
@@ -125,12 +139,14 @@ export function useTourState() {
     };
   }, []);
 
+  // ── Wire trigger button click ─────────────────────────────────────────────
   useEffect(() => {
     const btn = document.getElementById('cvTourTriggerBtn');
     if (!btn || btn._cvTourBound) return;
     btn._cvTourBound = true;
     const handler = () => start();
     btn.addEventListener('click', handler);
+    // Flash border once on first load if visible
     const show = get('show_tour_btn') !== '0';
     if (show && !btn._cvFlashDone) {
       btn._cvFlashDone = true;
