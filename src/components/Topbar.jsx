@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useEditorLeaveGuard } from '../hooks/useEditorLeaveGuard';
 import useCube from '../hooks/useCube';
-import { isLoggedIn } from '../utils/auth';
+import { isLoggedIn, isSuperAdmin } from '../utils/auth';
 
 const NAV_LINKS = [
   { label: 'Home', route: 'landing' },
@@ -16,6 +16,7 @@ export default function Topbar({ onMenuOpen }) {
   const location = useLocation();
   const isEditor = location.pathname === '/editor';
   const loggedIn = isLoggedIn();
+  const dashboardHome = isSuperAdmin() ? '/AdminDashboard' : '/adaptive-practice';
   // Confirms before leaving the editor so the user doesn't lose unsaved code.
   const { onLinkClick } = useEditorLeaveGuard();
   const brandRef = useRef(null);
@@ -35,11 +36,11 @@ export default function Topbar({ onMenuOpen }) {
       {/* Brand */}
       <Link
         className="brand"
-        to="/adaptive-practice"
+        to={dashboardHome}
         aria-label="Codivium Home"
         id="brandLogo"
         ref={brandRef}
-        onClick={(e) => onLinkClick(e, '/adaptive-practice')}
+        onClick={(e) => onLinkClick(e, dashboardHome)}
       >
         <div className="brand-mark cv-cube" aria-hidden="true">
           <div className="cube-wrap">
@@ -120,8 +121,8 @@ export default function Topbar({ onMenuOpen }) {
 
         {loggedIn ? (
           <NavLink
-            to="/adaptive-practice"
-            onClick={(e) => onLinkClick(e, '/adaptive-practice')}
+            to={dashboardHome}
+            onClick={(e) => onLinkClick(e, dashboardHome)}
             className={({ isActive }) => (isActive ? "nav-login active" : "nav-login")}
           >
             Dashboard

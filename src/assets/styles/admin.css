@@ -1,0 +1,867 @@
+/* ── Admin (Superadmin) shell + page styling ─────────────────────────
+   Scoped under .cv-admin-page so admin styles never leak into student
+   pages. Reuses existing tokens (--color-bg-surface, --color-accent…)
+   so the admin section auto-themes with the rest of the app. */
+
+@layer components {
+
+/* ── Sidebar superadmin badge ── */
+.cv-admin-sidebar .side-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px 14px;
+}
+
+.cv-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border-accent-subtle);
+  border-radius: 999px;
+  background: var(--color-accent-subtle);
+  font-family: var(--font-brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-accent);
+  white-space: nowrap;
+  transition: padding 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cv-admin-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-glow, rgba(255, 200, 110, 0.5));
+  flex-shrink: 0;
+}
+
+.sidebar.collapsed .cv-admin-badge-text { display: none; }
+.sidebar.collapsed .cv-admin-badge { padding: 6px; }
+
+/* ── Page wrapper ── */
+.cv-admin-page {
+  padding: 28px 28px 64px;
+  max-width: 1400px;
+  margin: 0 auto;
+  color: var(--color-text-primary);
+}
+
+.cv-admin-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.cv-admin-header-text { min-width: 0; }
+
+.cv-admin-kicker {
+  font-family: var(--font-brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-accent-soft);
+  margin-bottom: 6px;
+}
+
+.cv-admin-title {
+  font-family: var(--font-brand);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.cv-admin-subtitle {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* ── Stat cards (dashboard) ── */
+.cv-admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.cv-admin-stat {
+  position: relative;
+  padding: 22px 22px 20px;
+  border-radius: var(--cv-radius, 20px);
+  border: 1px solid var(--color-border-default);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,0.06), transparent 52%),
+    radial-gradient(circle at 78% 72%, var(--color-accent-subtle), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.24)),
+    var(--color-bg-surface);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.55),
+    0 18px 50px rgba(0,0,0,0.40);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  overflow: hidden;
+  transition: transform 180ms cubic-bezier(0.2, 0.9, 0.2, 1),
+              box-shadow 180ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.cv-admin-stat:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -1px 0 rgba(0,0,0,0.55),
+    0 24px 60px rgba(0,0,0,0.50);
+}
+
+.cv-admin-stat-ico {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-accent-subtle);
+  background: var(--color-accent-subtle);
+  color: var(--color-text-accent);
+}
+
+.cv-admin-stat-ico svg { width: 28px; height: 28px; stroke: currentColor; }
+
+.cv-admin-stat-body { min-width: 0; }
+
+.cv-admin-stat-label {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.cv-admin-stat-value {
+  font-family: var(--font-brand);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.1;
+}
+
+.cv-admin-stat-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ── Surface card (used for tables/forms) ── */
+.cv-admin-surface {
+  border-radius: var(--cv-radius, 20px);
+  border: 1px solid var(--color-border-default);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,0.04), transparent 52%),
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.18)),
+    var(--color-bg-surface);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    inset 0 -1px 0 rgba(0,0,0,0.45),
+    0 18px 50px rgba(0,0,0,0.35);
+  overflow: hidden;
+}
+
+.cv-admin-surface-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border-default);
+  background: rgba(0,0,0,0.18);
+}
+
+.cv-admin-surface-head h2 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--color-text-accent-soft, var(--color-text-accent));
+}
+
+/* ── Search field ── */
+.cv-admin-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-default);
+  background: rgba(0,0,0,0.30);
+  min-width: 220px;
+}
+
+.cv-admin-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  width: 100%;
+  font-family: inherit;
+}
+
+.cv-admin-search input::placeholder { color: var(--color-text-muted); }
+.cv-admin-search svg { color: var(--color-text-muted); flex-shrink: 0; }
+
+/* ── Table ── */
+.cv-admin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.cv-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  min-width: 920px;
+}
+
+.cv-admin-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  padding: 12px 14px;
+  font-family: var(--font-brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-accent-soft);
+  background: rgba(0,0,0,0.42);
+  border-bottom: 1px solid var(--color-border-accent-subtle);
+  white-space: nowrap;
+}
+
+.cv-admin-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border-default);
+  vertical-align: middle;
+}
+
+.cv-admin-table tbody tr:hover td {
+  background: rgba(255,255,255,0.025);
+}
+
+.cv-admin-table tbody tr:last-child td { border-bottom: none; }
+
+.cv-admin-table .cell-email { color: var(--color-text-primary); font-weight: 500; }
+.cv-admin-table .cell-muted { color: var(--color-text-muted); }
+
+.cv-admin-table-empty {
+  padding: 36px 18px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+/* ── Status pill ── */
+.cv-admin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-border-default);
+}
+
+.cv-admin-pill.is-active {
+  color: var(--color-success);
+  border-color: var(--color-success);
+  background: var(--color-success-subtle);
+}
+
+.cv-admin-pill.is-inactive {
+  color: var(--color-data-negative);
+  border-color: var(--color-data-negative);
+  background: rgba(201, 137, 121, 0.08);
+}
+
+.cv-admin-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── Action buttons (table row) ── */
+.cv-admin-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cv-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-btn-bg);
+  color: var(--color-btn-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms, color 150ms, transform 120ms;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.cv-admin-btn:hover {
+  background: var(--color-btn-bg-hover);
+  border-color: var(--color-btn-border-hover);
+  color: var(--color-text-primary);
+}
+
+.cv-admin-btn:active { transform: translateY(1px); }
+
+.cv-admin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cv-admin-btn.is-primary {
+  border-color: var(--color-border-accent);
+  color: var(--color-text-accent);
+  background: var(--color-accent-subtle);
+}
+.cv-admin-btn.is-primary:hover {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent);
+  color: var(--color-text-accent);
+  filter: brightness(1.1);
+}
+
+.cv-admin-btn.is-warn {
+  border-color: rgba(220, 80, 80, 0.55);
+  color: var(--color-error, rgba(220, 80, 80, 0.92));
+}
+.cv-admin-btn.is-warn:hover {
+  background: var(--color-error-subtle, rgba(220, 80, 80, 0.10));
+  color: var(--color-error, rgba(220, 80, 80, 1));
+}
+
+.cv-admin-btn.is-success {
+  border-color: var(--color-success);
+  color: var(--color-success);
+  background: var(--color-success-subtle);
+}
+
+/* ── Pagination ── */
+.cv-admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--color-border-default);
+  background: rgba(0,0,0,0.18);
+  flex-wrap: wrap;
+}
+
+.cv-admin-pagination-info {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.cv-admin-pager {
+  display: flex;
+  gap: 4px;
+}
+
+.cv-admin-pager button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-btn-bg);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 150ms, border-color 150ms;
+}
+
+.cv-admin-pager button:hover:not(:disabled) {
+  background: var(--color-btn-bg-hover);
+  border-color: var(--color-border-accent-subtle);
+}
+
+.cv-admin-pager button.is-active {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-border-accent);
+  color: var(--color-text-accent);
+}
+
+.cv-admin-pager button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cv-admin-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.cv-admin-page-size select {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-btn-bg);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ── Modal ── */
+.cv-admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000; /* above topbar (50) and any fixed nav */
+  background: var(--color-bg-overlay, rgba(0,0,0,0.72));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: cvAdminFade 160ms ease-out;
+}
+
+@keyframes cvAdminFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cv-admin-modal {
+  width: 100%;
+  max-width: 720px;
+  max-height: calc(100vh - 20px); /* 10px gap top + 10px gap bottom */
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--cv-radius, 20px);
+  border: 1px solid var(--color-border-default);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,0.05), transparent 52%),
+    radial-gradient(circle at 82% 82%, var(--color-accent-subtle), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.30)),
+    var(--color-bg-surface);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    0 32px 80px rgba(0,0,0,0.65);
+  overflow: hidden;
+  animation: cvAdminScale 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.cv-admin-modal.is-narrow { max-width: 460px; }
+
+@keyframes cvAdminScale {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cv-admin-modal-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border-default);
+  background: rgba(0,0,0,0.22);
+}
+
+.cv-admin-modal-head h3 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--color-text-accent-soft, var(--color-text-accent));
+}
+
+.cv-admin-modal-close {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 120ms, color 120ms;
+}
+
+.cv-admin-modal-close:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--color-text-primary);
+}
+
+.cv-admin-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-accent-subtle) transparent;
+}
+
+.cv-admin-modal-body::-webkit-scrollbar { width: 6px; }
+.cv-admin-modal-body::-webkit-scrollbar-track { background: transparent; }
+.cv-admin-modal-body::-webkit-scrollbar-thumb {
+  background: var(--color-border-accent-subtle);
+  border-radius: 99px;
+}
+.cv-admin-modal-body::-webkit-scrollbar-thumb:hover { background: var(--color-border-accent); }
+
+.cv-admin-modal-foot {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border-default);
+  background: rgba(0,0,0,0.20);
+  flex-wrap: wrap;
+}
+
+/* Forms inside the modal need to be flex columns so the body can shrink/scroll. */
+.cv-admin-modal > form {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Form grid ── */
+.cv-admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 16px;
+}
+
+@media (max-width: 640px) {
+  .cv-admin-form-grid { grid-template-columns: 1fr; }
+}
+
+.cv-admin-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cv-admin-field.is-full { grid-column: 1 / -1; }
+
+.cv-admin-field label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.cv-admin-field input,
+.cv-admin-field select,
+.cv-admin-field textarea {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-default);
+  background: rgba(0,0,0,0.30);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cv-admin-field input:focus,
+.cv-admin-field select:focus,
+.cv-admin-field textarea:focus {
+  border-color: var(--color-border-accent);
+  background: rgba(0,0,0,0.40);
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+}
+
+.cv-admin-field input::placeholder { color: var(--color-text-muted); }
+
+.cv-admin-field input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7) sepia(0.4) saturate(2) hue-rotate(7deg);
+  cursor: pointer;
+}
+
+/* ── Rich text editor (CKEditor 5) — Codivium dark theming ── */
+.cv-admin-rich-editor {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+}
+
+.cv-admin-rich-editor--loading {
+  padding: 14px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: rgba(0, 0, 0, 0.30);
+}
+
+.cv-admin-rich-editor .ck.ck-editor__main > .ck-editor__editable {
+  background: rgba(0, 0, 0, 0.30);
+  color: var(--color-text-primary);
+  min-height: 160px;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.cv-admin-rich-editor .ck.ck-editor__main > .ck-editor__editable.ck-focused {
+  box-shadow: inset 0 0 0 1px var(--color-border-accent);
+}
+
+.cv-admin-rich-editor .ck.ck-toolbar {
+  background: rgba(0, 0, 0, 0.42);
+  border: none;
+  border-bottom: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+.cv-admin-rich-editor .ck.ck-button {
+  color: var(--color-text-secondary);
+}
+
+.cv-admin-rich-editor .ck.ck-button:hover:not(.ck-disabled),
+.cv-admin-rich-editor .ck.ck-button:focus:not(.ck-disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-primary);
+}
+
+.cv-admin-rich-editor .ck.ck-button.ck-on {
+  background: var(--color-accent-subtle);
+  color: var(--color-text-accent);
+}
+
+.cv-admin-rich-editor .ck.ck-button .ck-icon {
+  fill: currentColor;
+  color: inherit;
+}
+
+.cv-admin-rich-editor .ck.ck-toolbar__separator {
+  background: var(--color-border-default);
+}
+
+.cv-admin-rich-editor .ck-content blockquote {
+  border-left: 3px solid var(--color-border-accent);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--color-text-secondary);
+}
+
+.cv-admin-rich-editor .ck-content code {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-accent);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.cv-admin-rich-editor .ck-content pre {
+  background: rgba(0, 0, 0, 0.50);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+}
+
+.cv-admin-rich-editor .ck-content a {
+  color: var(--color-text-accent);
+}
+
+/* CKEditor dropdowns / link balloons / table edit floating panels */
+.ck.ck-balloon-panel,
+.ck.ck-list,
+.ck.ck-toolbar.ck-toolbar_floating {
+  background: var(--color-bg-surface) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-default) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55) !important;
+}
+
+.ck.ck-list .ck-list__item .ck-button:hover:not(.ck-disabled) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.ck.ck-list .ck-list__item .ck-button.ck-on {
+  background: var(--color-accent-subtle) !important;
+  color: var(--color-text-accent) !important;
+}
+
+.ck.ck-input,
+.ck.ck-input-text {
+  background: rgba(0, 0, 0, 0.30) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+.ck.ck-input:focus,
+.ck.ck-input-text:focus {
+  border-color: var(--color-border-accent) !important;
+  box-shadow: 0 0 0 3px var(--color-accent-subtle) !important;
+}
+
+/* ── Field row + IsHTML switch toggle ── */
+.cv-admin-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.cv-admin-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cv-admin-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--color-border-default);
+  position: relative;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+  margin: 0;
+}
+
+.cv-admin-switch::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  transition: left 150ms, background 150ms;
+}
+
+.cv-admin-switch:checked {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-border-accent);
+}
+
+.cv-admin-switch:checked::after {
+  left: 17px;
+  background: var(--color-accent);
+}
+
+.cv-admin-switch:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Modal title with two-line layout (parent breadcrumb + name) */
+.cv-admin-modal-title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.cv-admin-modal-title-kicker {
+  font-family: var(--font-brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.cv-admin-modal-title-name {
+  font-family: var(--font-brand);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-text-accent);
+  text-transform: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Loading state ── */
+.cv-admin-loading {
+  padding: 36px 18px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.cv-admin-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-border-default);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+  animation: cvAdminSpin 0.7s linear infinite;
+}
+
+@keyframes cvAdminSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 720px) {
+  .cv-admin-page { padding: 18px 14px 60px; }
+  .cv-admin-stat-value { font-size: 26px; }
+  .cv-admin-surface-head { flex-direction: column; align-items: stretch; }
+  .cv-admin-search { min-width: 0; }
+}
+
+}
