@@ -3,20 +3,20 @@ import { allpackages, allpackagefiltering, getepackagebyid, createpackage, getal
      packagepurchasecheckout, geteActivePackagebyuserid, ActivepackagecancelByUser} from './constants'
 import { baseURL } from "../../config";
 
-// export const getpackageslist = async () => {
-//     var url = baseURL + allpackages;
-//     const config = {
-//         headers: {
-//             'Content-Type': 'application/json',
-//         }
-//     }
-//     try {
-//         const res = await Axios.get(url, config);
-//         return res;
-//     } catch (e) {
-//         return e.response;
-//     }
-// }
+export const getpackageslist = async () => {
+    var url = baseURL + allpackages;
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    }
+    try {
+        const res = await Axios.get(url, config);
+        return res;
+    } catch (e) {
+        return e.response;
+    }
+}
 
 export const getpackageslistbybillingperiod = async (key) => {
     let token = localStorage.getItem('LoginToken');

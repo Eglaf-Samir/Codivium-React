@@ -100,7 +100,10 @@
 }
 
 .sidebar.collapsed::before{ opacity: 0.22; }
-.sidebar.collapsed::after{ opacity: 0.38; }
+/* Hide the vertical-grill strip when collapsed — with the icon tiles now
+   carrying their own gradient/glow, the right-edge stripes read as visual
+   noise behind them rather than a premium accent. */
+.sidebar.collapsed::after{ opacity: 0; }
 
 /* ===================== Sidebar Tab Handle (ported from uploaded reference) ===================== */
 .sidebar-handle{
@@ -580,7 +583,10 @@ body.sidebar-collapsed .side-comingsoon { display: none; }
 }
 .sidebar.collapsed .side-link{
   justify-content: center;
-  padding: 10px 8px 10px 22px;
+  /* Symmetric horizontal padding so `justify-content: center` actually centers
+     the icon in the collapsed rail. Asymmetric padding (was 22px left / 8px
+     right) caused every nav icon to drift toward the right edge. */
+  padding: 10px 8px;
   /* When collapsed, let the icon be the "window" and keep the link surface invisible */
   background: transparent;
   box-shadow: none;
@@ -615,9 +621,77 @@ body.sidebar-collapsed .side-comingsoon { display: none; }
   filter: none;
 }
 
+/* ── Collapsed sidebar: premium icon-tile look ─────────────────────────
+   When the sidebar is collapsed, the .side-ico box becomes the only
+   visible affordance for each nav item. Give it a richer gradient, a
+   bit of depth, and gold-tinted hover/active states so it matches the
+   "machined" feel of the expanded buttons instead of looking like a
+   plain dark square. */
 .sidebar.collapsed .side-ico{
   width: 47px;
   height: 47px;
+  border-radius: 14px;
+  background:
+    radial-gradient(150% 130% at 50% 0%, rgba(255,255,255,0.10), rgba(0,0,0,0.62) 72%),
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.50));
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.55),
+    0 12px 26px rgba(0,0,0,0.42),
+    0 4px 10px rgba(0,0,0,0.30);
+  color: var(--gold);
+  transition:
+    border-color 160ms var(--ease, cubic-bezier(0.2,0.9,0.2,1)),
+    box-shadow 160ms var(--ease, cubic-bezier(0.2,0.9,0.2,1)),
+    transform 120ms var(--ease, cubic-bezier(0.2,0.9,0.2,1)),
+    background 160ms var(--ease, cubic-bezier(0.2,0.9,0.2,1));
+}
+
+/* Subtle lift + gold rim on hover. The :hover lives on the link so the
+   whole tile reacts to pointer presence, not just the icon box itself. */
+.sidebar.collapsed .side-link:hover .side-ico,
+.sidebar-collapsed #cvHelpSidebarBtn:hover .sb-ico-help{
+  border-color: rgba(246,213,138,0.36);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 -1px 0 rgba(0,0,0,0.55),
+    0 14px 30px rgba(0,0,0,0.50),
+    0 0 0 1px rgba(246,213,138,0.20),
+    0 0 22px rgba(246,213,138,0.18);
+  transform: translateY(-1px);
+}
+
+/* Pressed state — let the icon box visibly recess. Override on the inner
+   .side-ico so the existing .side-link:active bg/shadow doesn't fight it. */
+.sidebar.collapsed .side-link:active .side-ico{
+  transform: translateY(1px);
+  border-color: rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 4px 10px rgba(0,0,0,0.70),
+    inset 0 -1px 0 rgba(255,255,255,0.10),
+    0 2px 4px rgba(0,0,0,0.30);
+}
+
+/* Current-page selected state — gold-rimmed, slightly recessed. Mirrors
+   the expanded `.side-link.active` concave button feel, but on the icon
+   tile only since the link surface is transparent in collapsed mode. */
+.sidebar.collapsed .side-link.active .side-ico{
+  border-color: rgba(246,213,138,0.55);
+  background:
+    radial-gradient(ellipse 110% 70% at 50% 110%,
+      rgba(246,213,138,0.22) 0%,
+      transparent 60%),
+    radial-gradient(ellipse 100% 70% at 50% -10%,
+      rgba(0,0,0,0.95) 0%,
+      transparent 70%),
+    linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.55));
+  box-shadow:
+    inset 0 8px 18px rgba(0,0,0,0.85),
+    inset 0 -1px 0 rgba(246,213,138,0.50),
+    0 0 0 1px rgba(246,213,138,0.30),
+    0 0 22px rgba(246,213,138,0.20),
+    0 6px 12px rgba(0,0,0,0.40);
 }
 
 
@@ -671,11 +745,11 @@ body.sidebar-collapsed .side-comingsoon { display: none; }
   /* margin handled by absolute placement rules above */
   border-radius: calc(var(--radius) + 2px);
   border: 1px solid var(--color-border-accent-subtle);
-  background:
+  /* background:
     radial-gradient(circle at 18% 18%, rgba(255,255,255,0.06), transparent 45%),
     radial-gradient(circle at 78% 68%, var(--color-accent-subtle), transparent 55%),
     linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.18));
-  box-shadow: 0 18px 54px rgba(0,0,0,0.42);
+  box-shadow: 0 18px 54px rgba(0,0,0,0.42); */
   padding: 12px;
   display:flex;
   align-items:center;
@@ -721,6 +795,50 @@ body.sidebar-collapsed .side-comingsoon { display: none; }
 }
 
 .sidebar.collapsed .profile-meta{ display:none; }
+
+/* ── Collapsed sidebar: profile tile matches the nav-icon tile ──────────
+   The expanded profile-card has a panel-style chrome (border + radial
+   gradients) that fights the rail aesthetic when only the avatar shows.
+   In collapsed mode we drop the card chrome and re-skin the avatar with
+   the same machined gradient + hover/active treatment as .side-ico. */
+.sidebar.collapsed .profile-card{
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  justify-content: center;
+}
+
+.sidebar.collapsed .profile-avatar{
+  width: 47px;
+  height: 47px;
+  border-radius: 14px;
+  background:
+    radial-gradient(150% 130% at 50% 0%, rgba(255,255,255,0.10), rgba(0,0,0,0.62) 72%),
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.50));
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.55),
+    0 12px 26px rgba(0,0,0,0.42),
+    0 4px 10px rgba(0,0,0,0.30);
+  transition:
+    border-color 160ms var(--ease, cubic-bezier(0.2,0.9,0.2,1)),
+    box-shadow 160ms var(--ease, cubic-bezier(0.2,0.9,0.2,1)),
+    transform 120ms var(--ease, cubic-bezier(0.2,0.9,0.2,1));
+}
+
+/* Hover lifts + gold rim, mirroring the .side-link:hover .side-ico rule. */
+.sidebar.collapsed .profile-card:hover .profile-avatar{
+  border-color: rgba(246,213,138,0.36);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 -1px 0 rgba(0,0,0,0.55),
+    0 14px 30px rgba(0,0,0,0.50),
+    0 0 0 1px rgba(246,213,138,0.20),
+    0 0 22px rgba(246,213,138,0.18);
+  transform: translateY(-1px);
+}
 
 @media (max-width: 920px){
   .sidebar{ transform: translateX(0); }

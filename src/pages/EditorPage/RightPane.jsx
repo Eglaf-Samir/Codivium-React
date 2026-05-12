@@ -80,9 +80,20 @@ function TestResultItem({ result, index }) {
       </div>
       {!pass && (
         <>
-          <div className="cv-test-row"><span className="cv-tr-key">Unit Test Description:</span><code>{result.input}</code></div>
-          <div className="cv-test-row"><span className="cv-tr-key">Expected:</span><code>{result.expected}</code></div>
-          <div className="cv-test-row"><span className="cv-tr-key">Got:</span><code className="cv-got">{result.got}</code></div>
+          {result.input && (
+            <div className="cv-test-row"><span className="cv-tr-key">Unit Test Description:</span><code>{result.input}</code></div>
+          )}
+          {/* Show Expected/Got only when the harness produced a real diff;
+              fall back to the error message otherwise so the user sees
+              something actionable instead of an empty/<unknown> row. */}
+          {result.expected || result.got ? (
+            <>
+              <div className="cv-test-row"><span className="cv-tr-key">Expected:</span><code>{result.expected || '—'}</code></div>
+              <div className="cv-test-row"><span className="cv-tr-key">Got:</span><code className="cv-got">{result.got || '—'}</code></div>
+            </>
+          ) : (
+            <div className="cv-test-row"><span className="cv-tr-key">Error:</span><code className="cv-got">{result.error || 'Test failed without a diagnostic message.'}</code></div>
+          )}
         </>
       )}
     </li>
@@ -91,7 +102,9 @@ function TestResultItem({ result, index }) {
 
 export default function RightPane({
   exercise, locks, syntaxTheme,
+  editorFontSize, editorFontFamily, editorBold,
   candidateRef,    // forwarded ref to candidate editor
+  onCandidateChange, // fires on every keystroke — used to keep a buffer of the latest code
   onSubmit, submitting, submitStatus, attemptCount, testResults,
   elapsedSeconds,
 }) {
@@ -120,6 +133,21 @@ export default function RightPane({
     if (testResults) setActiveTab('result');
     else setActiveTab(prev => (prev === 'result' ? 'candidate' : prev));
   }, [testResults]);
+
+  // Ace doesn't paint correctly while its container has `hidden`/display:none.
+  // After a tab switch makes an editor visible, force a reflow so the latest
+  // font / theme / value lands on screen instead of waiting for the next user
+  // resize. Both editors receive the same editor settings, so this keeps
+  // Suggested Solution visually in sync with Candidate Solution.
+  useEffect(() => {
+    const target =
+      activeTab === 'candidate' ? candidateRef?.current :
+      activeTab === 'solution'  ? solutionRef?.current  : null;
+    if (!target?.refresh) return;
+    // Defer one frame so the `hidden` attribute is removed before Ace measures.
+    const id = requestAnimationFrame(() => target.refresh());
+    return () => cancelAnimationFrame(id);
+  }, [activeTab, candidateRef, editorFontSize, editorFontFamily, editorBold, syntaxTheme]);
 
   const handleSolutionTabClick = useCallback(() => {
     if (solutionLocked) {
@@ -249,7 +277,11 @@ export default function RightPane({
             ref={candidateRef}
             initialValue={exercise?.codeScaffold ?? ''}
             syntaxTheme={syntaxTheme}
+            fontSize={editorFontSize}
+            fontFamily={editorFontFamily}
+            bold={editorBold}
             readOnly={false}
+            onChange={onCandidateChange}
           />
         </div>
 
@@ -268,6 +300,9 @@ export default function RightPane({
             ref={solutionRef}
             initialValue={exercise?.suggestedSolution ?? ''}
             syntaxTheme={syntaxTheme}
+            fontSize={editorFontSize}
+            fontFamily={editorFontFamily}
+            bold={editorBold}
             readOnly
           />
         </div>

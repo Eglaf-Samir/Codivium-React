@@ -88,8 +88,16 @@ function TimeChart({ history }) {
         <path d={d} fill="none" stroke="rgba(246,213,138,0.95)" strokeWidth="2.6"
           strokeLinecap="round" strokeLinejoin="round" />
         {pts.map((p, i) => (
-          <circle key={i} cx={p.x.toFixed(2)} cy={p.y.toFixed(2)} r="3.1"
-            fill="rgba(246,213,138,0.95)" stroke="rgba(0,0,0,0.30)" strokeWidth="1" />
+          // Slightly oversized invisible hit-area so the native tooltip fires
+          // before the cursor reaches the visible 3px dot.
+          <g key={i}>
+            <circle cx={p.x.toFixed(2)} cy={p.y.toFixed(2)} r="3.1"
+              fill="rgba(246,213,138,0.95)" stroke="rgba(0,0,0,0.30)" strokeWidth="1" />
+            <circle cx={p.x.toFixed(2)} cy={p.y.toFixed(2)} r="9"
+              fill="transparent" style={{ cursor: 'pointer' }}>
+              <title>{`Solve ${i + 1}: ${fmtTime(values[i])}${history[i].attempts != null ? ` · ${history[i].attempts} attempt${history[i].attempts === 1 ? '' : 's'}` : ''}`}</title>
+            </circle>
+          </g>
         ))}
       </svg>
       <div className="fb-legend">
@@ -124,10 +132,14 @@ function AttemptsChart({ history }) {
           const barH = (H - 2 * PAD) * (a / Math.max(1, max));
           const y    = baseY - barH;
           const alpha = i === n - 1 ? 0.85 : 0.50;
+          const time = history[i]?.timeToSuccessSeconds;
           return (
             <rect key={i} x={x.toFixed(2)} y={y.toFixed(2)}
               width={barW.toFixed(2)} height={barH.toFixed(2)}
-              rx="6" fill={`rgba(246,213,138,${alpha})`} />
+              rx="6" fill={`rgba(246,213,138,${alpha})`}
+              style={{ cursor: 'pointer' }}>
+              <title>{`Solve ${i + 1}: ${a} attempt${a === 1 ? '' : 's'}${time != null ? ` · ${fmtTime(time)}` : ''}`}</title>
+            </rect>
           );
         })}
         <path d={d} fill="none" stroke="rgba(245,245,252,0.72)"

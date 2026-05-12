@@ -2,6 +2,11 @@
    Public pages load their own CSS via dynamic <link> injection (useCssLoader hook)
    This prevents @layer conflicts between public site and app platform CSS */
 
+/* Cinzel font @font-face — registers the font globally so the topbar
+   (which uses var(--serif)) renders consistently on every page. App
+   page bodies are explicitly set to sans-serif below to prevent Cinzel
+   from cascading into MCQ/editor content. */
+@import './fonts-public.css';
 @import './base.css';
 @import './logo.css';
 @import './topbar.css';
@@ -11,13 +16,15 @@
 @import './help-panel.css';
 @import './exercise-menu.css';
 @import './editor.css';
+@import './ace-syntax-overrides.css';
 @import './feedback.css';
 @import './adaptive.css';
 @import './onboarding-tour.css';
-@import './mcq-forms.css';
-@import './mcq-parent.css';
-@import './mcq-quiz.css';
-@import './mcq-setup-overrides.css';
+/* MCQ CSS files (mcq-forms/parent/quiz/setup-overrides) are NOT imported here.
+   They have unscoped class selectors (.card, .input, .divider, .btn, .ghost,
+   etc.) that collide with public pages like Contact. They are now loaded
+   dynamically by McqParentPage / McqQuizPage via useCssLoader so they only
+   affect the MCQ routes. Files live at public/assets/css/components/mcq/. */
 @import './settings.css';
 @import './dashboard-base.css';
 @import './dashboard-chrome.css';
@@ -28,4 +35,5 @@
 @import './dashboard-resizers.css';
 @import './dashboard-settings.css';
 @import './dashboard-shell.css';
+@import './dashboard-analyse.css';
 @import './responsive.css';

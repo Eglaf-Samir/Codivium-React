@@ -14,11 +14,46 @@ import 'ace-builds/src-noconflict/mode-python';
 import 'ace-builds/src-noconflict/theme-tomorrow_night';
 import 'ace-builds/src-noconflict/theme-tomorrow';
 import 'ace-builds/src-noconflict/theme-textmate';
+import 'ace-builds/src-noconflict/theme-monokai';
+import 'ace-builds/src-noconflict/theme-dracula';
+import 'ace-builds/src-noconflict/theme-terminal';
+import 'ace-builds/src-noconflict/theme-github';
 import 'ace-builds/src-noconflict/ext-language_tools';
 
 const LIGHT_THEMES = new Set(['frost', 'parchment']);
 
-function resolveAceTheme(appTheme) {
+// Maps the editor palette's "Syntax Highlighting" choice → an Ace theme.
+// Each named option needs a visually distinct Ace theme so the user can see
+// the change land in the editor and REPL input.
+const SYNTAX_THEME_TO_ACE = {
+  'obsidian-code':      'tomorrow_night',
+  'midnight-terminal':  'terminal',
+  'carbon-ink':         'monokai',
+  'graphite-neon':      'dracula',
+  'aurora-nightfall':   'tomorrow_night',
+  'porcelain-codebook': 'github',
+  'ivory-syntax':       'textmate',
+  'champagne-console':  'tomorrow',
+  'slate-studio':       'tomorrow_night',
+  'mist-meridian':      'tomorrow',
+};
+
+const FONT_FAMILY_MAP = {
+  'system-mono':     'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
+  'jetbrains-mono':  '"JetBrains Mono", ui-monospace, monospace',
+  'fira-code':       '"Fira Code", ui-monospace, monospace',
+  'source-code-pro': '"Source Code Pro", ui-monospace, monospace',
+  'ibm-plex-mono':   '"IBM Plex Mono", ui-monospace, monospace',
+  'inconsolata':     '"Inconsolata", ui-monospace, monospace',
+  'cinzel':          '"Cinzel", serif',
+  'system-sans':     'system-ui, -apple-system, sans-serif',
+  'system-serif':    'ui-serif, Georgia, serif',
+};
+
+function resolveAceTheme(syntaxTheme, appTheme) {
+  if (syntaxTheme && SYNTAX_THEME_TO_ACE[syntaxTheme]) {
+    return SYNTAX_THEME_TO_ACE[syntaxTheme];
+  }
   if (appTheme === 'parchment') return 'textmate';
   if (LIGHT_THEMES.has(appTheme)) return 'tomorrow';
   return 'tomorrow_night';
@@ -37,6 +72,10 @@ const EditorSlot = forwardRef(function EditorSlot(
     initialValue = '',
     readOnly     = false,
     syntaxTheme  = 'obsidian-code',
+    fontSize,        // e.g. '14px'  (optional — falls back to Ace default)
+    fontFamily,      // e.g. 'jetbrains-mono'
+    bold,            // boolean
+    variant      = 'editor', // 'editor' → uses --syn-*; 'repl' → uses --repl-syn-*
     onChange,
     className    = '',
   },
@@ -46,6 +85,36 @@ const EditorSlot = forwardRef(function EditorSlot(
   const wrapperRef = useRef(null);
   const [appTheme, setAppTheme] = useState(currentAppTheme);
   const [pasteBlocked, setPasteBlocked] = useState(false);
+
+  const aceTheme = resolveAceTheme(syntaxTheme, appTheme);
+  // 'auto' / undefined / 'NaN' → leave Ace's default (~14px). Strip any 'px'
+  // suffix so values from /settings ('13') and palette ('13px') both work.
+  const aceFontSize = (() => {
+    if (!fontSize || fontSize === 'auto') return undefined;
+    const n = parseInt(String(fontSize), 10);
+    return Number.isFinite(n) ? n : undefined;
+  })();
+
+  // Apply font/family/weight to a given Ace editor instance. Used by the
+  // useEffect (prop changes) AND onLoad (initial mount), because the effect
+  // can run before react-ace has populated aceRef.current.editor on some
+  // mount sequences — leading to candidate-solution missing the first paint.
+  const applyAceTypography = useCallback((ed) => {
+    if (!ed) return;
+    if (aceFontSize) ed.setOption('fontSize', aceFontSize);
+    const ff = fontFamily && fontFamily !== 'auto' ? FONT_FAMILY_MAP[fontFamily] : null;
+    if (ff) ed.setOption('fontFamily', ff);
+    const weight = bold ? '700' : '';
+    ed.container.style.fontWeight = weight;
+    const layer = ed.container.querySelector('.ace_text-layer');
+    if (layer) layer.style.fontWeight = weight;
+    try { ed.renderer.updateFontSize(); } catch (_) {}
+    try { ed.resize(true); } catch (_) {}
+  }, [aceFontSize, fontFamily, bold]);
+
+  useEffect(() => {
+    applyAceTypography(aceRef.current?.editor);
+  }, [applyAceTypography]);
 
   // Imperative API — matches the old textarea contract so callers keep working
   useImperativeHandle(ref, () => ({
@@ -118,6 +187,7 @@ const EditorSlot = forwardRef(function EditorSlot(
   const wrapperClass = [
     'cm-shell',
     'editor-slot',
+    variant === 'repl' ? 'repl-shell' : 'editor-shell',
     readOnly ? 'readonly' : '',
     className,
   ].filter(Boolean).join(' ');
@@ -138,16 +208,17 @@ const EditorSlot = forwardRef(function EditorSlot(
       <AceEditor
         ref={aceRef}
         mode="python"
-        theme={resolveAceTheme(appTheme)}
+        theme={aceTheme}
         name={`editor-${readOnly ? 'ro' : 'rw'}-${Math.random().toString(36).slice(2, 7)}`}
         width="100%"
         height="100%"
-        fontSize={14}
+        fontSize={aceFontSize || 14}
         readOnly={readOnly}
         wrapEnabled
         showGutter
         showPrintMargin={false}
         highlightActiveLine={!readOnly}
+        onLoad={(editor) => applyAceTypography(editor)}
         editorProps={{ $blockScrolling: true }}
         setOptions={{
           useWorker: false,

@@ -131,7 +131,7 @@ function LayoutDock({ panels, uiMode, onPreset }) {
       role="group" aria-label="Dashboard layout presets">
       {PRESETS.map(p => (
         <button key={p.id} type="button"
-          className={`cvLayoutBtn${activePresetId===p.id ? ' isOn isActive' : ''}`}
+          className={`cvLayoutBtn${activePresetId===p.id ? ' isActive' : ''}`}
           data-layout-preset={p.id} aria-label={p.label}
           onClick={() => onPreset(p)}>
           <span className="cvLayoutBtnLabel">

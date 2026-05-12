@@ -1,12 +1,18 @@
 // hooks/useTimer.js
-// Session timer — tracks elapsed seconds since exercise load.
-// Exposes reset() so the exercise loader can restart the clock on new exercise.
+// Session timer — tracks elapsed seconds since exercise load. Accepts an
+// optional initialSeconds so the resume flow can start counting from the
+// previously saved time rather than zero. reset(newInitial) lets the caller
+// restart the clock at any baseline (0 for a fresh attempt; saved seconds
+// for "continue where I left off").
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function useTimer() {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+export function useTimer({ initialSeconds = 0 } = {}) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(initialSeconds);
   const [visible, setVisible] = useState(true);
-  const startRef = useRef(Date.now());
+  // Anchoring startRef in the past by initialSeconds means each tick computes
+  // (now - startRef) / 1000 = initialSeconds + real-elapsed, so the display
+  // and the value used for save / submit both reflect cumulative time.
+  const startRef = useRef(Date.now() - initialSeconds * 1000);
   const intervalRef = useRef(null);
 
   const start = useCallback(() => {
@@ -16,9 +22,9 @@ export function useTimer() {
     }, 1000);
   }, []);
 
-  const reset = useCallback(() => {
-    startRef.current = Date.now();
-    setElapsedSeconds(0);
+  const reset = useCallback((newInitial = 0) => {
+    startRef.current = Date.now() - newInitial * 1000;
+    setElapsedSeconds(newInitial);
   }, []);
 
   const toggleVisible = useCallback(() => setVisible(v => !v), []);

@@ -1,11 +1,65 @@
 import Axios from "axios";
 import {
-    getalldeliberatepractic, getalldeliberatePracticeByadmin, getExerciseDetails, executedeliberatepracticeUserCode, noncodingoutput, userTimelogandoutput,
+    getalldeliberatepractic, getalldeliberatePracticeByadmin, getExerciseDetails, executedeliberatepracticeUserCode, executedeliberatepracticeUserCodeStream, noncodingoutput, userTimelogandoutput,
     checkDeliberatepracticeUserCode, deleteDeliberatePracticePreprationbyadmin, createdeliberatepractice, getDeliberatePracticePrepration, updatedeliberatepractice,
     createdeliberatepracticunittestadd, deliberatepracticUnitTestDelete, deliberatePracticePreprationUnitTestfileupload,
     alldeliberatepracticunittestlistbyid, DeliberatePracticePreprationbyfileupload, getalldeliberatePracticefiltering, submitUserInterViewPrepration
 } from './constants'
 import { baseURL } from "../../config";
+
+// Streaming counterpart to CreateOutput. Same NDJSON line protocol as the
+// interview-track variant; resolves with the final `complete` event's result.
+export const CreateOutputStream = async (body, onEvent) => {
+    const token = localStorage.getItem('LoginToken');
+    const url = baseURL + executedeliberatepracticeUserCodeStream;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'ngrok-skip-browser-warning': 'true',
+        },
+        body,
+    });
+    if (!res.ok || !res.body) {
+        const text = await res.text().catch(() => '');
+        const err = new Error(`Stream failed (${res.status}): ${text || res.statusText}`);
+        err.status = res.status;
+        throw err;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let finalResult = null;
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, idx).trim();
+            buffer = buffer.slice(idx + 1);
+            if (!line) continue;
+            let evt;
+            try { evt = JSON.parse(line); }
+            catch { continue; }
+            if (evt?.type === 'complete') finalResult = evt.result;
+            try { onEvent && onEvent(evt); } catch (_) { /* keep streaming */ }
+        }
+    }
+    const tail = buffer.trim();
+    if (tail) {
+        try {
+            const evt = JSON.parse(tail);
+            if (evt?.type === 'complete') finalResult = evt.result;
+            onEvent && onEvent(evt);
+        } catch { /* ignore */ }
+    }
+
+    return { status: 200, data: finalResult };
+};
 
 //used user
 

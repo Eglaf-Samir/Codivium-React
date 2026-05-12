@@ -3,7 +3,7 @@
 // loaded from the CDN. Pulls "My Code" from candidateRef so user-defined symbols
 // are available to the REPL.
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import EditorSlot from './EditorSlot.jsx';
+import ReplEditor from './ReplEditor.jsx';
 
 const HISTORY_KEY = 'cv_repl_history';
 const HISTORY_MAX = 30;
@@ -59,7 +59,13 @@ function writeHistory(arr) {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(-HISTORY_MAX))); } catch (_) {}
 }
 
-export default function ReplPane({ syntaxTheme, candidateRef, onReplSplitDrag }) {
+export default function ReplPane({
+  syntaxTheme,
+  replFontSize,
+  replFontFamily,
+  candidateRef,
+  onReplSplitDrag,
+}) {
   const replEditorRef = useRef(null);
   const outputRef     = useRef(null);
   const [history, setHistory]     = useState([]);
@@ -233,10 +239,12 @@ sys.stderr = StringIO()
           </div>
         </div>
         <div className="pane-body">
-          <EditorSlot
+          <ReplEditor
             ref={replEditorRef}
             initialValue=""
             syntaxTheme={syntaxTheme}
+            fontSize={replFontSize}
+            fontFamily={replFontFamily}
             readOnly={false}
             className="editor repl"
           />

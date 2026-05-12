@@ -731,9 +731,9 @@ function Faq() {
                         </div>
                     </details>
                 </section>
-                <div className="footer-bar">
+                {/* <div className="footer-bar">
                     Codivium is not a content library. It is an environment for training Python deliberately — with feedback, structure, and intent.
-                </div>
+                </div> */}
                 <script defer="" src="/assets/js/pages/faq-01.fad07c96.js"></script>
                 <script defer="" src="/assets/js/cv-cube.08d05a23.js"></script>
             </main>

@@ -12,7 +12,7 @@ export default function MenuHeader({ trackLabel, searchTerm, onSearchChange, onT
           type="search"
           id="menuSearch"
           className="cv-search-input"
-          placeholder="Search exercises\u2026"
+          placeholder="Search exercises"
           autoComplete="off"
           spellCheck={false}
           aria-label="Search exercises"

@@ -2,14 +2,15 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout    from './components/Layout.jsx';
 import PublicWrapper from './components/PublicWrapper.jsx';
+import { LeaveConfirmProvider } from './context/LeaveConfirmContext.jsx';
 import { isLoggedIn } from './utils/auth.js';
 
 // App pages
-import AdaptivePage  from './pages/AdaptivePage/index.jsx';
+import AdaptivePage  from './adaptive/AdaptivePage.jsx';
 import MenuPage      from './pages/MenuPage/index.jsx';
 import EditorPage    from './pages/EditorPage/index.jsx';
-import McqSetupPage  from './pages/McqSetupPage.jsx';
-import McqQuizPage   from './pages/McqQuizPage.jsx';
+import McqSetupPage  from './pages/mcq-parent/McqParentPage.jsx';
+import McqQuizPage   from './pages/mcq-quiz/McqQuizPage.jsx';
 import SettingsPage  from './pages/SettingsPage.jsx';
 import InsightsPage  from './pages/InsightsPage.jsx';
 
@@ -108,6 +109,7 @@ function PubRoute({ component: Component, page, title }) {
 
 export default function App() {
   return (
+    <LeaveConfirmProvider>
     <Routes>
       {/* ── PUBLIC PAGES ── */}
       <Route path="/"                element={<PubRoute component={Landing}        page="landing"         title="Become Python Pro" />} />
@@ -143,5 +145,6 @@ export default function App() {
       <Route path="/codivium_insights_embedded.html"  element={<Navigate to="/insights" replace />} />
       <Route path="*"                                 element={<Navigate to="/adaptive-practice" replace />} />
     </Routes>
+    </LeaveConfirmProvider>
   );
 }

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEditorLeaveGuard } from '../hooks/useEditorLeaveGuard';
 import { logout } from '../utils/auth';
 
 const NAV_ITEMS = [
@@ -47,7 +48,19 @@ export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const active = getActiveSection(location.pathname, location.search);
 
-  function handleLogout() {
+  // Editor leave-confirmation — see useEditorLeaveGuard for behaviour.
+  const { inEditor, onLinkClick: onNavLinkClick, confirm } = useEditorLeaveGuard();
+
+  async function handleLogout() {
+    if (inEditor) {
+      const ok = await confirm({
+        title: 'End the current exercise and log out?',
+        message: 'Your code and progress will be saved so you can continue later.',
+        confirmText: 'Yes, log out',
+        cancelText: 'No, keep coding',
+      });
+      if (!ok) return;
+    }
     logout();
     navigate('/login', { replace: true });
   }
@@ -150,6 +163,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   data-section={item.section}
                   data-tip={item.tip}
                   aria-current={isActive ? 'page' : undefined}
+                  onClick={(e) => onNavLinkClick(e, item.to)}
                 >
                   <SideIcon id={item.icon} />
                   {item.twoLine && labelParts ? (
@@ -193,6 +207,7 @@ export default function Sidebar({ isOpen, onClose }) {
               data-section="settings"
               data-tip="Account &amp; Settings"
               aria-current={active === 'settings' ? 'page' : undefined}
+              onClick={(e) => onNavLinkClick(e, '/settings')}
             >
               <SideIcon id="icon-settings" />
               <span className="side-label two-line">Account &amp;<br />Settings</span>

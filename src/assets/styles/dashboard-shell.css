@@ -157,6 +157,7 @@
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  margin-right: 40px;
 }
 #ciMount .panelCtaBtn:hover{
   transform: translateY(-1px);
@@ -210,31 +211,4 @@
 #ciMount[data-layout="info_only"] .infoPane {
   max-height: calc(100vh - var(--topbar-h, 82px) - 40px) !important;
   overflow: hidden !important;
-}
-
-/* ─── Insights page: reserve right gutter for the fixed layout dock and
-   add bottom breathing room so the scroll doesn't end flush with content.
-   Dock width = 100px, positioned at right:60px → needs 160px clearance
-   plus ~30px breathing gap before content.                             */
-body[data-page="Performance Insights"] .main {
-  padding-right: 200px !important;
-  padding-bottom: 54px !important;
-}
-
-/* Belt-and-braces: constrain the dashboard layout's max width so it can
-   never extend under the fixed dock, regardless of .main padding.     */
-body[data-page="Performance Insights"] #ciMount .insights-layout {
-  max-width: calc(100vw - var(--sidebar-w, 264px) - 220px);
-}
-body.sidebar-collapsed[data-page="Performance Insights"] #ciMount .insights-layout {
-  max-width: calc(100vw - var(--sidebar-w-collapsed, 76px) - 220px);
-}
-
-@media (max-width: 1200px) {
-  body[data-page="Performance Insights"] .main {
-    padding-right: 22px !important;
-  }
-  body[data-page="Performance Insights"] #ciMount .insights-layout {
-    max-width: none;
-  }
 }

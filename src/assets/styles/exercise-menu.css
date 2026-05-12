@@ -49,16 +49,10 @@
       --font: "Cinzel", serif;
     }
 
-*{ box-sizing: border-box; }
-    html, body{ height: 100%; }
-body{
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
+/* Scoped to app pages (body.cv-app). On public pages base.css governs body
+   styles, so the menu page's font/overflow no longer leaks globally. */
+body.cv-app{
   font-family: var(--font);
-  height: 100%;
-  overflow: hidden;
-  overflow-x: hidden;
 }
 
 /* (removed menu styles to use source theme) */
@@ -585,10 +579,16 @@ body{
       background: rgb(18, 30, 24);
     }
 
-    .card-status.todo{
+    .card-status.attempted{
       border-color: rgba(250, 204, 21, 0.76);
       color: rgba(250, 204, 21, 0.86);
       background: rgb(34, 30, 18);
+    }
+
+    .card-status.todo{
+      border-color: rgba(160, 165, 175, 0.55);
+      color: rgba(200, 205, 215, 0.78);
+      background: rgb(28, 30, 34);
     }
 
     .card-body{
@@ -825,12 +825,15 @@ body{
     }
 
 /* ===== Scroll only the windows (grid), keep base background static ===== */
-    html, body{
+    /* Scoped to app pages (body.cv-app) so this doesn't kill scroll on
+       public pages (landing, join, etc.) that share main.css. */
+    html:has(body.cv-app),
+    body.cv-app{
       height: 100%;
       overflow: hidden;
     }
 
-    .stage{
+    body.cv-app .stage{
       overflow: hidden;
     }
 
@@ -1518,8 +1521,48 @@ body:not(.drawer-collapsed) .stage{
   font-size: 14px;
   letter-spacing: 0.04em;
 }
-.cv-menu-loading { color: var(--color-text-accent-mid); }
+.cv-menu-loading {
+  color: var(--color-text-accent-mid);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
 .cv-menu-error   { color: rgba(252,165,165,0.85); }
+
+.cv-progress {
+  width: min(420px, 80%);
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+.cv-progress-bar {
+  position: absolute;
+  inset-block: 0;
+  width: 35%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-text-accent-mid, #c8a86b),
+    transparent
+  );
+  animation: cv-progress-slide 1.4s ease-in-out infinite;
+}
+.cv-progress-label {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, rgba(245, 245, 252, 0.55));
+}
+@keyframes cv-progress-slide {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(360%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cv-progress-bar { animation-duration: 0s; width: 100%; }
+}
 
 @media (max-width: 640px) {
   .cv-menu-header { flex-direction: column; align-items: stretch; }

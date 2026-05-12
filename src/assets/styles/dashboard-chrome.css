@@ -36,7 +36,7 @@
 /* Always viewport-fixed — NEVER moves regardless of layout mode */
 .cvLayoutPresetDock.isInHeader{
   position: fixed;
-  right: 60px;
+  right: 18px;
   top: 50vh;
   transform: translateY(-50%);
   left: auto;
@@ -44,6 +44,14 @@
   z-index: 9000;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
+}
+
+/* Reserve space on the right of main content so the preset dock never
+   overlaps the dashboard panels. Dock is ~100px wide + 18px gap + breathing. */
+@media (min-width: 921px) {
+  body[data-page="Performance Insights"] .main {
+    padding-right: 142px;
+  }
 }
 
 /* info_only (Summary View): dock stays at the same right position */
@@ -75,7 +83,7 @@
   background:
     radial-gradient(140% 120% at 50% 0%, rgba(255,255,255,0.10), rgba(0,0,0,0.46) 70%),
     linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.44));
-  color: var(--color-text-primary);
+  color: rgba(245,245,252,0.92);
   cursor: pointer;
   box-shadow:
     0 12px 26px rgba(0,0,0,0.46),
@@ -97,7 +105,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-text-secondary);
+  color: rgba(245,245,252,0.70);
   line-height: 1.25;
   text-align: center;
   width: 100%;
@@ -108,8 +116,9 @@
   position: relative;
 }
 
+.cvLayoutBtn.isActive .cvLayoutBtnLabel,
 .cvLayoutBtn.isOn .cvLayoutBtnLabel{
-  color: var(--color-text-accent);
+  color: rgba(246,213,138,0.92);
 }
 
 .cvLayoutBtnIcon{
@@ -146,11 +155,15 @@
   position:absolute;
   inset: 6px;
   border-radius: 0;
-  background: radial-gradient(140% 160% at 50% 30%, rgba(0,0,0,0.30), rgba(0,0,0,0.75));
+  background:
+    /* Bright catch-light at lower face — creates the convex raised surface illusion */
+    radial-gradient(ellipse 100% 50% at 50% 100%, rgba(255,255,255,0.18), transparent 65%),
+    /* Dark cavity — centre below button so bottom-edge is darkest, mid-face is lighter */
+    radial-gradient(ellipse 100% 70% at 50% 115%, rgba(0,0,0,0.65), rgba(0,0,0,0.20) 55%, transparent 75%);
   box-shadow:
     inset 0 10px 14px rgba(0,0,0,0.55),
-    inset 0 -8px 12px rgba(255,255,255,0.04);
-  opacity: 0.32;
+    inset 0 -6px 14px rgba(255,255,255,0.14);
+  opacity: 0.55;
   pointer-events:none;
 }
 
@@ -164,37 +177,44 @@
     inset 0 -6px 10px rgba(255,255,255,0.03);
 }
 
-/* Active preset — gold glow ring */
-.cvLayoutBtn.isOn{
-  /* Deep concave pressed state — same effect as editor wsc-btn.active */
-  transform: translateY(2px);
-  border-color: rgba(246, 213, 138, 0.70);
+/* Clicked state: concave bowl effect — bright white concentrated in upper half,
+ * dark lower half. Mimics overhead light hitting the top inner wall of a
+ * pressed-in button cavity. */
+.cvLayoutBtn:active::after{
+  /* Press moment: even more intense than the persistent isOn state */
   background:
-    radial-gradient(ellipse 110% 50% at 50% 110%,
-      rgba(255,255,255,0.44) 0%,
-      rgba(255,255,255,0.16) 45%,
-      transparent 70%),
-    radial-gradient(ellipse 100% 70% at 50% -10%,
-      rgba(0,0,0,1.00) 0%,
-      rgba(0,0,0,1.00) 50%,
-      transparent 80%),
-    linear-gradient(180deg,
-      rgba(0,0,0,1.00) 0%,
-      rgba(0,0,0,1.00) 55%,
-      rgba(255,255,255,0.16) 100%),
-    #080B10;
+    radial-gradient(ellipse 130% 75% at 50% 0%, rgba(255,255,255,0.78), transparent 60%),
+    radial-gradient(ellipse 100% 65% at 50% 120%, rgba(0,0,0,0.90), transparent 70%);
   box-shadow:
-    inset 0 14px 28px rgba(0,0,0,1.00),
-    inset 0 6px  14px rgba(0,0,0,1.00),
-    inset 0 -2px 0 rgba(255,255,255,0.44),
-    inset 2px  0 6px rgba(0,0,0,1.00),
-    inset -2px 0 6px rgba(0,0,0,1.00),
-    0 0 0 1px rgba(246,213,138,0.55),
-    0 1px 3px rgba(0,0,0,1.00);
+    inset 0 -16px 24px rgba(0,0,0,0.85),
+    inset 0 8px 20px rgba(255,255,255,0.52);
+  opacity: 0.90;
 }
+
+/* Active preset — gold glow ring */
+.cvLayoutBtn.isActive,
+.cvLayoutBtn.isOn{
+  /* Selected layout: pressed down, no gold ring, concave bowl lit from above */
+  border-color: rgba(246, 213, 138, 0.20);
+  transform: translateY(2px);
+  background:
+    radial-gradient(170% 160% at 50% 12%, rgba(246,213,138,0.10), rgba(0,0,0,0.68) 70%),
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.58));
+  box-shadow:
+    /* Pressed-in: deep top cavity shadow + subtle bottom rim */
+    inset 0 14px 22px rgba(0,0,0,0.68),
+    inset 0 -4px 10px rgba(255,255,255,0.06);
+}
+.cvLayoutBtn.isActive::after,
 .cvLayoutBtn.isOn::after{
-  opacity: 0.50;
-  background: radial-gradient(180% 180% at 50% 0%, var(--color-accent-subtle), transparent 60%);
+  /* Concave bowl lit from above — bright upper half, dark lower half */
+  background:
+    radial-gradient(ellipse 120% 70% at 50% 0%, rgba(255,255,255,0.60), transparent 62%),
+    radial-gradient(ellipse 100% 60% at 50% 120%, rgba(0,0,0,0.75), transparent 68%);
+  box-shadow:
+    inset 0 -14px 20px rgba(0,0,0,0.72),
+    inset 0 6px 16px rgba(255,255,255,0.38);
+  opacity: 0.82;
 }
 
 .cvLayoutBtn:focus-visible{
@@ -212,6 +232,29 @@
   filter: saturate(0.6);
 }
 
+/* Default: no preset has been activated yet — highlight first button.
+ * Uses :has() (supported in all modern browsers). Gives way the moment
+ * any button receives isActive or isOn via the React state. */
+.cvLayoutPresetDock:not(:has(.cvLayoutBtn.isActive)):not(:has(.cvLayoutBtn.isOn)) .cvLayoutBtn:first-child{
+  border-color: rgba(246, 213, 138, 0.20);
+  transform: translateY(2px);
+  background:
+    radial-gradient(170% 160% at 50% 12%, rgba(246,213,138,0.10), rgba(0,0,0,0.68) 70%),
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.58));
+  box-shadow:
+    inset 0 14px 22px rgba(0,0,0,0.68),
+    inset 0 -4px 10px rgba(255,255,255,0.06);
+}
+.cvLayoutPresetDock:not(:has(.cvLayoutBtn.isActive)):not(:has(.cvLayoutBtn.isOn)) .cvLayoutBtn:first-child::after{
+  background:
+    radial-gradient(ellipse 120% 70% at 50% 0%, rgba(255,255,255,0.60), transparent 62%),
+    radial-gradient(ellipse 100% 60% at 50% 120%, rgba(0,0,0,0.75), transparent 68%);
+  box-shadow:
+    inset 0 -14px 20px rgba(0,0,0,0.72),
+    inset 0 6px 16px rgba(255,255,255,0.38);
+  opacity: 0.82;
+}
+
 /* ============================================================
    Layout icon SVG
    ============================================================ */
@@ -224,21 +267,22 @@
 
 .cvLayoutIco .cvLayoutFrame{
   fill: rgba(255,255,255,0.03);
-  stroke: var(--color-text-muted);
+  stroke: rgba(245,245,252,0.34);
   stroke-width: 1.5;
 }
 .cvLayoutIco rect{
   fill: rgba(245,245,252,0.14);
-  stroke: var(--color-text-muted);
+  stroke: rgba(245,245,252,0.36);
   stroke-width: 1.2;
 }
+.cvLayoutBtn.isActive .cvLayoutIco rect,
 .cvLayoutBtn.isOn .cvLayoutIco rect{
   fill: rgba(255, 200, 110, 0.14);
   stroke: rgba(246, 213, 138, 0.40);
 }
 .cvLayoutIco .cvLayoutPane{
   fill: rgba(245,245,252,0.10);
-  stroke: var(--color-text-muted);
+  stroke: rgba(245,245,252,0.32);
   stroke-width: 1.2;
 }
 

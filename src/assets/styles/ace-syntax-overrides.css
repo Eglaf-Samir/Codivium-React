@@ -1,0 +1,101 @@
+/* ace-syntax-overrides.css
+ * Repaints Ace tokens with the active syntax palette so the code editor and
+ * REPL match the Settings → Appearance preview.
+ *
+ * Two completely independent scopes:
+ *   .editor-shell  → reads --syn-*       (Code Editor settings)
+ *   .repl-shell    → reads --repl-syn-*  (REPL settings)
+ *
+ * `!important` is required because Ace ships per-theme stylesheets that target
+ * the same selectors at the same specificity.
+ */
+
+/* ─── Code Editor scope (Candidate / Suggested Solution) ─────────────────── */
+.editor-shell .ace_editor,
+.editor-shell .ace_editor .ace_scroller {
+  background: var(--syn-bg) !important;
+  color: var(--syn-fg) !important;
+}
+.editor-shell .ace_gutter {
+  background: var(--syn-gutter-bg) !important;
+  color: var(--syn-gutter-fg) !important;
+}
+.editor-shell .ace_gutter-active-line,
+.editor-shell .ace_marker-layer .ace_active-line {
+  background: var(--syn-linehl) !important;
+}
+.editor-shell .ace_marker-layer .ace_selection {
+  background: var(--syn-selection) !important;
+}
+.editor-shell .ace_cursor {
+  color: var(--syn-caret) !important;
+  border-left-color: var(--syn-caret) !important;
+}
+.editor-shell .ace_comment             { color: var(--syn-comment) !important; }
+.editor-shell .ace_keyword             { color: var(--syn-keyword) !important; }
+.editor-shell .ace_keyword.ace_operator{ color: var(--syn-operator) !important; }
+.editor-shell .ace_storage             { color: var(--syn-keyword) !important; }
+.editor-shell .ace_storage.ace_type    { color: var(--syn-type) !important; }
+.editor-shell .ace_string              { color: var(--syn-string) !important; }
+.editor-shell .ace_constant.ace_numeric{ color: var(--syn-number) !important; }
+.editor-shell .ace_constant.ace_language,
+.editor-shell .ace_constant.ace_other  { color: var(--syn-builtin) !important; }
+.editor-shell .ace_support.ace_function,
+.editor-shell .ace_support.ace_constant{ color: var(--syn-builtin) !important; }
+.editor-shell .ace_support.ace_type,
+.editor-shell .ace_support.ace_class   { color: var(--syn-type) !important; }
+.editor-shell .ace_entity.ace_name.ace_function { color: var(--syn-function) !important; }
+.editor-shell .ace_entity.ace_name.ace_class    { color: var(--syn-type) !important; }
+.editor-shell .ace_variable            { color: var(--syn-variable) !important; }
+.editor-shell .ace_variable.ace_parameter { color: var(--syn-variable) !important; }
+.editor-shell .ace_paren,
+.editor-shell .ace_punctuation         { color: var(--syn-punct) !important; }
+.editor-shell .ace_operator            { color: var(--syn-operator) !important; }
+.editor-shell .ace_print-margin {
+  background: color-mix(in srgb, var(--syn-fg) 12%, transparent) !important;
+}
+
+/* ─── REPL scope (REPL input editor) ─────────────────────────────────────── */
+.repl-shell .ace_editor,
+.repl-shell .ace_editor .ace_scroller {
+  background: var(--repl-syn-bg) !important;
+  color: var(--repl-syn-fg) !important;
+}
+.repl-shell .ace_gutter {
+  background: var(--repl-syn-gutter-bg) !important;
+  color: var(--repl-syn-gutter-fg) !important;
+}
+.repl-shell .ace_gutter-active-line,
+.repl-shell .ace_marker-layer .ace_active-line {
+  background: var(--repl-syn-linehl) !important;
+}
+.repl-shell .ace_marker-layer .ace_selection {
+  background: var(--repl-syn-selection) !important;
+}
+.repl-shell .ace_cursor {
+  color: var(--repl-syn-caret) !important;
+  border-left-color: var(--repl-syn-caret) !important;
+}
+.repl-shell .ace_comment             { color: var(--repl-syn-comment) !important; }
+.repl-shell .ace_keyword             { color: var(--repl-syn-keyword) !important; }
+.repl-shell .ace_keyword.ace_operator{ color: var(--repl-syn-operator) !important; }
+.repl-shell .ace_storage             { color: var(--repl-syn-keyword) !important; }
+.repl-shell .ace_storage.ace_type    { color: var(--repl-syn-type) !important; }
+.repl-shell .ace_string              { color: var(--repl-syn-string) !important; }
+.repl-shell .ace_constant.ace_numeric{ color: var(--repl-syn-number) !important; }
+.repl-shell .ace_constant.ace_language,
+.repl-shell .ace_constant.ace_other  { color: var(--repl-syn-builtin) !important; }
+.repl-shell .ace_support.ace_function,
+.repl-shell .ace_support.ace_constant{ color: var(--repl-syn-builtin) !important; }
+.repl-shell .ace_support.ace_type,
+.repl-shell .ace_support.ace_class   { color: var(--repl-syn-type) !important; }
+.repl-shell .ace_entity.ace_name.ace_function { color: var(--repl-syn-function) !important; }
+.repl-shell .ace_entity.ace_name.ace_class    { color: var(--repl-syn-type) !important; }
+.repl-shell .ace_variable            { color: var(--repl-syn-variable) !important; }
+.repl-shell .ace_variable.ace_parameter { color: var(--repl-syn-variable) !important; }
+.repl-shell .ace_paren,
+.repl-shell .ace_punctuation         { color: var(--repl-syn-punct) !important; }
+.repl-shell .ace_operator            { color: var(--repl-syn-operator) !important; }
+.repl-shell .ace_print-margin {
+  background: color-mix(in srgb, var(--repl-syn-fg) 12%, transparent) !important;
+}

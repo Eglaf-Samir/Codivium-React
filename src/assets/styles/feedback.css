@@ -10,7 +10,10 @@
   z-index: 200;
   display: grid;
   place-items: center;
-  padding: 22px;
+  /* Insets: top = topbar + 20px breathing gap; left = current sidebar width
+     (via --content-left, which collapses with body.sidebar-collapsed and
+     drops to 0 on mobile) + 22px frame; sides + bottom = 22px frame. */
+  padding: calc(var(--topbar-h, 82px) + 20px) 22px 22px calc(var(--content-left, var(--sidebar-w, 264px)) + 22px);
   pointer-events: none;
 }
 .fb-overlay.is-open { pointer-events: auto; }
@@ -33,6 +36,16 @@
 .fb-modal {
   position: relative;
   width: min(1040px, 100%);
+  /* Centered by .fb-overlay's grid; capped at viewport minus the overlay's
+     top inset (topbar + 20px gap) + 22px bottom padding so the card always
+     fits. Body scrolls inside when content overflows — header & footer stay
+     pinned. dvh is used so the mobile address-bar collapse doesn't crop the
+     footer. (Width is auto-tracked via the .fb-overlay grid cell; no left
+     calc needed here.) */
+  max-height: calc(100vh - var(--topbar-h, 82px) - 42px);
+  max-height: calc(100dvh - var(--topbar-h, 82px) - 42px);
+  display: flex;
+  flex-direction: column;
   z-index: 1;
   border-radius: calc(var(--radius, 18px) + 10px);
   border: 1px solid rgba(255,255,255,0.12);
@@ -48,6 +61,25 @@
     opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* Header + footer never shrink; body absorbs leftover height and scrolls. */
+.fb-head { flex: 0 0 auto; }
+.fb-foot { flex: 0 0 auto; }
+.fb-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  /* Slim, on-brand scrollbar so it doesn't fight the gold/dark palette. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+.fb-body::-webkit-scrollbar { width: 8px; }
+.fb-body::-webkit-scrollbar-track { background: transparent; }
+.fb-body::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.16);
+  border-radius: 8px;
+}
+.fb-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
 .fb-overlay.is-open .fb-modal { opacity: 1; transform: translateY(0) scale(1); }
 
 .fb-modal::before {
