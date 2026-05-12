@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout    from './components/Layout.jsx';
+import AdminLayout from './components/AdminLayout.jsx';
 import PublicWrapper from './components/PublicWrapper.jsx';
 import { LeaveConfirmProvider } from './context/LeaveConfirmContext.jsx';
-import { isLoggedIn } from './utils/auth.js';
+import { isLoggedIn, isSuperAdmin } from './utils/auth.js';
 
 // App pages
 import AdaptivePage  from './adaptive/AdaptivePage.jsx';
@@ -13,6 +14,16 @@ import McqSetupPage  from './pages/mcq-parent/McqParentPage.jsx';
 import McqQuizPage   from './pages/mcq-quiz/McqQuizPage.jsx';
 import SettingsPage  from './pages/SettingsPage.jsx';
 import InsightsPage  from './pages/InsightsPage.jsx';
+
+// Admin pages
+import AdminDashboard from './pages/admin/AdminDashboard.jsx';
+import UserManagement from './pages/admin/UserManagement.jsx';
+import McqManagement from './pages/admin/McqManagement.jsx';
+import PackageManagement from './pages/admin/PackageManagement.jsx';
+import CouponsManagement from './pages/admin/CouponsManagement.jsx';
+import UnitTestManagement from './pages/admin/UnitTestManagement.jsx';
+import DeliberatePracticeManagement from './pages/admin/DeliberatePracticeManagement.jsx';
+import FaqManagement from './pages/admin/FaqManagement.jsx';
 
 // Public pages
 import Landing       from './pages/Landing.jsx';
@@ -36,11 +47,26 @@ const PAGE_TITLES = {
   '/mcq/quiz':          'MCQ Quiz',
   '/insights':          'Performance Insights',
   '/settings':          'Account & Settings',
+  '/AdminDashboard':                'Admin Dashboard',
+  '/UserManagement':                'User Management',
+  '/McqManagement':                 'MCQ Management',
+  '/PackageManagement':             'Package Management',
+  '/CouponsManagement':             'Coupons',
+  '/UnitTestManagement':            'Unit Tests',
+  '/DeliberatePracticeManagement':  'Deliberate Practice',
+  '/FaqManagement':                 'FAQ Management',
 };
 
 // ── Block unauthenticated users from app pages ───────────────────
 function RequireAuth({ children }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />;
+  return children;
+}
+
+// ── Restrict admin pages to superadmin role ──────────────────────
+function RequireSuperAdmin({ children }) {
+  if (!isLoggedIn()) return <Navigate to="/login" replace />;
+  if (!isSuperAdmin()) return <Navigate to="/adaptive-practice" replace />;
   return children;
 }
 
@@ -84,9 +110,35 @@ function AppRoute({ component: Component, bodyClass = '' }) {
   );
 }
 
+// ── Admin route wrapper ──────────────────────────────────────────
+function AdminRoute({ component: Component, bodyClass = '' }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    const label = PAGE_TITLES[location.pathname] || 'Admin';
+    document.title = `Codivium — ${label}`;
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+
+    ['mcq-quiz','mcq-parent','cv-settings','drawer-collapsed','cv-app','cv-admin']
+      .forEach(c => document.body.classList.remove(c));
+    document.body.classList.add('cv-app', 'cv-admin');
+    if (bodyClass) bodyClass.split(' ').forEach(c => c && document.body.classList.add(c));
+  }, [location.pathname, bodyClass]);
+
+  return (
+    <AdminLayout>
+      <Component />
+    </AdminLayout>
+  );
+}
+
 // ── Redirect logged-in users away from guest-only pages ──────────
 function GuestOnly({ children }) {
-  if (isLoggedIn()) return <Navigate to="/adaptive-practice" replace />;
+  if (isLoggedIn()) {
+    if (isSuperAdmin()) return <Navigate to="/AdminDashboard" replace />;
+    return <Navigate to="/adaptive-practice" replace />;
+  }
   return children;
 }
 
@@ -135,6 +187,16 @@ export default function App() {
       <Route path="/insights"          element={<RequireAuth><AppRoute key="insights" component={InsightsPage} bodyClass="drawer-collapsed" /></RequireAuth>} />
       <Route path="/settings"          element={<RequireAuth><AppRoute component={SettingsPage}  bodyClass="cv-settings" /></RequireAuth>} />
 
+      {/* ── ADMIN PAGES ── */}
+      <Route path="/AdminDashboard"                element={<RequireSuperAdmin><AdminRoute component={AdminDashboard} /></RequireSuperAdmin>} />
+      <Route path="/UserManagement"                element={<RequireSuperAdmin><AdminRoute component={UserManagement} /></RequireSuperAdmin>} />
+      <Route path="/McqManagement"                 element={<RequireSuperAdmin><AdminRoute component={McqManagement} /></RequireSuperAdmin>} />
+      <Route path="/PackageManagement"             element={<RequireSuperAdmin><AdminRoute component={PackageManagement} /></RequireSuperAdmin>} />
+      <Route path="/CouponsManagement"             element={<RequireSuperAdmin><AdminRoute component={CouponsManagement} /></RequireSuperAdmin>} />
+      <Route path="/UnitTestManagement"            element={<RequireSuperAdmin><AdminRoute component={UnitTestManagement} /></RequireSuperAdmin>} />
+      <Route path="/DeliberatePracticeManagement"  element={<RequireSuperAdmin><AdminRoute component={DeliberatePracticeManagement} /></RequireSuperAdmin>} />
+      <Route path="/FaqManagement"                 element={<RequireSuperAdmin><AdminRoute component={FaqManagement} /></RequireSuperAdmin>} />
+
       {/* ── LEGACY REDIRECTS ── */}
       <Route path="/adaptive-practice.html"           element={<Navigate to="/adaptive-practice" replace />} />
       <Route path="/menu-page.html"                   element={<Navigate to="/menu" replace />} />
@@ -143,7 +205,7 @@ export default function App() {
       <Route path="/mcq-quiz.html"                    element={<Navigate to="/mcq/quiz" replace />} />
       <Route path="/account-settings.html"            element={<Navigate to="/settings" replace />} />
       <Route path="/codivium_insights_embedded.html"  element={<Navigate to="/insights" replace />} />
-      <Route path="*"                                 element={<Navigate to="/adaptive-practice" replace />} />
+      <Route path="*"                                 element={<Navigate to={isSuperAdmin() ? "/AdminDashboard" : "/adaptive-practice"} replace />} />
     </Routes>
     </LeaveConfirmProvider>
   );

@@ -16,9 +16,11 @@
       "Bash(rm -f \"d:/github/Codivium-React/src/hooks/useAdaptiveState.js\" \"d:/github/Codivium-React/src/hooks/useTourState.js\" \"d:/github/Codivium-React/src/hooks/useSpotlight.js\" \"d:/github/Codivium-React/src/hooks/adaptiveRouting.js\" \"d:/github/Codivium-React/src/hooks/adaptiveTemplates.js\" \"d:/github/Codivium-React/src/hooks/adaptiveUtils.js\")",
       "Bash(grep -rln \"^\\\\.btn\\\\s*[\\\\{,]\\\\|^\\\\s\\\\+\\\\.btn\\\\s*\\\\{\" \"D:/Praveen/codivium_production/assets\" 2>/dev/null | head -5)",
       "Read(//d/Praveen/codivium_production/assets/**)",
-      "Bash(ls D:/github/Code-Adept-BackEnd 2>&1 | head -30; echo \"---\"; ls D:/github/Code-Adept-React 2>&1 | head -30)",
+  "Bash(ls D:/github/Code-Adept-BackEnd 2>&1 | head -30; echo \"---\"; ls D:/github/Code-Adept-React 2>&1 | head -30)",
       "Read(//d/github/Code-Adept-BackEnd/**)",
       "Read(//d/github/Code-Adept-React/**)"
-    ]
+  "Bash(xargs grep -l \"AdminDashboard\\\\|UnitTestManagement\\\\|McqManagement\\\\|PackageManagement\\\\|UserManagement\")",
+      "Bash(xargs ls -la)"
+  ]
   }
 }

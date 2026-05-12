@@ -6,6 +6,14 @@ export function isLoggedIn() {
   }
 }
 
+export function isSuperAdmin() {
+  try {
+    return (localStorage.getItem("UserRoleName") || "").toLowerCase() === "superadmin";
+  } catch {
+    return false;
+  }
+}
+
 export function logout() {
   try {
     localStorage.removeItem("Userid");
