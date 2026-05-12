@@ -198,6 +198,11 @@ export default function RightPane({
               <span className="cv-tab-lock" aria-label="Locked">{LOCK_SVG}</span>
             )}
           </button>
+          {attemptCount > 0 && (
+            <span className="cv-attempt-count" id="attemptCount" aria-live="polite">
+              Attempt {attemptCount}
+            </span>
+          )}
           {testResults && (
             <button
               id="tab-right-result"
@@ -232,6 +237,17 @@ export default function RightPane({
         </div>
 
         <div className="submit-bar">
+          {submitStatus && (
+            <div
+              className={`cv-editor-status cv-status-${submitStatus.type}`}
+              id="editorStatus"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {submitStatus.message}
+            </div>
+          )}
           <button
             className="submit-btn"
             id="submitSolution"
@@ -240,26 +256,9 @@ export default function RightPane({
             aria-busy={submitting}
             onClick={onSubmit}
           >
-            {submitting ? 'Running tests…' : 'Submit'}
+            {submitting ? 'Running…' : 'Submit'}
           </button>
-          {attemptCount > 0 && (
-            <span className="cv-attempt-count" id="attemptCount" aria-live="polite">
-              Attempt {attemptCount}
-            </span>
-          )}
         </div>
-
-        {submitStatus && (
-          <div
-            className={`cv-editor-status cv-status-${submitStatus.type}`}
-            id="editorStatus"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {submitStatus.message}
-          </div>
-        )}
       </div>
 
       <div className="pane-body">

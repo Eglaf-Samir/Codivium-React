@@ -238,17 +238,15 @@ export default function EditorPage() {
       const onStreamEvent = (evt) => {
         if (!evt) return;
         if (evt.type === 'progress') {
-          const label = evt.name || `test_${evt.index}`;
           setSubmitStatus({
             type: 'running',
-            message: `Running test ${evt.index} / ${evt.total}: ${label}`,
+            message: `Running ${evt.index} / ${evt.total}`,
           });
         } else if (evt.type === 'testResult') {
           const verb = evt.passed ? '✓' : '✗';
-          const label = evt.name || `test_${evt.index}`;
           setSubmitStatus({
             type: 'running',
-            message: `${verb} ${evt.index} / ${evt.total}: ${label}`,
+            message: `${verb} ${evt.index} / ${evt.total}`,
           });
         }
       };

@@ -500,18 +500,20 @@ export default function DeliberatePracticeManagement() {
             ) : (
               <table className="cv-admin-table">
                 <thead>
-                  <tr><th>Title</th><th>Coding</th><th>Seq</th><th>Description</th><th aria-label="Actions" >Action</th></tr>
+                  <tr><th>Title</th>
+                  {/* <th>Coding</th><th>Seq</th> */}
+                  <th>Description</th><th aria-label="Actions" >Action</th></tr>
                 </thead>
                 <tbody>
                   {visible.map(it => (
                     <tr key={it.id}>
                       <td className="cell-email">{it.title || '—'}</td>
-                      <td>
+                      {/* <td>
                         <span className={`cv-admin-pill ${it.isCoding ? 'is-active' : 'is-inactive'}`}>
                           <span className="cv-admin-pill-dot" />{it.isCoding ? 'Coding' : 'Other'}
                         </span>
                       </td>
-                      <td className="cell-muted">{it.sequenceNo || '—'}</td>
+                      <td className="cell-muted">{it.sequenceNo || '—'}</td> */}
                       <td className="cell-muted">
                         {(it.description || '').length > 120 ? (it.description || '').slice(0, 120) + '…' : (it.description || '—')}
                       </td>
