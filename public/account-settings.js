@@ -144,19 +144,19 @@
         upgradeBtn.textContent = 'Re-subscribe';
         upgradeBtn.addEventListener('click', function () {
           // TODO: link to pricing / checkout page
-          showToast('Redirecting to pricing\u2026');
+          showToast('Redirecting to pricing');
         });
       } else if (plan.tier === 'free') {
         upgradeBtn.textContent = 'Subscribe';
         upgradeBtn.addEventListener('click', function () {
           // TODO: link to pricing / checkout page
-          showToast('Redirecting to pricing\u2026');
+          showToast('Redirecting to pricing');
         });
       } else {
         // Monthly or Annual — manage via Stripe Customer Portal
         upgradeBtn.textContent = 'Manage plan';
         upgradeBtn.addEventListener('click', function () {
-          showToast('Opening billing portal\u2026');
+          showToast('Opening billing portal');
           // TODO: fetch('/api/billing/portal', { credentials: 'same-origin' })
           //         .then(r => r.json()).then(d => { window.location.href = d.url; });
         });
@@ -998,7 +998,7 @@
     if (cancelSubBtn) {
       cancelSubBtn.addEventListener('click', function () {
         closeAllModals();
-        showToast('Opening billing portal\u2026');
+        showToast('Opening billing portal');
         // TODO: fetch('/api/billing/portal', { credentials: 'same-origin' })
         //         .then(r => r.json()).then(d => { window.location.href = d.url; });
         // Cancellation is handled inside the Stripe Customer Portal — no custom cancel endpoint needed.

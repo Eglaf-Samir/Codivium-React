@@ -239,7 +239,7 @@ export function exerciseDonutConfig(canvas, alloc, onCategoryClick, allocMode, s
   opts.scales.x.suggestedMin = 0;
   opts.scales.y.ticks.callback = (v, i) => {
     const s = String(labels[i] != null ? labels[i] : v);
-    return s.length > 16 ? s.slice(0, 15) + '\u2026' : s;
+    return s.length > 16 ? s.slice(0, 15): s;
   };
   opts.layout = { padding: { top: 4, right: 8, bottom: 10, left: 0 } };
 

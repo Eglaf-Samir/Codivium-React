@@ -364,11 +364,21 @@ function Pricing() {
   }, []);
 
   const visiblePackages = useMemo(() => {
-    return packages.filter(
-      (p) =>
-        Array.isArray(p.packagePriceList) &&
-        p.packagePriceList.some((pr) => !pr.isdeleted)
-    );
+    return packages.filter((p) => {
+      if (!Array.isArray(p.packagePriceList)) return false;
+      const activePrices = p.packagePriceList.filter((pr) => !pr.isdeleted);
+      if (activePrices.length === 0) return false;
+      // Treat the package as "free" only when every active price has both
+      // basePrice and price as 0/null. Using `||` (not `??`) so a literal 0
+      // on basePrice doesn't shadow a real amount on the price field — that
+      // was filtering out the paid package alongside the free one.
+      const isFreePackage = activePrices.every((pr) => {
+        const base = Number(pr.basePrice) || 0;
+        const amount = Number(pr.price) || 0;
+        return base === 0 && amount === 0;
+      });
+      return !isFreePackage;
+    });
   }, [packages]);
 
   return (

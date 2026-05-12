@@ -28,7 +28,7 @@ export default function SimplePills({ categories, selected, onChange }) {
       <div className="simple-top">
         <div className="simple-search-wrap">
           <input className="simple-search" type="text" autoComplete="off" spellCheck="false"
-            placeholder="Filter categories\u2026" value={query}
+            placeholder="Filter categories" value={query}
             onChange={e => setQuery(e.target.value)} aria-label="Filter category pills" />
         </div>
         <div className="simple-actions">

@@ -7,7 +7,10 @@ export default function ExerciseGrid({ exercises, totalCount, loading, error, on
   if (loading) {
     return (
       <div className="cv-menu-loading" id="cvMenuLoading" aria-live="polite" aria-label="Loading exercises">
-        <span>Loading exercises\u2026</span>
+        <div className="cv-progress" role="progressbar" aria-label="Loading exercises">
+          <div className="cv-progress-bar" />
+        </div>
+        <span className="cv-progress-label">Loading exercises</span>
       </div>
     );
   }

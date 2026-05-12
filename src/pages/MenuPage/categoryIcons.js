@@ -48,7 +48,7 @@ export const CATEGORY_PATHS = {
 export const STATUS_ICON_PATHS = {
   completed:   '<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6"/>',
   attempted:   '<path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-linecap="round" stroke-width="2.6"/>',
-  not_started: '<path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" stroke-linecap="round" stroke-width="2.6"/>',
+  not_started: '<circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2.2"/>',
 };
 
 export const STATUS_CLASS = {
@@ -59,7 +59,7 @@ export const STATUS_CLASS = {
 
 export const STATUS_LABEL = {
   completed:   'Completed',
-  attempted:   'Attempted',
+  attempted:   'In progress',
   not_started: 'Not started',
 };
 

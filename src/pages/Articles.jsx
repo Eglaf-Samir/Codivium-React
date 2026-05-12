@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
+import { Link } from "react-router-dom";
 
 function Articles() {
     usePageMeta("articles");
@@ -70,7 +71,7 @@ function Articles() {
                                 </aside>
                                 <section aria-label="Article list" className="bm-main">
                                     <section aria-label="Featured article" className="bm-feature">
-                                        <a className="bm-feature-card glow-track bm-article" data-date="2026-02-13" data-pop="90" data-subtitle="This is the first of a two-part series on deliberate practice – what it is, the benefits and how it may be leveraged for improving in…" href="/article">
+                                        <Link className="bm-feature-card glow-track bm-article" data-date="2026-02-13" data-pop="90" data-subtitle="This is the first of a two-part series on deliberate practice – what it is, the benefits and how it may be leveraged for improving in…" to="/article">
                                             <div className="bm-feature-top">
                                                 <div className="bm-badge">Featured</div>
                                                 <div className="bm-meta">
@@ -84,7 +85,7 @@ function Articles() {
                                             <div className="bm-feature-foot">
                                                 <span className="bm-read">Read</span>
                                             </div>
-                                        </a>
+                                        </Link>
                                     </section>
                                     <section aria-label="All articles" className="bm-listing">
                                         <div className="bm-section-head">
@@ -93,7 +94,7 @@ function Articles() {
                                             <div aria-hidden="true" className="bm-spacer"></div>
                                         </div>
                                         <div className="bm-rows" id="bmRows" role="list">
-                                            <a className="bm-row glow-track bm-article" data-date="2026-02-13" data-pop="90" data-subtitle="This is the first of a two-part series on deliberate practice – what it is, the benefits and how it may be leveraged for improving in…" href="/article" role="listitem">
+                                            <Link className="bm-row glow-track bm-article" data-date="2026-02-13" data-pop="90" data-subtitle="This is the first of a two-part series on deliberate practice – what it is, the benefits and how it may be leveraged for improving in…" to="/article" role="listitem">
                                                 <div aria-hidden="true" className="bm-ico">◆</div>
                                                 <div className="bm-row-main">
                                                     <div className="bm-row-title">Deliberate Practice: The path to mastery of Software development in Python (Part I)</div>
@@ -102,8 +103,8 @@ function Articles() {
                                                     <div className="bm-row-cat">Deliberate Practice</div>
                                                     <div className="bm-row-date">Feb 13, 2026</div>
                                                 </div>
-                                            </a>
-                                            <a className="bm-row glow-track bm-article" data-date="2026-01-18" data-pop="72" data-subtitle="How feedback, repetition, and scope control create compounding skill — and how to structure your sessions." href="/article" role="listitem">
+                                            </Link>
+                                            <Link className="bm-row glow-track bm-article" data-date="2026-01-18" data-pop="72" data-subtitle="How feedback, repetition, and scope control create compounding skill — and how to structure your sessions." to="/article" role="listitem">
                                                 <div aria-hidden="true" className="bm-ico">◆</div>
                                                 <div className="bm-row-main">
                                                     <div className="bm-row-title">The deliberate-practice loop for Python mastery</div>
@@ -112,8 +113,8 @@ function Articles() {
                                                     <div className="bm-row-cat">Deliberate Practice</div>
                                                     <div className="bm-row-date">Jan 18, 2026</div>
                                                 </div>
-                                            </a>
-                                            <a className="bm-row glow-track bm-article" data-date="2025-12-22" data-pop="61" data-subtitle="A pragmatic way to build correctness-first intuition in Python — without memorizing patterns." href="/article" role="listitem">
+                                            </Link>
+                                            <Link className="bm-row glow-track bm-article" data-date="2025-12-22" data-pop="61" data-subtitle="A pragmatic way to build correctness-first intuition in Python — without memorizing patterns." to="/article" role="listitem">
                                                 <div aria-hidden="true" className="bm-ico">◆</div>
                                                 <div className="bm-row-main">
                                                     <div className="bm-row-title">Mental models: why “small drills” beat long tutorials</div>
@@ -122,7 +123,7 @@ function Articles() {
                                                     <div className="bm-row-cat">Python Mastery</div>
                                                     <div className="bm-row-date">Dec 22, 2025</div>
                                                 </div>
-                                            </a>
+                                            </Link>
                                         </div>
                                         <div aria-hidden="true" className="bm-preview" id="bmPreview">
                                             <div aria-label="Article preview" className="bm-preview-card" role="note">
