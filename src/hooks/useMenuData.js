@@ -54,6 +54,7 @@ export function useMenuData() {
   const [error, setError] = useState(null);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [difficultyOptions, setDifficultyOptions] = useState([]);
+  const [optionsReady, setOptionsReady] = useState(false);
 
   const track = (
     new URLSearchParams(window.location.search).get("track") || "micro"
@@ -62,6 +63,7 @@ export function useMenuData() {
   useEffect(() => {
     let cancelled = false;
     const mode = track === "interview" ? "INTERVIEW" : "DELIBERATION";
+    setOptionsReady(false);
     (async () => {
       try {
         const [catRes, diffRes] = await Promise.all([
@@ -79,6 +81,8 @@ export function useMenuData() {
         }
       } catch (err) {
         console.error("Failed to load filter options", err);
+      } finally {
+        if (!cancelled) setOptionsReady(true);
       }
     })();
     return () => {
@@ -170,5 +174,6 @@ export function useMenuData() {
     categoryOptions,
     difficultyOptions,
     completionOptions: COMPLETION_OPTIONS,
+    optionsReady,
   };
 }

@@ -184,6 +184,7 @@ export default function MenuPage() {
     difficultyOptions,
     completionOptions,
     runFilter,
+    optionsReady,
   } = useMenuData();
 
   const filterBody = useMemo(
@@ -206,8 +207,9 @@ export default function MenuPage() {
   );
 
   useEffect(() => {
+    if (!optionsReady) return;
     runFilter(filterBody);
-  }, [filterBody, runFilter]);
+  }, [filterBody, runFilter, optionsReady]);
 
   const trackLabel =
     data?.trackLabel || (track === 'interview' ? 'Interview Questions Menu' : 'Micro Challenge Menu');

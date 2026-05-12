@@ -38,6 +38,10 @@ export default function EditorPage() {
   const workspaceRef = useRef(null);
   const candidateRef = useRef(null);   // imperative ref into EditorSlot (candidate)
   const feedbackRef = useRef(null);   // imperative ref into FeedbackModal
+  // Set to true after a successful final submit. The unmount cleanup uses this
+  // to skip SaveSession, which would otherwise flip IsSubmitted back to true
+  // on the server and clobber the "completed" state we just achieved.
+  const didFinalizeRef = useRef(false);
 
   // ── Attempt-first note ─────────────────────────────────────────────────────
   const [attemptNoteSeen, setAttemptNoteSeen] = React.useState(() => {
@@ -130,6 +134,13 @@ export default function EditorPage() {
   // already null by the time React runs the parent cleanup — children
   // unmount first, leaving Ace's instance destroyed.
   const codeBufferRef = useRef('');
+  // Mirror elapsedSeconds + attemptCount into refs so the unmount cleanup
+  // (deps: [item, track]) reads the current values instead of the stale ones
+  // captured when the effect was first registered. Without these the saved
+  // session always held the initial seconds / run count — which is why
+  // "Continue Where I Left Off" resumed at 0.
+  const elapsedSecondsRef = useRef(0);
+  const attemptCountRef = useRef(0);
 
   // Run-progress is now driven by NDJSON events streamed from the backend
   // (`progress` per test start, `testResult` per finish, `complete` at end).
@@ -143,7 +154,11 @@ export default function EditorPage() {
     if (exercise.id !== prev) {
       localStorage.setItem('cv_exercise_id', exercise.id);
       localStorage.setItem('cv_submission_count', '0');
-      timer.reset();
+      // Honour the resume baseline: when the user is continuing an in-progress
+      // exercise, location.state carries the previously saved seconds. Passing
+      // it to reset keeps the clock counting from where they left off instead
+      // of restarting at 0.
+      timer.reset(resumeSeconds);
       locks.resetForExercise();
       setTestResults(null);
       setSubmitStatus(null);
@@ -354,6 +369,7 @@ export default function EditorPage() {
       }
 
       setSubmitStatus({ type: 'success', message: 'Submission successful!' });
+      didFinalizeRef.current = true;
 
       // Backend now returns the v1.2.1 Feedback Modal Integration Contract
       // shape: { accepted, testsPassed, testsTotal, testResults, feedback }.
@@ -433,10 +449,23 @@ export default function EditorPage() {
     setShowSubmitConfirm(false);
   }, []);
 
+  // Keep the latest-value refs in sync on every render.
+  useEffect(() => {
+    elapsedSecondsRef.current = timer.elapsedSeconds;
+  }, [timer.elapsedSeconds]);
+  useEffect(() => {
+    attemptCountRef.current = attemptCount;
+  }, [attemptCount]);
+
   // ── Save session on unmount (best-effort) ──
   useEffect(() => {
     return () => {
       if (!item) return;
+      // After a successful final submit the server has already reset the
+      // exercise to (IsCompleted=true, IsSubmitted=false). Skipping the
+      // session-save here prevents the backend from flipping IsSubmitted
+      // back to true and undoing the "Completed" state in the menu.
+      if (didFinalizeRef.current) return;
       const Userid = localStorage.getItem('Userid');
       if (!Userid) return;
       // Read from the buffer ref — the candidate editor's child unmount
@@ -445,7 +474,11 @@ export default function EditorPage() {
       // the EditorSlot onChange callback.
       const liveCode = candidateRef.current?.getValue?.() ?? '';
       const code = liveCode || codeBufferRef.current || '';
-      const totalSecs = timer.elapsedSeconds;
+      // Read from refs so we capture the latest values — the closure-captured
+      // `timer.elapsedSeconds` / `attemptCount` would be the ones from this
+      // effect's first registration (typically 0).
+      const totalSecs = elapsedSecondsRef.current;
+      const runCount = attemptCountRef.current;
       try {
         if (track === 'interview') {
           SaveInterviewPreparationSession({
@@ -453,7 +486,7 @@ export default function EditorPage() {
             interviewPreprationId: item.id,
             lastUserCode: code,
             totalSeconds: totalSecs,
-            runCount: attemptCount,
+            runCount,
             lastOutput: null,
           });
         } else {
@@ -465,7 +498,7 @@ export default function EditorPage() {
             deliberatePracticePreprationId: item.id,
             lastUserCode: code,
             totalSeconds: totalSecs,
-            runCount: attemptCount,
+            runCount,
             lastOutput: null,
           });
         }

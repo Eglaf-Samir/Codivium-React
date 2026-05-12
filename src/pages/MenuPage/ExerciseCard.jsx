@@ -13,7 +13,7 @@ function cap(s) {
 
 function truncate(s, max) {
   s = String(s || '');
-  return s.length > max ? s.slice(0, max - 1) + '\u2026' : s;
+  return s.length > max ? s.slice(0, max - 1) : s;
 }
 
 export default function ExerciseCard({ exercise: ex, returnUrl, onClick }) {
