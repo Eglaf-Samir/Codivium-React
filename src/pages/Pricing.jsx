@@ -24,8 +24,8 @@ const PER_LABELS = {
 
 const NOTE_LABELS = {
   week: "Week-only access. Ends after 7 days.",
-  month: "Renews automatically every month.",
-  year: "Renews automatically every year.",
+  month: "Renews automatically at the end of each month.",
+  year: "Renews automatically at the end of each year.",
 };
 
 const SELECT_LABELS = {
@@ -282,42 +282,26 @@ function PackageCard({ pkg }) {
       </div>
 
       <ul aria-label="Features included" className="features">
-        {pkg.isAccessToAllMCQ && (
-          <li>
-            <CheckIcon />
-            Full access to all MCQs
-          </li>
-        )}
-        {pkg.isAccessToAllCodingQuestions && (
-          <li>
-            <CheckIcon />
-            Full access to all coding questions
-          </li>
-        )}
-        {pkg.isDashboardShouldBeViewable && (
-          <li>
-            <CheckIcon />
-            Personal performance dashboard
-          </li>
-        )}
-        {pkg.isTutorialsPageViewable && (
-          <li>
-            <CheckIcon />
-            Tutorials &amp; learning resources
-          </li>
-        )}
-        {pkg.isBlogShouldBeViewable && (
-          <li>
-            <CheckIcon />
-            Blog &amp; articles access
-          </li>
-        )}
-        {pkg.isRefundPossible && pkg.refundOfDays > 0 && (
-          <li>
-            <CheckIcon />
-            {pkg.refundOfDays}-day refund window
-          </li>
-        )}
+        <li>
+          <CheckIcon />
+          Full-spectrum access: interview questions, micro-challenges, and MCQs
+        </li>
+        <li>
+          <CheckIcon />
+          Mental model training designed for elite problem-solvers
+        </li>
+        <li>
+          <CheckIcon />
+          Precision gap diagnosis — so you never practise blindly
+        </li>
+        <li>
+          <CheckIcon />
+          Market-leading analytics that turns effort into measurable progress
+        </li>
+        <li>
+          <CheckIcon />
+          Immediate, deliberate-practice-driven feedback after every session
+        </li>
       </ul>
 
       {/* BUTTON */}
@@ -390,7 +374,9 @@ function Pricing() {
           <header className="top">
             <div className="kicker">Pricing</div>
             <h1>Choose your subscription</h1>
-            <p className="sub">One plan. Full access to everything.</p>
+            <p className="sub">
+              One plan. Full access to everything — choose the billing cadence that matches your practice rhythm.
+            </p>
           </header>
 
           {loading && <div className="note">Loading pricing…</div>}
