@@ -296,16 +296,11 @@ export default function EditorPage() {
       };
       setTestResults(mapped);
 
+      // Clear the status pill once results are in — the Result tab is the
+      // single source of truth for what happened on this attempt.
+      setSubmitStatus(null);
       if (mapped.accepted) {
-        // Surface the confirmation modal instead of asking the user to click
-        // the header button a second time.
-        setSubmitStatus(null);
         setShowSubmitConfirm(true);
-      } else {
-        setSubmitStatus({
-          type: 'fail',
-          message: `${mapped.testsPassed} / ${mapped.testsTotal} tests passed — keep going.`,
-        });
       }
     } catch (err) {
       setSubmitting(false);
