@@ -1,7 +1,7 @@
 // PublicWrapper.jsx — wraps all public pages
 // Injects/removes the correct CSS and resets body state
-import React, { useEffect } from 'react';
-import { useCssLoader } from '../hooks/useCssLoader.js';
+import React, { useLayoutEffect } from 'react';
+import { useCssLoader, prewarmCss } from '../hooks/useCssLoader.js';
 
 // CSS shared by ALL public pages
 const BASE_CSS = [
@@ -50,16 +50,27 @@ const APP_CLASSES = [
   'sidebar-collapsed','mcq-quiz','mcq-parent','cv-settings','drawer-collapsed','cv-app',
 ];
 
+// Prewarm at module load time — every public-page CSS file starts fetching
+// the moment this module is imported, which happens before React even
+// renders the first route. Each file is `body[data-page="…"]` scoped so
+// loading them all is inert until the right data-page activates. By the
+// time the user clicks a navlink, the target page's CSS is already parsed
+// and in <head>; useState's lazy init below returns true immediately and
+// the page mounts fully styled — no blank, no FOUC.
+prewarmCss(Array.from(
+  new Set([...BASE_CSS, ...Object.values(PAGE_CSS).flat()]),
+));
+
 export default function PublicWrapper({ page, children }) {
   const extraCss = PAGE_CSS[page] || [];
-  useCssLoader([...BASE_CSS, ...extraCss]);
+  const cssReady = useCssLoader([...BASE_CSS, ...extraCss]);
 
-  useEffect(() => {
-    // Remove all app body classes
+  // useLayoutEffect runs before the browser paints, so the body class /
+  // data-page attribute is correct for the very first frame of the new
+  // page — no flash of the old page's scoped styles.
+  useLayoutEffect(() => {
     APP_CLASSES.forEach(c => document.body.classList.remove(c));
-    // Set data-page for CSS scoping
     document.body.setAttribute('data-page', page);
-    // Ensure body can scroll (app pages use fixed layout)
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
 
@@ -69,5 +80,12 @@ export default function PublicWrapper({ page, children }) {
     };
   }, [page]);
 
+  // Only hide the page on cold cache — on the very first visit to any
+  // public page in a fresh session, give CSS a chance to land before we
+  // paint. Once anything is cached (post-prewarm), cssReady is true on
+  // the first render and the children show without a blank frame.
+  if (!cssReady) {
+    return <div style={{ visibility: 'hidden' }}>{children}</div>;
+  }
   return <>{children}</>;
 }
