@@ -440,7 +440,7 @@ export const GetDeliberatePracticeSession = async (UserId, DeliberatePracticePre
     console.log('GetDeliberatePracticeSession UserId:', UserId);
     console.log('GetDeliberatePracticeSession DeliberatePracticePreprationId:', DeliberatePracticePreprationId);
     let token = localStorage.getItem('LoginToken');
-    var url = baseURL + 'api/v1/deliberatepractice/GetDeliberatePracticeSession?userId=' + UserId + '&deliberatePracticePreprationId =' + DeliberatePracticePreprationId;
+    var url = baseURL + 'api/v1/deliberatepractice/GetDeliberatePracticeSession?userId=' + UserId + '&deliberatePracticePreprationId=' + DeliberatePracticePreprationId;
     const config = {
         headers: {
             'Content-Type': 'application/json',

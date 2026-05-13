@@ -189,9 +189,10 @@ body[data-page="login"] .icon-eye{
   height: 18px;
 }
 
-body[data-page="login"] .icon-eye-closed{ display: none; }
-body[data-page="login"] .pass-toggle[aria-pressed="true"] .icon-eye-open{ display: none; }
-body[data-page="login"] .pass-toggle[aria-pressed="true"] .icon-eye-closed{ display: block; }
+body[data-page="login"] .icon-eye-open{ display: none; }
+body[data-page="login"] .icon-eye-closed{ display: block; }
+body[data-page="login"] .pass-toggle[aria-pressed="true"] .icon-eye-closed{ display: none; }
+body[data-page="login"] .pass-toggle[aria-pressed="true"] .icon-eye-open{ display: block; }
 
 body[data-page="login"] .caps-indicator{
   min-height: 18px;
@@ -424,9 +425,10 @@ body[data-page="login"] .pass-toggle .icon-eye{
   height: 18px;
   display: block;
 }
-body[data-page="login"] .pass-toggle .icon-eye-closed{ display: none; }
-body[data-page="login"] .pass-toggle.is-on .icon-eye-open{ display: none; }
-body[data-page="login"] .pass-toggle.is-on .icon-eye-closed{ display: block; }
+body[data-page="login"] .pass-toggle .icon-eye-open{ display: none; }
+body[data-page="login"] .pass-toggle .icon-eye-closed{ display: block; }
+body[data-page="login"] .pass-toggle[aria-pressed="true"] .icon-eye-closed{ display: none; }
+body[data-page="login"] .pass-toggle[aria-pressed="true"] .icon-eye-open{ display: block; }
 
 body[data-page="login"] .caps-indicator{
   display: block;

@@ -20,6 +20,7 @@ function Join() {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -194,7 +195,7 @@ function Join() {
                     <div className="pw-wrap">
                       <input
                         name="password"
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         value={form.password}
                         onChange={handleChange}
                         className="input"
@@ -204,12 +205,13 @@ function Join() {
                       )}
                       <button
                         aria-controls="password password2"
-                        aria-pressed="false"
+                        aria-pressed={showPassword}
                         className="pw-toggle"
                         id="pwToggle"
                         type="button"
+                        onClick={() => setShowPassword((s) => !s)}
                       >
-                        Show
+                        {showPassword ? "Hide" : "Show"}
                       </button>
                     </div>
                     <div className="pw-hint">
@@ -243,7 +245,7 @@ function Join() {
                     <label for="password2">Confirm password</label>
                     <input
                       name="confirmPassword"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       value={form.confirmPassword}
                       onChange={handleChange}
                       className="input"

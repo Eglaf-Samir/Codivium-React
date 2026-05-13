@@ -125,17 +125,19 @@
  * Both match the visual language of the public landing page.
  */
 .navlinks a.nav-join {
-  /* border: 1px solid var(--color-text-muted); */
   padding: 6px 14px;
 }
 .navlinks a.nav-join:hover {
   border-color: var(--color-text-muted);
 }
-.navlinks a.nav-login {
-  color: var(--color-text-accent);
-}
 .navlinks a.nav-login:hover {
   color: var(--color-text-accent);
+}
+/* Active link (matches current route) gets the gold accent. */
+.navlinks a.nav-join.active,
+.navlinks a.nav-login.active {
+  color: var(--color-text-accent);
+  font-weight: 600;
 }
 
 /* ── Parchment theme overrides ── */
@@ -145,7 +147,11 @@ html[data-theme="parchment"] .topbar {
 }
 html[data-theme="parchment"] .navlinks a { color: var(--color-text-secondary); }
 html[data-theme="parchment"] .navlinks a:hover { color: var(--color-text-accent); }
-html[data-theme="parchment"] .nav-join { border-color: var(--color-border-accent); color: var(--color-text-accent); }
+html[data-theme="parchment"] .nav-join.active,
+html[data-theme="parchment"] .nav-login.active {
+  color: var(--color-text-accent);
+  font-weight: 600;
+}
 
 /* ── Parchment: topbar links → midnight blue ── */
 html[data-theme="parchment"] .topbar {
@@ -158,14 +164,7 @@ html[data-theme="parchment"] .navlinks a {
 html[data-theme="parchment"] .navlinks a:hover {
   color: rgba(14,28,80,1.00);
 }
-html[data-theme="parchment"] .nav-join {
-  border-color: rgba(14,28,80,0.40);
-  color:        rgba(14,28,80,0.90);
-}
 html[data-theme="parchment"] .nav-join:hover {
   background:   rgba(14,28,80,0.07);
   border-color: rgba(14,28,80,0.60);
-}
-html[data-theme="parchment"] .nav-login {
-  color: rgba(14,28,80,0.75);
 }
