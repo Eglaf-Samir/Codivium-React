@@ -377,11 +377,15 @@
 .quiz-inline-code { font-family: var(--font-mono, 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', monospace); font-size: 0.88em; padding: 2px 6px; border-radius: 0; border: 1px solid rgba(255,255,255,0.12); background: var(--cv-code-bg, rgba(0,0,0,0.28)); color: var(--cv-code-fg, var(--color-text-accent)); }
 .nano-tutorial-body .quiz-code-block { margin: 10px 0; font-size: 12px; }
 
-/* ── Summary ──────────────────────────────────────────────────── */
-.summary { display: none;
+/* ── Summary ────────────────────────────────────────────────────
+ * Scoped to body.mcq-quiz so the parent setup page's SummaryRail
+ * (which also uses .summary as its class name) isn't accidentally
+ * hidden when mcq-quiz.css is prewarmed at app boot.
+ */
+body.mcq-quiz .summary { display: none;
   overflow-y: auto;
 }
-.summary.show {
+body.mcq-quiz .summary.show {
   display: block;
   overflow-y: auto;
   max-height: calc(100vh - var(--topbar-h, 82px) - 44px);
@@ -1656,5 +1660,89 @@ body.cv-app.mcq-quiz .window-large{
   flex: 1 1 auto !important;
   width: 100% !important;
   max-width: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — preserve design, only adjust layout below 1400px.
+   The existing @media (max-width: 1400px) already stacks the
+   tutorial panel under the question card; rules below tighten
+   paddings and stack option pairs on narrower viewports.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Tablet — keep two option columns but trim oversized padding so the
+   card no longer needs to scroll horizontally. */
+@media (max-width: 1024px){
+  .quiz-stage{ gap: 16px; min-height: 0; }
+  .options{ gap: 14px; }
+  .opt{ padding: 22px 14px; min-height: 110px; }
+}
+
+/* Tablet portrait — stack the answer grid into a single column so
+   each option spans the full card width. */
+@media (max-width: 820px){
+  .quiz-top{ gap: 10px; }
+  .quiz-top-meta{ justify-items: flex-start; }
+  .options{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 10px;
+  }
+  .opt{ padding: 16px 14px; min-height: 0; }
+  .qtext{ font-size: 14px; line-height: 1.55; }
+  .quiz-actions{ gap: 10px; }
+  .quiz-btn-row{ gap: 6px; }
+
+  /* Stop the fixed timer from colliding with the quiz header */
+  .cv-timer{ top: auto; bottom: 14px; right: 12px; }
+  .cv-timer-toggle{ margin-top: 0; }
+  .cv-timer-face{ width: 56px; height: 56px; }
+}
+
+/* Phone — compact card while keeping every design element visible. */
+@media (max-width: 640px){
+  .window-pad{ padding: 14px; }
+  .tag{ font-size: 9.5px; padding: 5px 8px; }
+  .qmeta{ font-size: 11.5px; gap: 6px; }
+  .progress-seg-track{ height: 8px; gap: 2px; }
+  .progress-seg-label{ font-size: 10px; }
+  .qtext{ font-size: 13.5px; }
+  .opt{ padding: 14px 12px; gap: 8px; }
+  .opt span{ font-size: 12.5px; }
+  .opt.correct::before,
+  .opt.wrong::before{
+    width: 18px; height: 18px; font-size: 11px; line-height: 18px;
+    top: 6px; right: 8px;
+  }
+  .peek-warning{ padding: 12px 14px; }
+  .peek-warning-actions{ flex-wrap: wrap; gap: 6px; }
+  .quiz-actions{ flex-direction: column; align-items: stretch; }
+  .quiz-btn-row{ width: 100%; justify-content: stretch; }
+  .quiz-btn-row .btn,
+  .quiz-btn-row .ghost{ flex: 1 1 auto; }
+
+  /* Summary cards stack to two then one for very narrow widths
+     (the existing 920px rule drops to 2 cols; 480px drops to 1). */
+  .summary.show{ max-height: none; }
+  .summary-actions{ width: 100%; justify-content: stretch; }
+  .summary-actions .btn,
+  .summary-actions .ghost{ flex: 1 1 auto; }
+
+  /* Tutorial panel under the card */
+  .quiz-tutorial-panel{ max-height: 360px; }
+  .nano-tutorial-body{ font-size: 12.5px; }
+}
+
+@media (max-width: 480px){
+  .window-pad{ padding: 12px; }
+  .quiz-top{ flex-direction: column; align-items: flex-start; }
+  .quiz-top-meta{ justify-items: flex-start; }
+  .tags{ gap: 6px; }
+  .summary-grid{ grid-template-columns: 1fr; }
+  .review-item-head{ flex-wrap: wrap; padding: 8px 12px; }
+  .review-item-body{ padding: 10px 12px; }
+  .metric{ padding: 12px; }
+  .metric .v{ font-size: 18px; }
+  .cv-timer-face{ width: 48px; height: 48px; }
+  .cv-timer-digital{ font-size: 13px; }
 }
 

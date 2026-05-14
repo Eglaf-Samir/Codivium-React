@@ -8,7 +8,7 @@ import SummaryRail    from './components/SummaryRail.jsx';
 import InfoRail       from './components/InfoRail.jsx';
 import McqTour, { useMcqTour } from '../mcq-shared/McqTour.jsx';
 import { useGlowFollow } from '../mcq-shared/useGlowFollow.js';
-import { useCssLoader } from '../../hooks/useCssLoader.js';
+import { useCssLoader, prewarmCss } from '../../hooks/useCssLoader.js';
 
 // MCQ CSS files have unscoped selectors (.card, .input, .divider, etc.) that
 // would collide with other pages if imported globally. Inject them only
@@ -18,6 +18,12 @@ const MCQ_CSS = [
   '/assets/css/components/mcq/mcq-parent.css',
   '/assets/css/components/mcq/mcq-setup-overrides.css',
 ];
+
+// Prewarm at module load — the link tags start fetching as soon as the
+// bundle reaches the browser, so by the time React mounts the page the
+// stylesheets are usually already parsed and cssReady is true on first
+// render (no flash of unstyled content).
+prewarmCss(MCQ_CSS);
 
 const QUIZ_URL = window.__CODIVIUM_MCQ_QUIZ_URL__ || '/mcq/quiz';
 

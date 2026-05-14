@@ -18,7 +18,7 @@
   display:flex;
   align-items:center;
   justify-content: center;
-  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .help-toggle{
@@ -175,9 +175,12 @@
 .filters-grid{
   display: grid;
   grid-template-columns: minmax(0, 1fr) 460px;
-  grid-template-rows: 1fr auto;
+  /* Single row, minmax(0, 1fr) so the row can shrink below content-min
+     (a plain `1fr` resolves to minmax(auto, 1fr) and would grow to fit
+     panel-left's long category list, pushing past the action bar). */
+  grid-template-rows: minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
   min-height: 0;
   flex: 1 1 auto;
 }
@@ -1015,11 +1018,16 @@
 .window-pad{ display:flex; flex-direction: column; height: 100%; min-height: 0; }
 .form{ display:flex; flex-direction: column; gap: 18px; flex: 1 1 auto; min-height: 0; }
 
-/* Actions bar: premium layered texture (not flat) */
+/* Actions bar: premium layered texture (not flat). Sits at the natural
+   bottom of the form via `margin-top: auto`. We deliberately don't use
+   position:sticky here — when DevTools opens and shrinks .main, sticky
+   would pin this bar to .main's visible bottom and float it OVER the
+   filter/options content (which extends below the sticky position).
+   Each panel inside the form has its own internal scroll, so the form
+   stays within window-large's bounded height and this bar remains at
+   the form's true bottom. */
 .actions{
   margin-top: auto;
-  position: sticky;
-  bottom: 0;
   padding-top: 16px;
   padding-bottom: 10px;
   border-radius: 18px;
@@ -1133,7 +1141,7 @@
 
 .msg.show{ display:block; }
 
-.h1-center{ width: 100%; text-align: center; }
+.h1-center{ width: 100%;  }
 
 /* ===== Right rail (Info + Selected Settings) ===== */
 .mcq-rail{
@@ -1269,11 +1277,13 @@
 
 .summary-text{ color: var(--color-text-secondary); font-size: 13px; line-height: 1.5; }
 
-/* Place panels: left (top), quick guide (bottom-left), right spans both rows */
+/* Place panels: left + right-stack both in a single row, equal heights.
+   The grid was originally 2 rows because QuickGuide lived in row 2; now
+   it's bundled inside .right-stack, so a single row keeps panel-left and
+   right-stack the SAME height (without the 16px gap between rows that
+   used to make panel-left taller). */
 .panel-left{ grid-column: 1; grid-row: 1; }
-.panel-left{ grid-column: 1; grid-row: 1 / span 2; }
-.panel-right{ grid-column: 2; grid-row: 1; height: auto; align-self: start; }
-.panel-quickguide{ grid-column: 2; grid-row: 2; }
+.panel-right{ grid-column: 2; grid-row: 1; height: auto; align-self: stretch; }
 
 @media (max-width: 980px){
   .filters-grid{ grid-template-columns: 1fr; grid-template-rows: auto; }
@@ -1347,7 +1357,9 @@
    ========================================================= */
 
 .filters-grid{
-  grid-template-rows: 1fr;
+  /* minmax(0, 1fr) — same rationale as the base rule: prevent the row
+     from growing to fit panel-left's intrinsic content size. */
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .right-stack{
@@ -2388,14 +2400,159 @@ body.cv-app.mcq-parent .main{
   overflow-x: hidden !important;
   overflow-y: auto !important;
 }
+/* No min-height on .right-stack — that rule pre-dated internal scrolling
+   and forced 520px even when the grid cell was shorter (e.g. with DevTools
+   open), which pushed content past the action bar. Right-stack now fills
+   its grid cell and scrolls vertically if its panels exceed the cell. */
 body.cv-app.mcq-parent .right-stack{
-  min-height: 520px;
+  overflow-y: auto;
+  min-height: 0;
+}
+/* Pin OptionsPanel (Difficulty/Count/Exclude) to its natural height —
+   without `flex: 0 0 auto`, its default `0 1 auto` lets a tight grid
+   cell shrink it to 0 (because QuickGuide is already `0 0 auto`),
+   which hides Difficulty + Number-of-Questions. With both panels at
+   `0 0 auto`, .right-stack scrolls internally instead. */
+body.cv-app.mcq-parent .right-stack .panel-right{
+  flex: 0 0 auto;
 }
 body.cv-app.mcq-parent .panel-quickguide{
-  min-height: 200px;
   flex: 0 0 auto;
 }
 /* Right rail scrolls internally if its panels exceed the available height. */
 body.cv-app.mcq-parent .mcq-rail .window-rail{
   overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — preserve design, only adjust layout below 1320px.
+   The existing breakpoints already stack .mcq-layout at 1320px and
+   .filters-grid at 980px; the rules below release fixed heights,
+   shrink paddings, and stack remaining inner grids on small screens.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Once the layout stacks, the existing rule at line 1148 already releases
+   .mcq-rail width/height. Don't touch .window-large height — its children
+   (.form, .filters-grid, .panel-left, .right-stack) all chain `height: 100%`
+   from the form's fixed viewport-height. Releasing it collapses the whole
+   form to ~200px and the action bar lands over the rail.
+   But `.mcq-parent .page-shell { height: 100% }` AT line 135 also has to
+   be relaxed: with mcq-layout in flex-column inside a height-constrained
+   page-shell, .window-large (basis ~100vh) plus the rail content easily
+   exceed page-shell's height, so flex-shrink squeezes .window-large below
+   its intended height. Letting page-shell flow lets each section keep
+   its proper height; .main scrolls if the total grows past the viewport. */
+@media (max-width: 1320px){
+  .mcq-rail{
+    gap: 18px;
+  }
+  .mcq-parent .page-shell{ height: auto; }
+  /* In column flex (the existing 1320px rule), the main axis is now
+     vertical. `.window-large { flex: 1 1 0 }` from the base rule + the
+     mcq-setup-overrides.css copy makes basis: 0 — which overrides its
+     declared `height: calc(100vh - 118px)` and collapses the form to
+     ~200px. The .mcq-parent prefix bumps specificity above the
+     overrides file's plain `.window-large` rule. */
+  .mcq-parent .window-large{ flex: 0 0 auto; }
+}
+
+/* Sidebar becomes an overlay at 920px — give MCQ pages a tighter
+   page-shell so the form isn't crammed against the viewport edge. */
+@media (max-width: 920px){
+  .mcq-layout{ gap: 22px; }
+  .window-head{ flex-wrap: wrap; gap: 10px; }
+  .window-help{ width: auto; }
+}
+
+/* Tablet portrait — collapse the second column of every inner grid
+   so cards stack instead of overflowing the narrow main area. */
+@media (max-width: 820px){
+  .mcq-layout{ gap: 18px; }
+  .filters-grid{ grid-template-columns: 1fr; gap: 14px; }
+  .panel-left, .panel-quickguide, .panel-right{
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .right-grid{ grid-template-columns: 1fr; }
+  .qg-split{ grid-template-columns: 1fr; }
+  .panel-toggles-row{ grid-template-columns: 1fr; gap: 12px; }
+  .right-stack{ height: auto; gap: 14px; }
+  body.cv-app.mcq-parent .panel-quickguide{
+    min-height: 0;
+    margin-top: 0;
+  }
+  /* Floating tab strip sits over the panel top — keep it inside the
+     window edge when the window-pad padding shrinks. */
+  .panel-window-tabs{ left: 10px; }
+  .lede-wide{ width: 100%; }
+}
+
+/* Small tablet / large phone — reduce paddings and tighten controls
+   so the design still fits without horizontal scroll. */
+@media (max-width: 640px){
+  .window-pad{ padding: 16px; }
+  .h1{ font-size: clamp(17px, 5vw, 22px); }
+  .ap-source-banner{ font-size: 12px; padding: 9px 11px; }
+  .divider{ margin: 14px 0; }
+
+  /* Tab/control sizing — design is preserved, just smaller */
+  .panel-window-tabs{ left: 8px; }
+  .wtab{ padding: 8px 10px; font-size: 9.5px; letter-spacing: 0.08em; }
+  .tabbar .tab{ min-width: 0; padding: 10px 10px; font-size: 9.5px; }
+  .mini-tab{ min-width: 60px; padding: 7px 9px; font-size: 9.5px; }
+  .toggle-item label{ padding: 10px 8px; font-size: 10px; }
+
+  /* Category pills + lists */
+  .pill label{ padding: 6px 9px; font-size: 10px; }
+  .simple-pillgrid{ gap: 5px; }
+  .simple-pillgrid .pill label{
+    padding: 4px 7px !important;
+    font-size: 11px !important;
+    max-width: 100%;
+  }
+  .category-row{ padding: 8px 10px; gap: 8px; }
+  .category-row label{ font-size: 12px; }
+  .palette-control{ padding: 4px; }
+  .palette-input{ font-size: 13px; padding: 10px 8px; }
+  .palette-browse{ width: 38px; height: 38px; }
+  .palette-browse svg{ width: 18px; height: 18px; }
+  .chip{ padding: 6px 10px; font-size: 11.5px; }
+
+  /* Right column readouts */
+  .qcount-display{ padding: 6px 9px; gap: 8px; }
+  .qcount-num{ font-size: 13px; }
+  .difficulty-ladder{ padding: 8px 8px; gap: 6px; }
+  .gauge{ width: min(280px, 100%); }
+
+  /* Right rail summary */
+  .summary{ gap: 12px; }
+  .summary-row{ gap: 8px; }
+  .summary-v{ font-size: 16px; }
+  .summary-pills{ gap: 6px; }
+  .summary-pill{ padding: 5px 7px; font-size: 9.5px; }
+  .mcq-rail .window-palette .summary{ max-height: none; }
+
+  /* Action bar: full-width primary button reads better on phones */
+  .actions{ padding-top: 12px; padding-bottom: 8px; }
+  .actions-right{ width: 100%; }
+  .actions-right .btn{ width: 100%; }
+  #startQuiz{ width: 100%; }
+}
+
+/* Phone — final tightening; design elements remain visible. */
+@media (max-width: 480px){
+  .mcq-layout{ gap: 14px; }
+  .window-pad{ padding: 12px; }
+  .h1{ font-size: 17px; letter-spacing: 0.04em; }
+  .lede{ font-size: 12.5px; }
+  .panel, .panel-group, .panel-quickguide{ padding: 10px; }
+  .panel-toggles-row{ padding: 10px; }
+  .panel-left{ padding-top: 48px; }
+  .panel-window-tabs{ left: 6px; }
+  .qg-item{ padding: 8px; font-size: 12px; }
+  .info-dot{ width: 20px; height: 20px; }
+  .info-dot-mini{ width: 16px; height: 16px; font-size: 10px; }
+  .ghost-mini{ padding: 7px 9px; font-size: 9.5px; }
+  .category-head{ padding: 10px 12px; }
+  .palette-chips{ gap: 6px; }
 }
