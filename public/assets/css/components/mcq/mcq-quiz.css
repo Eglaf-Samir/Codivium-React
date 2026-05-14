@@ -498,6 +498,17 @@ body.mcq-quiz .summary.show {
 .summary-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
 /* ── Timer (matches editor page) ──────────────────────────────── */
+/* Width budget the fixed-position clock occupies in the top-right.
+   Used below to reserve right-side padding on the quiz shell so the
+   question + options + tags + meta + progress bar never sit underneath
+   the clock.
+     face (72) + widget x-padding (16) + gap (4) + toggle (~44) + right offset (18) ≈ 154
+   Plus ~30px breathing room so the card visibly stops *before* the
+   clock instead of flush against it. */
+:root {
+  --cv-timer-reserve: 184px;
+}
+
 .cv-timer {
   position: fixed;
   top: 117px;
@@ -509,6 +520,20 @@ body.mcq-quiz .summary.show {
   gap: 4px;
   pointer-events: auto;
   user-select: none;
+}
+
+/* Reserve a matching gutter on BOTH sides of the shell — the right gutter
+   makes room for the fixed clock; the left gutter mirrors it so the card
+   stays visually centered on the page. Demo banner, quiz window, and
+   everything inside reflow into the centered band.
+   .page-shell has no visible background of its own, so this is pure
+   transparent space; the clock floats over the right gap.
+   Scoped to the quiz route; tutorial panel + summary keep default width
+   (clock is hidden / not over them at those phases). */
+body.mcq-quiz .page-shell {
+  padding-left:  var(--cv-timer-reserve) !important;
+  padding-right: var(--cv-timer-reserve) !important;
+  box-sizing: border-box;
 }
 
 .cv-timer-toggle {
@@ -1696,6 +1721,13 @@ body.cv-app.mcq-quiz .window-large{
   .cv-timer{ top: auto; bottom: 14px; right: 12px; }
   .cv-timer-toggle{ margin-top: 0; }
   .cv-timer-face{ width: 56px; height: 56px; }
+
+  /* Timer no longer sits in the top-right, so the shell can reclaim
+     its full width on both sides. */
+  body.mcq-quiz .page-shell {
+    padding-left:  0 !important;
+    padding-right: 0 !important;
+  }
 }
 
 /* Phone — compact card while keeping every design element visible. */

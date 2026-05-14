@@ -123,6 +123,45 @@ export function TutorialPanel({ question, isOpen }) {
 // ── Question card ─────────────────────────────────────────────────────────────
 // Tags, progress bar and meta live in McqQuizPage — this is just the card.
 
+// Strip script/iframe + inline handlers from admin-authored HTML before
+// dangerouslySetInnerHTML. The admin's CKEditor produces HTML for questions;
+// renderContent can't parse HTML tags so we route those branches through a
+// sanitized innerHTML render.
+function sanitizeHtmlSnippet(html) {
+  return String(html || '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '');
+}
+
+function looksLikeHtml(text) {
+  return /<[a-z][\s\S]*>/i.test(String(text || ''));
+}
+
+function renderQuestionContent(text) {
+  if (!text) return null;
+  if (looksLikeHtml(text)) {
+    return <div className="qtext-html" dangerouslySetInnerHTML={{ __html: sanitizeHtmlSnippet(text) }} />;
+  }
+  return renderContent(text);
+}
+
+// Render a single option, honoring backend's per-option `isCoding` flag —
+// option text that lacks fence markers gets wrapped in ```python``` so the
+// existing renderContent can lay it out as a code block.
+function renderOptionContent(text, isCoding) {
+  if (!text) return null;
+  const str = String(text);
+  if (isCoding && !/```/.test(str)) {
+    return renderContent('```python\n' + str + '\n```');
+  }
+  if (looksLikeHtml(str)) {
+    return <span className="opt-html" dangerouslySetInnerHTML={{ __html: sanitizeHtmlSnippet(str) }} />;
+  }
+  return renderContent(str);
+}
+
 export function QuestionCard({
   question, index, total, state,
   onSubmit, onPeek, onPeekConfirm, onPeekCancel,
@@ -162,16 +201,23 @@ export function QuestionCard({
   const correctSet = new Set(question.correctIndices);
   const lastSelSet = lastAns ? new Set(lastAns.selected) : new Set();
   const isPeek     = lastAns?.isPeek;
+  // Multi-select if EITHER signal says so:
+  //   - admin's `isMultipleAnswer` flag (explicit intent), OR
+  //   - the question actually has 2+ correct answers (derived truth).
+  // The second condition catches questions where the admin forgot to tick
+  // the flag — a user must still be able to pick every correct option.
+  const isMulti = !!question.isMultipleAnswer || (question.correctIndices?.length || 0) > 1;
 
   return (
     <section className="window glow-follow" id="quizCard" aria-label="Quiz question">
       <div className="window-pad">
 
-        <div className="qtext" id="qText" data-role="question">{renderContent(question.question)}</div>
+        <div className="qtext" id="qText" data-role="question">{renderQuestionContent(question.question)}</div>
         <div className="divider" />
 
-        <div className="options" id="options" role="group" aria-label="Answer choices" data-role="options">
+        <div className="options" id="options" role={isMulti ? 'group' : 'radiogroup'} aria-label="Answer choices" data-role="options">
           {question.options.map((opt, i) => {
+            const meta = question.optionMeta?.[i];
             const isChecked = locked ? lastSelSet.has(i) : selected.includes(i);
             const isCorrect = locked && correctSet.has(i);
             const isWrong   = locked && !correctSet.has(i) && lastSelSet.has(i);
@@ -182,14 +228,25 @@ export function QuestionCard({
             if (isWrong)   cls.push('wrong');
             return (
               <label key={i} className={cls.join(' ')} htmlFor={`opt_${i}`}>
-                <input type="checkbox" id={`opt_${i}`} name="answer" value={String(i)}
-                  checked={isChecked} disabled={locked}
+                <input
+                  type={isMulti ? 'checkbox' : 'radio'}
+                  id={`opt_${i}`}
+                  name="answer"
+                  value={String(i)}
+                  checked={isChecked}
+                  disabled={locked}
                   onChange={() => {
                     if (locked) return;
-                    setSelected(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
+                    if (isMulti) {
+                      setSelected(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
+                    } else {
+                      // Single-select: replace selection. Clicking the
+                      // already-selected radio is a no-op (browser default).
+                      setSelected([i]);
+                    }
                   }}
                 />
-                <span>{renderContent(opt)}</span>
+                <span>{renderOptionContent(opt, meta?.isCoding)}</span>
               </label>
             );
           })}
@@ -244,14 +301,15 @@ function ReviewItem({ answer, index }) {
         </div>
       </div>
       <div className="review-item-body">
-        <div className="review-q">{renderContent(q.question)}</div>
+        <div className="review-q">{renderQuestionContent(q.question)}</div>
         <div className="review-options">
           {q.options.map((opt, i) => {
+            const meta = q.optionMeta?.[i];
             const isC = correctSet.has(i), isS = selectedSet.has(i);
             return (
               <div key={i} className={`review-opt${isC ? ' correct' : isS ? ' wrong' : ''}`}>
                 <span className="review-opt-icon">{isC ? '\u2713' : isS ? '\u2717' : '\u00b7'}</span>
-                <span>{renderContent(opt)}</span>
+                <span>{renderOptionContent(opt, meta?.isCoding)}</span>
               </div>
             );
           })}
@@ -259,7 +317,7 @@ function ReviewItem({ answer, index }) {
         {q.explanation && (
           <div className="review-explanation">
             <div className="review-explanation-label">Explanation</div>
-            <div>{renderContent(q.explanation)}</div>
+            <div>{renderQuestionContent(q.explanation)}</div>
           </div>
         )}
       </div>

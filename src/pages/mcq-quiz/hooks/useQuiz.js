@@ -1,13 +1,33 @@
 // hooks/useQuiz.js
-// Quiz state machine using useReducer.
-// States: loading → active → summary
+//
+// Quiz state machine for the user-facing MCQ flow. Phases: loading → active
+// → summary. Question fetch now hits the real Code-Adept backend
+// (`POST /api/v1/mcq/GetAllbyfilterAsync`) using the IDs the setup page
+// saved, with an adapter that maps the McqQuestion shape into the flat
+// `options[] + correctIndices[]` shape this UI was built on.
+//
+// On reaching `summary` the reducer triggers `postResults` once (guarded by
+// a ref so re-renders or restart-mid-summary don't double-post). The body
+// shape mirrors what Code-Adept-React's McqTest.jsx submits — that's what
+// UserMCQDashboardUseCases parses for the dashboard.
 
 import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { pickFromDemo, DEMO_CATEGORIES } from '../utils/demoBank.js';
-import { getToken, apiUrl} from '../../mcq-shared/fetch.js';
+import { getToken } from '../../mcq-shared/fetch.js';
+import { Getallmcqbyfilter, Createmcqtimelogs } from '../../../api/mcq/apimcq';
+import {
+  adaptBackendQuestions,
+  buildResultsPayload,
+} from '../../mcq-shared/mcqAdapters.js';
 
 const CORRECT_KEY  = 'cv.mcq.correctIds';
 const SETTINGS_KEY = 'cv.mcq.settings';
+
+// Allow demo fallback only outside production. The Codivium docs and the
+// user's policy explicitly say: in production, surface real failures rather
+// than hide them behind sample questions.
+const ALLOW_DEMO = (typeof import.meta !== 'undefined' && import.meta?.env?.MODE !== 'production')
+  || (typeof process !== 'undefined' && process?.env?.NODE_ENV !== 'production');
 
 function readSet(key) {
   try { const r = localStorage.getItem(key); const a = r ? JSON.parse(r) : []; return new Set(Array.isArray(a) ? a : []); }
@@ -18,7 +38,7 @@ function writeSet(key, set) {
 }
 
 const INIT = {
-  phase:       'loading',  // loading | active | summary
+  phase:       'loading',  // loading | active | summary | error
   questions:   [],
   index:       0,
   locked:      false,
@@ -29,6 +49,7 @@ const INIT = {
   sessionId:   null,
   settings:    null,
   startedAt:   null,
+  loadError:   null,
   tutorialOpen: false,
   tutorialViewedThisQ: false,
   peekWarning: false,
@@ -46,6 +67,7 @@ function reducer(state, action) {
         settings:   action.settings,
         startedAt:  new Date().toISOString(),
         correctSet: readSet(CORRECT_KEY),
+        loadError:  null,
         index: 0, locked: false,
         answers: [], correctCount: 0, peekCount: 0,
         tutorialOpen: false, tutorialViewedThisQ: false, peekWarning: false,
@@ -54,8 +76,11 @@ function reducer(state, action) {
     case 'LOAD_FAIL':
       return { ...state, phase: 'active', questions: action.questions, settings: action.settings,
         sessionId: null, startedAt: new Date().toISOString(),
-        correctSet: readSet(CORRECT_KEY),
+        correctSet: readSet(CORRECT_KEY), loadError: action.error || null,
         index: 0, locked: false, answers: [], correctCount: 0, peekCount: 0 };
+
+    case 'LOAD_ERROR':
+      return { ...state, phase: 'error', loadError: action.error || 'Failed to load questions.', settings: action.settings };
 
     case 'SHOW_PEEK_WARNING':
       return { ...state, peekWarning: true };
@@ -72,7 +97,6 @@ function reducer(state, action) {
       const selected   = action.selected;
       const isPeek     = action.isPeek;
       const correctSet = new Set(q.correctIndices);
-      const selSet     = new Set(selected);
       const isCorrect  = !isPeek && selected.length === q.correctIndices.length &&
                          selected.every(i => correctSet.has(i));
 
@@ -117,6 +141,7 @@ function reducer(state, action) {
         questions:   action.questions,
         sessionId:   action.sessionId || null,
         startedAt:   new Date().toISOString(),
+        loadError:   null,
         index: 0, locked: false,
         answers: [], correctCount: 0, peekCount: 0,
         tutorialOpen: false, tutorialViewedThisQ: false, peekWarning: false,
@@ -127,84 +152,133 @@ function reducer(state, action) {
   }
 }
 
+// Resolve the request body the backend expects from the settings the parent
+// page wrote to localStorage. `difficultyLevelId` and `categoryIds` are
+// Guid strings; backend's McqQuestionFilterReqest uses ints, but in practice
+// Cosmos `McqQuestion.DifficultyLevel.Id` is whatever paramMaster stores
+// (the same value `ParamMaster.Id` returns). We forward the values verbatim.
+function buildFilterBody(settings, userId) {
+  return {
+    DifficultyLevelID: settings.difficultyLevelId || 0,
+    CategoriesIds:     Array.isArray(settings.categoryIds) ? settings.categoryIds : [],
+    NoOfQuestion:      Math.max(1, Math.min(50, Number(settings.questionCount) || 10)),
+    isSkipPriviosAttempetedQuestions: !!settings.skipCorrect,  // typo matches backend DTO
+    userId:            userId || '00000000-0000-0000-0000-000000000000',
+  };
+}
+
 async function fetchQuestionsFromAPI(settings, externalSignal = null) {
   const token = getToken();
+  const userId = typeof window !== 'undefined' ? localStorage.getItem('Userid') : '';
 
-  if (!token) {
-    return { sessionId: null, questions: pickFromDemo(settings) };
+  // Demo / unauthenticated path.
+  if (!token || !userId) {
+    if (ALLOW_DEMO) return { sessionId: null, questions: pickFromDemo(settings), demo: true };
+    return { sessionId: null, questions: [], error: 'Please log in to take a quiz.' };
   }
 
-  const params = new URLSearchParams({
-    categories:  (settings.categories || []).join(','),
-    difficulty:  settings.difficulty || 'basic',
-    count:       String(settings.questionCount || 10),
-    skipCorrect: settings.skipCorrect ? 'true' : 'false',
-  });
-
-  // Use an external abort signal if provided (from useEffect cleanup), or
-  // create a local timeout-only controller.
-  let ctrl, tid;
-  if (externalSignal) {
-    ctrl = null;
-    tid  = null;
-  } else {
-    ctrl = new AbortController();
-    tid  = setTimeout(() => ctrl.abort(), 5000);
-  }
-  const signal = externalSignal || ctrl.signal;
   try {
-    const res = await fetch(apiUrl('/api/mcq/questions?' + params), {
-      signal,
-      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
-    });
-    if (tid) clearTimeout(tid);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (!Array.isArray(data.questions) || !data.questions.length) throw new Error('Empty');
-    return { sessionId: data.sessionId || null, questions: data.questions };
-  } catch (_) {
-    if (tid) clearTimeout(tid);
-    return { sessionId: null, questions: pickFromDemo(settings) };
+    const body = buildFilterBody(settings, userId);
+    const res = await Getallmcqbyfilter(JSON.stringify(body));
+    if (externalSignal?.aborted) return { sessionId: null, questions: [], error: 'cancelled' };
+    if (!res) throw new Error('No response');
+    if (res.status === 401) return { sessionId: null, questions: [], error: 'unauthorized', status: 401 };
+    if (res.status !== 200 || !Array.isArray(res.data)) throw new Error('HTTP ' + (res.status || '?'));
+    if (!res.data.length) return { sessionId: null, questions: [], error: 'No matching questions found.' };
+    return { sessionId: null, questions: adaptBackendQuestions(res.data) };
+  } catch (e) {
+    if (ALLOW_DEMO) return { sessionId: null, questions: pickFromDemo(settings), demo: true };
+    return { sessionId: null, questions: [], error: 'Failed to load questions. ' + (e?.message || '') };
+  }
+}
+
+async function postQuizResults(state) {
+  const userId = typeof window !== 'undefined' ? localStorage.getItem('Userid') : '';
+  if (!userId) return; // demo / unauthenticated — nothing to record
+
+  // Compute total elapsed seconds from startedAt → now. The CvTimer keeps a
+  // separate display value; the only source of truth at submit time is the
+  // wall-clock delta.
+  const startedAt = state.startedAt ? new Date(state.startedAt) : null;
+  const totalSeconds = startedAt ? Math.max(0, Math.round((Date.now() - startedAt.getTime()) / 1000)) : 0;
+
+  const body = buildResultsPayload({ answers: state.answers, totalSeconds, userId });
+  try {
+    const res = await Createmcqtimelogs(body);
+    if (res?.status === 401) {
+      // Token expired mid-quiz. Quiet log; the page-level auth guard will
+      // intercept on the next route nav. We don't surface a popup mid-summary.
+      console.warn('[mcq] CreateMCQLog returned 401');
+      return;
+    }
+    if (res?.status !== 200) {
+      console.warn('[mcq] CreateMCQLog failed', res?.status);
+    }
+  } catch (e) {
+    console.warn('[mcq] CreateMCQLog threw', e);
   }
 }
 
 export function useQuiz() {
   const [state, dispatch] = useReducer(reducer, INIT);
+  const resultPostedRef = useRef(false);
 
-  // Boot: load settings + fetch questions
+  // Boot: load settings + fetch questions.
   useEffect(() => {
     let settings;
     try { settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); } catch(_) {}
 
-    // If no settings (direct navigation / cleared storage), use demo defaults
-    // rather than bouncing back to the parent page
-    if (!settings) {
-      settings = {
-        categories:    DEMO_CATEGORIES,
-        difficulty:    'basic',
-        questionCount: 10,
-        skipCorrect:   false,
-        _isDemo:       true,   // flag so we can show a "demo mode" banner
-      };
+    // No saved settings = direct navigation / cleared storage. In dev we
+    // drop into demo mode so the page is still inspectable; in prod we
+    // bounce to the setup page rather than show a broken state.
+    if (!settings || (!settings.difficultyLevelId && !Array.isArray(settings.categoryIds))) {
+      if (ALLOW_DEMO) {
+        settings = {
+          categories:    DEMO_CATEGORIES,
+          difficulty:    'basic',
+          questionCount: 10,
+          skipCorrect:   false,
+          _isDemo:       true,
+        };
+      } else {
+        // Production: hard-bounce to setup. Use replace so back-button works.
+        if (typeof window !== 'undefined') window.location.replace('/mcq');
+        return;
+      }
     }
 
     const abortCtrl = new AbortController();
     let cancelled = false;
-    fetchQuestionsFromAPI(settings, abortCtrl.signal).then(({ sessionId, questions }) => {
-      if (cancelled) return;
-      // If the filtered demo bank returned nothing, fall back to the full bank
-      const finalQuestions = (questions && questions.length)
-        ? questions
-        : pickFromDemo({ ...settings, categories: DEMO_CATEGORIES });
+    fetchQuestionsFromAPI(settings, abortCtrl.signal).then((result) => {
+      if (cancelled || abortCtrl.signal.aborted) return;
+      const { sessionId, questions, error, demo } = result;
+      const finalSettings = demo ? { ...settings, _isDemo: true } : settings;
 
-      if (!finalQuestions || !finalQuestions.length) {
-        dispatch({ type: 'LOAD_FAIL', questions: [], settings });
+      if (questions && questions.length) {
+        dispatch({ type: 'LOAD_DONE', questions, sessionId, settings: finalSettings });
+      } else if (ALLOW_DEMO) {
+        // Last-ditch demo fallback in non-production environments.
+        const demoQs = pickFromDemo({ ...settings, categories: DEMO_CATEGORIES });
+        if (demoQs.length) {
+          dispatch({ type: 'LOAD_DONE', questions: demoQs, sessionId: null, settings: { ...settings, _isDemo: true } });
+        } else {
+          dispatch({ type: 'LOAD_ERROR', error: error || 'No questions available.', settings });
+        }
       } else {
-        dispatch({ type: 'LOAD_DONE', questions: finalQuestions, sessionId, settings });
+        dispatch({ type: 'LOAD_ERROR', error: error || 'No questions available.', settings });
       }
     });
     return () => { cancelled = true; abortCtrl.abort(); };
   }, []);
+
+  // When the quiz enters `summary`, post results exactly once.
+  useEffect(() => {
+    if (state.phase !== 'summary') return;
+    if (resultPostedRef.current) return;
+    resultPostedRef.current = true;
+    postQuizResults(state);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
 
   const submit = useCallback((selected, isPeek = false) => {
     dispatch({ type: 'SUBMIT', selected, isPeek });
@@ -223,13 +297,16 @@ export function useQuiz() {
   const restart = useCallback(() => {
     const settings = state.settings;
     if (!settings) return;
-    // Abort any previous in-flight restart fetch
     restartAbortRef.current?.abort();
     const ctrl = new AbortController();
     restartAbortRef.current = ctrl;
+    // Allow a fresh result-post on the next summary.
+    resultPostedRef.current = false;
     fetchQuestionsFromAPI(settings, ctrl.signal).then(({ sessionId, questions }) => {
       if (ctrl.signal.aborted) return;
-      dispatch({ type: 'RESTART_DONE', questions, sessionId });
+      if (questions && questions.length) {
+        dispatch({ type: 'RESTART_DONE', questions, sessionId });
+      }
     });
   }, [state.settings]);
 

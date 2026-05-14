@@ -64,6 +64,25 @@ export default function McqQuizPage() {
     );
   }
 
+  // Production-mode hard error: shown when the backend refuses to give us
+  // questions and demo fallback is disabled (see useQuiz.js ALLOW_DEMO).
+  if (phase === 'error') {
+    return (
+      <main className="main" id="main-content" role="main">
+        <div className="page-shell">
+          <div className="window window-large glow-follow">
+            <div className="window-pad">
+              <div style={{ color: 'rgba(245,80,80,0.85)', fontSize: 14, marginBottom: 10 }}>
+                {state.loadError || 'Could not load questions.'}
+              </div>
+              <Link to="/mcq" style={{ color: 'rgba(246,213,138,0.85)' }}>← Back to Setup</Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (phase === 'active' && questions.length === 0) {
     return (
       <main className="main" id="main-content" role="main">
@@ -92,10 +111,22 @@ export default function McqQuizPage() {
   }
 
   // Active quiz
-  const humanDiff = d => d === 'intermediate' ? 'Intermediate' : d === 'advanced' ? 'Advanced' : 'Basic';
-  const isMulti = q?.correctIndices?.length > 1;
-  const catCount = settings?.categories?.length ?? 0;
-  const metaText = `${catCount} categor${catCount === 1 ? 'y' : 'ies'} · ${humanDiff(settings?.difficulty)} · ${questions.length} question${questions.length === 1 ? '' : 's'}${settings?.skipCorrect ? ' · skipping correct' : ''}`;
+  const humanDiff = d => {
+    const s = String(d || '').toLowerCase();
+    if (s === 'intermediate') return 'Intermediate';
+    if (s === 'advanced' || s === 'advance') return 'Advanced';
+    if (s === 'basic') return 'Basic';
+    return d || '—';
+  };
+  // Settings now carries Guid IDs + friendly names. Prefer the friendly name
+  // for display; fall back to `categories` (legacy) for category count.
+  const isMulti = q?.isMultipleAnswer || (q?.correctIndices?.length > 1);
+  const catCount =
+    (Array.isArray(settings?.categoryNames) && settings.categoryNames.length) ||
+    (Array.isArray(settings?.categoryIds) && settings.categoryIds.length) ||
+    (Array.isArray(settings?.categories) && settings.categories.length) || 0;
+  const diffLabel = humanDiff(settings?.difficultyName || settings?.difficulty);
+  const metaText = `${catCount} categor${catCount === 1 ? 'y' : 'ies'} · ${diffLabel} · ${questions.length} question${questions.length === 1 ? '' : 's'}${settings?.skipCorrect ? ' · skipping correct' : ''}`;
 
   return (
     <>
@@ -106,7 +137,7 @@ export default function McqQuizPage() {
           <CvTimer />
 
           {/* Demo mode notice */}
-          {settings?._isDemo && (
+          {/* {settings?._isDemo && (
             <div style={{
               padding: '8px 14px', marginBottom: 10, fontSize: 12,
               background: 'rgba(246,213,138,0.08)', border: '1px solid rgba(246,213,138,0.22)',
@@ -115,7 +146,7 @@ export default function McqQuizPage() {
               Demo mode — showing sample questions.{' '}
               <Link to="/mcq" style={{ color: 'inherit' }}>Go to MCQ Setup</Link> to choose your own filters.
             </div>
-          )}
+          )} */}
 
           {/* Main window — matches parent page chrome */}
           <div className="window window-large glow-follow">
