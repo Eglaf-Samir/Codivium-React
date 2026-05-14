@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import renderContent from '../utils/renderContent.jsx';
 import { useTimer }   from '../hooks/useTimer.js';
+import { computeMcqQuality } from '../../mcq-shared/mcqQuality.js';
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
 
@@ -327,6 +328,9 @@ function ReviewItem({ answer, index }) {
 
 export function SummaryView({ state, onRestart, onAdjust }) {
   const total = state.questions.length;
+  // Shared with the backend payload builder via mcqQuality.js so the badge
+  // shown here always matches the QualityLabel persisted to the DB.
+  const quality = computeMcqQuality(state.answers);
   return (
     <div className="summary show" id="summary" aria-label="Quiz summary">
       <div className="summary-grid">
@@ -341,6 +345,31 @@ export function SummaryView({ state, onRestart, onAdjust }) {
         </div>
         <div className="metric"><div className="n">Peeked</div><div className="v" id="mPeeked">{state.peekCount}</div></div>
       </div>
+      {quality && (
+        <div
+          id="qualityLabel"
+          role="status"
+          aria-live="polite"
+          style={{
+            marginTop: 14, padding: '10px 14px',
+            border: `1px solid ${quality.tone}`,
+            background: 'rgba(0,0,0,0.18)',
+            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-brand)', fontWeight: 950,
+              letterSpacing: '0.06em', fontSize: 12, textTransform: 'uppercase',
+              color: quality.tone, padding: '4px 10px',
+              border: `1px solid ${quality.tone}`,
+            }}
+          >
+            {quality.label}
+          </span>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>{quality.hint}</span>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
         <button className="ghost" id="btnAdjust" type="button" onClick={onAdjust}>Adjust Filters</button>
         <button className="btn" id="btnRestart" type="button" onClick={onRestart}>Restart</button>

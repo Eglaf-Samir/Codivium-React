@@ -21,6 +21,46 @@ import GlossaryModal           from './components/GlossaryModal.jsx';
 import { INFO_CONTENT }        from './data/infoContent.js';
 import { interpretMetric }     from './utils/interpretMetric.js';
 import { useGlowFollow } from '../shared/useGlowFollow.js';
+import { getalluserMcqdashborditem } from '../api/dashbord/apiDashbord.jsx';
+
+// Transform UserMCQdashboardResponse (BarChatResponse-list per difficulty)
+// into the shape metrics.js expects:
+//   { byDifficulty: { basic:{cat:score}, intermediate:{...}, advanced:{...} },
+//     overallCorrect: { correct, total } }
+// `value` per category is the % correct (0-100). Summary `value` is the
+// total questions answered in that difficulty; summary `Percentage`/`percentage`
+// is the % correct in that difficulty — used to derive overall.
+function transformMcqDashboardResponse(data) {
+  if (!data || typeof data !== 'object') return null;
+  const bucket = (list) => {
+    const m = {};
+    (list || []).forEach(b => {
+      if (b?.name) m[b.name] = Number(b.value) || 0;
+    });
+    return m;
+  };
+  const basic        = bucket(data.multipleChoiceQuestionsBasic        || data.MultipleChoiceQuestionsBasic);
+  const intermediate = bucket(data.multipleChoiceQuestionsIntermediate || data.MultipleChoiceQuestionsIntermediate);
+  const advanced     = bucket(data.multipleChoiceQuestionsAdvanced     || data.MultipleChoiceQuestionsAdvanced);
+
+  let totalQ = 0, correctQ = 0;
+  const summaries = [
+    data.multipleChoiceQuestionsBasicSummary        || data.MultipleChoiceQuestionsBasicSummary,
+    data.multipleChoiceQuestionsIntermediateSummary || data.MultipleChoiceQuestionsIntermediateSummary,
+    data.multipleChoiceQuestionsAdvancedSummary     || data.MultipleChoiceQuestionsAdvancedSummary,
+  ];
+  for (const sum of summaries) {
+    if (!sum) continue;
+    const t   = Number(sum.value) || 0;
+    const pct = Number(sum.percentage ?? sum.Percentage) || 0;
+    totalQ   += t;
+    correctQ += Math.round((t * pct) / 100);
+  }
+  return {
+    byDifficulty: { basic, intermediate, advanced },
+    overallCorrect: { correct: correctQ, total: totalQ },
+  };
+}
 
 // ── Layout presets ────────────────────────────────────────────────────────────
 const PRESETS = [
@@ -152,6 +192,30 @@ export default function InsightsDashboard() {
   useGlowFollow();
   const db      = useDashboardData();
   const metrics = useDashboardMetrics(db.dashData, db.selectedTrack);
+
+  // MCQ data bridge: on mount, fetch the user's MCQ performance from the
+  // existing backend endpoint and inject it into the dashboard payload so
+  // McqPanel renders real bars. Without this, the dashboard waits forever
+  // for an external CodiviumInsights.update caller.
+  // Note: we merge into existing dashData (if any) so we don't blow away
+  // other panels' data from a previous bridge call.
+  useEffect(() => {
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('Userid') : null;
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getalluserMcqdashborditem(userId);
+        if (cancelled || !res || res.status !== 200 || !res.data) return;
+        const mcq = transformMcqDashboardResponse(res.data);
+        if (!mcq) return;
+        const merged = { ...(db.dashData || {}), mcq };
+        db.applyData(merged);
+      } catch (_) { /* non-fatal */ }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const mountRef = useRef(null);
   const resizers = useResizers(mountRef);
   const tour     = useDashboardTour();

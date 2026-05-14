@@ -49,6 +49,9 @@ const INIT = {
   sessionId:   null,
   settings:    null,
   startedAt:   null,
+  // Wall-clock ms when the current question first rendered. Reset on every
+  // ADVANCE so per-question responseTime can be computed at SUBMIT.
+  questionRenderedAt: 0,
   loadError:   null,
   tutorialOpen: false,
   tutorialViewedThisQ: false,
@@ -66,6 +69,7 @@ function reducer(state, action) {
         sessionId:  action.sessionId,
         settings:   action.settings,
         startedAt:  new Date().toISOString(),
+        questionRenderedAt: Date.now(),
         correctSet: readSet(CORRECT_KEY),
         loadError:  null,
         index: 0, locked: false,
@@ -76,6 +80,7 @@ function reducer(state, action) {
     case 'LOAD_FAIL':
       return { ...state, phase: 'active', questions: action.questions, settings: action.settings,
         sessionId: null, startedAt: new Date().toISOString(),
+        questionRenderedAt: Date.now(),
         correctSet: readSet(CORRECT_KEY), loadError: action.error || null,
         index: 0, locked: false, answers: [], correctCount: 0, peekCount: 0 };
 
@@ -100,10 +105,19 @@ function reducer(state, action) {
       const isCorrect  = !isPeek && selected.length === q.correctIndices.length &&
                          selected.every(i => correctSet.has(i));
 
+      // Wall-clock seconds from when the question rendered to now. Null if
+      // the timer wasn't seeded (defensive — should never happen in normal
+      // boot flow). Used by the summary to compute a quality label and by
+      // the backend payload for analytics.
+      const responseTimeSeconds = state.questionRenderedAt
+        ? Math.max(0, Math.round((Date.now() - state.questionRenderedAt) / 1000))
+        : null;
+
       const answer = {
         q, selected, isPeek, isCorrect,
         tutorialViewed: state.tutorialViewedThisQ,
         submittedAt: new Date().toISOString(),
+        responseTimeSeconds,
       };
 
       const newAnswers     = [...state.answers, answer];
@@ -129,6 +143,7 @@ function reducer(state, action) {
     case 'ADVANCE': {
       if (state.index < state.questions.length - 1) {
         return { ...state, index: state.index + 1, locked: false,
+          questionRenderedAt: Date.now(),
           tutorialOpen: false, tutorialViewedThisQ: false, peekWarning: false };
       }
       return { ...state, phase: 'summary' };
@@ -141,6 +156,7 @@ function reducer(state, action) {
         questions:   action.questions,
         sessionId:   action.sessionId || null,
         startedAt:   new Date().toISOString(),
+        questionRenderedAt: Date.now(),
         loadError:   null,
         index: 0, locked: false,
         answers: [], correctCount: 0, peekCount: 0,
@@ -199,10 +215,17 @@ async function postQuizResults(state) {
   // Compute total elapsed seconds from startedAt → now. The CvTimer keeps a
   // separate display value; the only source of truth at submit time is the
   // wall-clock delta.
-  const startedAt = state.startedAt ? new Date(state.startedAt) : null;
-  const totalSeconds = startedAt ? Math.max(0, Math.round((Date.now() - startedAt.getTime()) / 1000)) : 0;
+  const startedAtDate = state.startedAt ? new Date(state.startedAt) : null;
+  const totalSeconds = startedAtDate ? Math.max(0, Math.round((Date.now() - startedAtDate.getTime()) / 1000)) : 0;
 
-  const body = buildResultsPayload({ answers: state.answers, totalSeconds, userId });
+  const body = buildResultsPayload({
+    answers: state.answers,
+    totalSeconds,
+    userId,
+    settings: state.settings,
+    startedAt: state.startedAt,
+    completedAt: new Date().toISOString(),
+  });
   try {
     const res = await Createmcqtimelogs(body);
     if (res?.status === 401) {

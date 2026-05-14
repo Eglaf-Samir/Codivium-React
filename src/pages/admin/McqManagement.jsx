@@ -24,6 +24,7 @@ const initialForm = {
   question: '',
   questionOptions: [],
   description: '',
+  nanoTutorial: '',
   difficultyLevelId: '',
   categoriesId: '',
   subCategoriesId: '',
@@ -152,6 +153,7 @@ export default function McqManagement() {
         mcqQuestionId: d.mcqQuestionId || null,
         question: d.question || '',
         description: d.description || '',
+        nanoTutorial: d.nanoTutorial || d.NanoTutorial || '',
         difficultyLevelId: diffId,
         categoriesId: catId,
         subCategoriesId: subId,
@@ -416,6 +418,11 @@ export default function McqManagement() {
                 <div className="cv-admin-field is-full">
                   <label>Description / explanation</label>
                   <textarea rows={3} name="description" value={form.description} onChange={handleField} />
+                </div>
+                <div className="cv-admin-field is-full">
+                  <label>Nano tutorial <span style={{ color: 'var(--color-text-muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — shown in the slide-in Tutorial panel during the quiz)</span></label>
+                  <textarea rows={4} name="nanoTutorial" value={form.nanoTutorial} onChange={handleField}
+                    placeholder="Short focused explanation of the concept this question tests. Supports markdown + code fences. Leave blank to hide the Tutorial button." />
                 </div>
                 <div className="cv-admin-field">
                   <label>Difficulty</label>
