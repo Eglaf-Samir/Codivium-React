@@ -8,22 +8,17 @@ import SummaryRail    from './components/SummaryRail.jsx';
 import InfoRail       from './components/InfoRail.jsx';
 import McqTour, { useMcqTour } from '../mcq-shared/McqTour.jsx';
 import { useGlowFollow } from '../mcq-shared/useGlowFollow.js';
-import { useCssLoader, prewarmCss } from '../../hooks/useCssLoader.js';
+import { useCssLoader } from '../../hooks/useCssLoader.js';
 
-// MCQ CSS files have unscoped selectors (.card, .input, .divider, etc.) that
-// would collide with other pages if imported globally. Inject them only
-// while this route is mounted; useCssLoader removes them on unmount.
+// MCQ CSS files have unscoped selectors (.card, .input, .divider, .control,
+// etc.) that would collide with other pages (e.g. Contact, which uses the
+// same class names) if imported globally. Inject them only while this
+// route is mounted via useCssLoader — do NOT prewarm at module load.
 const MCQ_CSS = [
   '/assets/css/components/mcq/mcq-forms.css',
   '/assets/css/components/mcq/mcq-parent.css',
   '/assets/css/components/mcq/mcq-setup-overrides.css',
 ];
-
-// Prewarm at module load — the link tags start fetching as soon as the
-// bundle reaches the browser, so by the time React mounts the page the
-// stylesheets are usually already parsed and cssReady is true on first
-// render (no flash of unstyled content).
-prewarmCss(MCQ_CSS);
 
 const QUIZ_URL = window.__CODIVIUM_MCQ_QUIZ_URL__ || '/mcq/quiz';
 
@@ -41,7 +36,7 @@ function safeRedirect(url) {
 }
 
 export default function McqParentPage() {
-  useCssLoader(MCQ_CSS);
+  const cssReady = useCssLoader(MCQ_CSS, { evict: true });
   useGlowFollow();
   const tourState = useMcqTour({ onParent: true });
   const { categories, loading, error } = useCategories();
@@ -94,6 +89,13 @@ export default function McqParentPage() {
     setMsg('');
     safeRedirect(QUIZ_URL);
   }, [loading, categories, selected, difficulty, count, skipCorrect, launching]);
+
+  // FOUC guard — keep the tree hidden until every MCQ stylesheet has
+  // parsed (the CSS is route-scoped via useCssLoader + evict, so this
+  // is the only window where unstyled content could flash).
+  if (!cssReady) {
+    return <main className="main" id="main-content" role="main" style={{ visibility: 'hidden' }} />;
+  }
 
   return (
     <>

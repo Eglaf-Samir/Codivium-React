@@ -7,23 +7,21 @@ import {
 } from './components/QuizComponents.jsx';
 import McqTour, { useMcqTour } from '../mcq-shared/McqTour.jsx';
 import { useGlowFollow } from '../mcq-shared/useGlowFollow.js';
-import { useCssLoader, prewarmCss } from '../../hooks/useCssLoader.js';
+import { useCssLoader } from '../../hooks/useCssLoader.js';
 import { Link } from 'react-router-dom';
 
-// MCQ CSS files have unscoped selectors that would collide with other pages.
-// Inject them only while this route is mounted.
+// MCQ CSS files have unscoped selectors (.summary, .input, .divider, etc.)
+// that would collide with other pages if imported globally. Inject them
+// only while this route is mounted via useCssLoader — do NOT prewarm at
+// module load (mcq-quiz.css's `.summary { display: none }` would hide the
+// Contact / MCQ-setup `.summary`-class elements on those pages).
 const MCQ_CSS = [
   '/assets/css/components/mcq/mcq-forms.css',
   '/assets/css/components/mcq/mcq-quiz.css',
 ];
 
-// Prewarm at module load so the <link> tags start fetching as soon as the
-// bundle parses — by the time the route mounts, cssReady is usually true
-// on the first render and the page paints fully styled (no FOUC).
-prewarmCss(MCQ_CSS);
-
 export default function McqQuizPage() {
-  useCssLoader(MCQ_CSS);
+  const cssReady = useCssLoader(MCQ_CSS, { evict: true });
   useGlowFollow();
 
   const tourState = useMcqTour({ onParent: false });
@@ -46,6 +44,11 @@ export default function McqQuizPage() {
   const handleAdvancePeek = useCallback(() => advance(), [advance]);
   const handleBack = useCallback(() => { window.location.href = '/mcq'; }, []);
   const handleAdjust = useCallback(() => { window.location.href = '/mcq'; }, []);
+
+  // FOUC guard — hide until MCQ CSS has parsed (route-scoped via evict).
+  if (!cssReady) {
+    return <main className="main" id="main-content" role="main" style={{ visibility: 'hidden' }} />;
+  }
 
   if (phase === 'loading') {
     return (
