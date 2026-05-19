@@ -246,6 +246,12 @@ export function useQuiz() {
   const [state, dispatch] = useReducer(reducer, INIT);
   const resultPostedRef = useRef(false);
 
+  // Keep a live ref of state so the saveAndExit callback (registered on
+  // `window` for the sidebar leave guard to invoke) always sees the latest
+  // answers, not a stale snapshot from when the effect ran.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   // Boot: load settings + fetch questions.
   useEffect(() => {
     let settings;
@@ -333,5 +339,20 @@ export function useQuiz() {
     });
   }, [state.settings]);
 
-  return { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart };
+  // Save & exit — used by the sidebar/topbar leave guard when the user
+  // tries to navigate away mid-quiz. Posts whatever the user has answered
+  // so far (could be zero answers) and resolves when the request settles.
+  // The flag prevents the summary-effect from double-posting if the user
+  // confirms exit and then the quiz still happens to enter summary phase.
+  const saveAndExit = useCallback(async () => {
+    if (resultPostedRef.current) return;
+    resultPostedRef.current = true;
+    try { await postQuizResults(stateRef.current); }
+    catch (_) { /* fire-and-forget; navigation should still proceed */ }
+  }, []);
+
+  return {
+    state, submit, advance, showPeekWarning, hidePeekWarning,
+    toggleTutorial, restart, saveAndExit,
+  };
 }

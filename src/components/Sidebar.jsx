@@ -48,18 +48,35 @@ export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const active = getActiveSection(location.pathname, location.search);
 
-  // Editor leave-confirmation — see useEditorLeaveGuard for behaviour.
-  const { inEditor, onLinkClick: onNavLinkClick, confirm } = useEditorLeaveGuard();
+  // Editor / MCQ-quiz leave-confirmation — see useEditorLeaveGuard.
+  // We use the live probe functions instead of the snapshot booleans so
+  // a guard registered after Sidebar's first render is still honoured at
+  // click time.
+  const { isGuardActive, isInMcqQuiz, onLinkClick: onNavLinkClick, confirm } = useEditorLeaveGuard();
 
   async function handleLogout() {
-    if (inEditor) {
-      const ok = await confirm({
-        title: 'End the current exercise and log out?',
-        message: 'Your code and progress will be saved so you can continue later.',
-        confirmText: 'Yes, log out',
-        cancelText: 'No, keep coding',
-      });
+    if (isGuardActive()) {
+      const inMcq = isInMcqQuiz();
+      const dialog = inMcq
+        ? {
+            title: 'End the quiz and log out?',
+            message: 'Your answers so far will be submitted before you sign out.',
+            confirmText: 'Yes, log out',
+            cancelText: 'No, keep going',
+          }
+        : {
+            title: 'End the current exercise and log out?',
+            message: 'Your code and progress will be saved so you can continue later.',
+            confirmText: 'Yes, log out',
+            cancelText: 'No, keep coding',
+          };
+      const ok = await confirm(dialog);
       if (!ok) return;
+      // For the MCQ quiz, flush the partial answers to the backend before
+      // we tear down auth — without this the in-progress session is lost.
+      if (inMcq && typeof window !== 'undefined' && typeof window.__cvMcqSaveAndExit === 'function') {
+        try { await window.__cvMcqSaveAndExit(); } catch (_) { /* proceed regardless */ }
+      }
     }
     logout();
     navigate('/login', { replace: true });
