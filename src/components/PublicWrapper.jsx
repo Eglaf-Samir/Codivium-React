@@ -39,10 +39,10 @@ export const PAGE_CSS = {
   legal:          ['/assets/css/pages/legal.63bdbd7d.css'],
   password_reset: ['/assets/css/components/watermark.c83fb1f0.css',
                    '/assets/css/components/forms-theme.unified.css',
-                   '/assets/css/pages/password_reset.0e1fe29f.css'],
+                   '/assets/css/pages/password_reset.0e1fe2a0.css'],
   forget_password:['/assets/css/components/watermark.c83fb1f0.css',
                    '/assets/css/components/forms-theme.unified.css',
-                   '/assets/css/pages/password_reset.0e1fe29f.css'],
+                   '/assets/css/pages/password_reset.0e1fe2a0.css'],
 };
 
 // App body classes that must be removed on public pages

@@ -130,6 +130,10 @@
 .navlinks a.nav-join:hover {
   border-color: var(--color-text-muted);
 }
+.navlinks a.nav-login {
+  /* Match the other nav links by default — the gold accent now signals the
+     active page only (see .navlinks a.active below), not a permanent CTA. */
+  color: var(--color-text-secondary);
 .navlinks a.nav-login:hover {
   color: var(--color-text-accent);
 }
@@ -138,6 +142,13 @@
 .navlinks a.nav-login.active {
   color: var(--color-text-accent);
   font-weight: 600;
+}
+
+/* Active-page indicator: the link whose route matches the current page gets
+   the gold accent. Applies to every nav item, including Login/Dashboard, so
+   the button is no longer highlighted on pages other than its own. */
+.navlinks a.active {
+  color: var(--color-text-accent);
 }
 
 /* ── Parchment theme overrides ── */
@@ -168,3 +179,12 @@ html[data-theme="parchment"] .nav-join:hover {
   background:   rgba(14,28,80,0.07);
   border-color: rgba(14,28,80,0.60);
 }
+
+html[data-theme="parchment"] .nav-login {
+  color: rgba(14,28,80,0.75);
+}
+/* Active-page link in parchment → full-strength midnight blue */
+html[data-theme="parchment"] .navlinks a.active {
+  color: rgba(14,28,80,1.00);
+}
+

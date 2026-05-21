@@ -253,7 +253,7 @@ export default function UnitTestManagement() {
       name: newCategory.trim(),
       otherName: newCategory.trim(),
       description: '',
-      parentId: form.difficultyLevelId || 0,
+      parentId: 0,
       category: ParamMasterKey.Categories,
       mode: MODE,
     };
