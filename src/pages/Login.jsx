@@ -143,56 +143,43 @@ function Login() {
                       <button
                         type="button"
                         className="pass-toggle"
+                        aria-pressed={showPass}
+                        aria-label={showPass ? "Hide password" : "Show password"}
                         onClick={() => setShowPass(!showPass)}
                       >
-                        {/* 👁 */}
                         {showPass ? (
+                          // OPEN EYE
                           <svg
                             aria-hidden="true"
-                            className="icon-eye icon-eye-open"
+                            className="icon-eye"
                             viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
                           >
                             <path
                               d="M1.5 12s4-7.5 10.5-7.5S22.5 12 22.5 12s-4 7.5-10.5 7.5S1.5 12 1.5 12Z"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-linejoin="round"
-                              strokeWidth="1.8"
-                            ></path>
+                            />
                             <path
                               d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4Z"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                            ></path>
+                            />
                           </svg>
                         ) : (
+                          // CLOSED EYE
                           <svg
                             aria-hidden="true"
-                            className="icon-eye icon-eye-closed"
+                            className="icon-eye"
                             viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           >
-                            <path
-                              d="M3 3l18 18"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeWidth="1.8"
-                            ></path>
-                            <path
-                              d="M2.2 12s3.4-6.4 9.8-6.4c2 0 3.7.6 5.1 1.5M21.8 12s-3.4 6.4-9.8 6.4c-2 0-3.7-.6-5.1-1.5"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeWidth="1.8"
-                            ></path>
-                            <path
-                              d="M10.2 10.2A3.2 3.2 0 0 0 12 15.2"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeWidth="1.8"
-                            ></path>
+                            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                            <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                            <line x1="2" y1="2" x2="22" y2="22" />
                           </svg>
                         )}
                       </button>

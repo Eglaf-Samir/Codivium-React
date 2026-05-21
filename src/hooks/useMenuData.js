@@ -54,6 +54,8 @@ export function useMenuData() {
   const [error, setError] = useState(null);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [difficultyOptions, setDifficultyOptions] = useState([]);
+  const [exerciseTypeOptions, setExerciseTypeOptions] = useState([]);
+  const [mentalModelOptions, setMentalModelOptions] = useState([]);
   const [optionsReady, setOptionsReady] = useState(false);
 
   const track = (
@@ -63,14 +65,21 @@ export function useMenuData() {
   useEffect(() => {
     let cancelled = false;
     const mode = track === "interview" ? "INTERVIEW" : "DELIBERATION";
+    const isMicro = track !== "interview";
     setOptionsReady(false);
     (async () => {
       try {
-        const [catRes, diffRes] = await Promise.all([
+        const requests = [
           GetCategoriesByMode(mode),
           GetallDifficultyLevel(ParamMasterKey.DifficultyLevel),
-        ]);
+        ];
+        if (isMicro) {
+          requests.push(GetallDifficultyLevel(ParamMasterKey.ExerciseType));
+          requests.push(GetallDifficultyLevel(ParamMasterKey.MentalModel));
+        }
+        const results = await Promise.all(requests);
         if (cancelled) return;
+        const [catRes, diffRes, exTypeRes, mentalRes] = results;
         if (catRes?.status === 200 && Array.isArray(catRes.data)) {
           setCategoryOptions(catRes.data);
         }
@@ -78,6 +87,21 @@ export function useMenuData() {
           setDifficultyOptions(
             [...diffRes.data].sort((a, b) => a.id - b.id),
           );
+        }
+        if (isMicro) {
+          if (exTypeRes?.status === 200 && Array.isArray(exTypeRes.data)) {
+            setExerciseTypeOptions(exTypeRes.data);
+          } else {
+            setExerciseTypeOptions([]);
+          }
+          if (mentalRes?.status === 200 && Array.isArray(mentalRes.data)) {
+            setMentalModelOptions(mentalRes.data);
+          } else {
+            setMentalModelOptions([]);
+          }
+        } else {
+          setExerciseTypeOptions([]);
+          setMentalModelOptions([]);
         }
       } catch (err) {
         console.error("Failed to load filter options", err);
@@ -173,6 +197,8 @@ export function useMenuData() {
     DEMO_DATA,
     categoryOptions,
     difficultyOptions,
+    exerciseTypeOptions,
+    mentalModelOptions,
     completionOptions: COMPLETION_OPTIONS,
     optionsReady,
   };

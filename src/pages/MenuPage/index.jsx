@@ -169,6 +169,8 @@ export default function MenuPage() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState(() => saved.categoryIds || ['all']);
   const [selectedDifficultyIds, setSelectedDifficultyIds] = useState(() => saved.difficultyIds || ['all']);
   const [selectedCompletionIds, setSelectedCompletionIds] = useState(() => saved.completionIds || ['all']);
+  const [selectedExerciseTypeIds, setSelectedExerciseTypeIds] = useState(() => saved.exerciseTypeIds || ['all']);
+  const [selectedMentalModelIds, setSelectedMentalModelIds] = useState(() => saved.mentalModelIds || ['all']);
   const [sortOrder, setSortOrder] = useState(() => saved.sortOrder || 'ASC');
   const [sortField, setSortField] = useState(() => saved.sortField || 'title');
   const [searchTerm, setSearchTerm] = useState('');
@@ -182,6 +184,8 @@ export default function MenuPage() {
     reload,
     categoryOptions,
     difficultyOptions,
+    exerciseTypeOptions,
+    mentalModelOptions,
     completionOptions,
     runFilter,
     optionsReady,
@@ -193,21 +197,43 @@ export default function MenuPage() {
       CategoryIds: toBackendIds(selectedCategoryIds, categoryOptions),
       SubCategoryIds: [],
       CompletionIds: toBackendIds(selectedCompletionIds, completionOptions),
+      ExerciseTypeIds: isMicro
+        ? toBackendIds(selectedExerciseTypeIds, exerciseTypeOptions)
+        : [],
+      MentalModelIds: isMicro
+        ? toBackendIds(selectedMentalModelIds, mentalModelOptions)
+        : [],
       SortOrder: sortOrder,
     }),
     [
       selectedCategoryIds,
       selectedDifficultyIds,
       selectedCompletionIds,
+      selectedExerciseTypeIds,
+      selectedMentalModelIds,
       sortOrder,
       categoryOptions,
       difficultyOptions,
       completionOptions,
+      exerciseTypeOptions,
+      mentalModelOptions,
+      isMicro,
     ],
   );
 
   useEffect(() => {
     if (!optionsReady) return;
+    // Backend ka mandatory check fail ho jata hai agar CategoryIds /
+    // DifficultyLabels / CompletionIds empty bheje — wo empty list return
+    // karta hai aur "No exercises" message dikhne lagta hai. Pehle saare
+    // option arrays populate hone do, phir hi runFilter fire ho.
+    if (
+      filterBody.CategoryIds.length === 0 ||
+      filterBody.DifficultyLabels.length === 0 ||
+      filterBody.CompletionIds.length === 0
+    ) {
+      return;
+    }
     runFilter(filterBody);
   }, [filterBody, runFilter, optionsReady]);
 
@@ -221,12 +247,22 @@ export default function MenuPage() {
         categoryIds: selectedCategoryIds,
         difficultyIds: selectedDifficultyIds,
         completionIds: selectedCompletionIds,
+        exerciseTypeIds: selectedExerciseTypeIds,
+        mentalModelIds: selectedMentalModelIds,
         sortOrder,
         sortField,
         ...next,
       });
     },
-    [selectedCategoryIds, selectedDifficultyIds, selectedCompletionIds, sortOrder, sortField],
+    [
+      selectedCategoryIds,
+      selectedDifficultyIds,
+      selectedCompletionIds,
+      selectedExerciseTypeIds,
+      selectedMentalModelIds,
+      sortOrder,
+      sortField,
+    ],
   );
 
   const toggleCategories = useCallback(
@@ -262,6 +298,28 @@ export default function MenuPage() {
     [persist],
   );
 
+  const toggleExerciseTypes = useCallback(
+    (value, allOptions) => {
+      setSelectedExerciseTypeIds((prev) => {
+        const next = toggleFilter(prev, value, allOptions);
+        persist({ exerciseTypeIds: next });
+        return next;
+      });
+    },
+    [persist],
+  );
+
+  const toggleMentalModels = useCallback(
+    (value, allOptions) => {
+      setSelectedMentalModelIds((prev) => {
+        const next = toggleFilter(prev, value, allOptions);
+        persist({ mentalModelIds: next });
+        return next;
+      });
+    },
+    [persist],
+  );
+
   const updateSortField = useCallback(
     (v) => {
       setSortField(v);
@@ -283,6 +341,8 @@ export default function MenuPage() {
     setSelectedCategoryIds(['all']);
     setSelectedDifficultyIds(['all']);
     setSelectedCompletionIds(['all']);
+    setSelectedExerciseTypeIds(['all']);
+    setSelectedMentalModelIds(['all']);
     setSortOrder('ASC');
     setSortField('title');
     savePrefs({});
@@ -426,22 +486,22 @@ export default function MenuPage() {
         onClose={() => setDrawerOpen(false)}
         categories={categoryOptions}
         difficultyLevels={difficultyOptions}
-        exerciseTypes={[]}
-        mentalModels={[]}
+        exerciseTypes={exerciseTypeOptions}
+        mentalModels={mentalModelOptions}
         completionOptions={completionOptions}
         isMicro={isMicro}
         selectedCategories={selectedCategoryIds}
         selectedLevels={selectedDifficultyIds}
         selectedCompleteness={selectedCompletionIds}
-        selectedExerciseTypes={['all']}
-        selectedMentalModels={['all']}
+        selectedExerciseTypes={selectedExerciseTypeIds}
+        selectedMentalModels={selectedMentalModelIds}
         sortField={sortField}
         sortDir={sortOrder === 'DESC' ? 'desc' : 'asc'}
         toggleCategories={toggleCategories}
         toggleLevels={toggleLevels}
         toggleCompleteness={toggleCompleteness}
-        toggleExerciseTypes={() => {}}
-        toggleMentalModels={() => {}}
+        toggleExerciseTypes={toggleExerciseTypes}
+        toggleMentalModels={toggleMentalModels}
         updateSortField={updateSortField}
         updateSortDir={updateSortDir}
         onReset={resetFilters}
