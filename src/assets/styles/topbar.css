@@ -134,6 +134,7 @@
   /* Match the other nav links by default — the gold accent now signals the
      active page only (see .navlinks a.active below), not a permanent CTA. */
   color: var(--color-text-secondary);
+}
 .navlinks a.nav-login:hover {
   color: var(--color-text-accent);
 }
