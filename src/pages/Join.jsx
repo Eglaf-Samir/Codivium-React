@@ -64,6 +64,7 @@ function Join() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return; // guard against double-submit
 
     if (!validate()) return;
 
@@ -298,12 +299,13 @@ function Join() {
                 </div>
                 <div className="form-actions">
                   <button
-                    aria-disabled="true"
-                    disabled=""
+                    aria-disabled={loading}
+                    aria-busy={loading}
+                    disabled={loading}
                     id="subscribeBtn"
                     type="submit"
                   >
-                    Join Now!
+                    {loading ? 'Joining…' : 'Join Now!'}
                   </button>
                   <p className="hint hint-reset">
                     Next step: you’ll confirm your plan and payment in a secure

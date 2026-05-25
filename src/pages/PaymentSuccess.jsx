@@ -17,8 +17,20 @@ export default function PaymentSuccess() {
   const [message, setMessage] = useState("Confirming your payment…");
   const cancelled = useRef(false);
 
-  const goDashboard = () =>
+  // If the user bought from the locked-question popup, resume that question by
+  // returning to its menu (MenuPage auto-opens it). Otherwise go to dashboard.
+  const goNext = () => {
+    let pending = null;
+    try {
+      pending = JSON.parse(localStorage.getItem("pendingExercise") || "null");
+    } catch (e) {}
+    if (pending && pending.track) {
+      navigate(`/menu?track=${encodeURIComponent(pending.track)}`);
+      return;
+    }
     navigate(isSuperAdmin() ? "/AdminDashboard" : "/adaptive-practice");
+  };
+  const goDashboard = goNext;
 
   useEffect(() => {
     const userId = localStorage.getItem("Userid");
@@ -118,7 +130,7 @@ export default function PaymentSuccess() {
           cursor: "pointer",
         }}
       >
-        Go to dashboard →
+        Continue →
       </button>
     </div>
   );

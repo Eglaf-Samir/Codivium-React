@@ -1,6 +1,11 @@
 // SettingsPage.jsx — Account & Settings with working theme picker
 import React, { useEffect, useRef } from 'react';
-import { ActivePackagebyuserid } from '../api/pricepackage/apipackage';
+import { useNavigate } from 'react-router-dom';
+import {
+  ActivePackagebyuserid,
+  getUserTransactionHistory,
+  activepackagecancelByUser,
+} from '../api/pricepackage/apipackage';
 
 function loadScript(src, onload) {
   const s = document.createElement('script');
@@ -50,16 +55,48 @@ function setupCVTheme() {
 
 export default function SettingsPage() {
   const initialized = useRef(false);
+  const navigate = useNavigate();
 
-  // Reflect the user's REAL active package in the Billing tab. The external
-  // account-settings.js controller fills #asPlanBadge / #asPlanRenewal from demo
-  // data, so we fetch the live package and overwrite those nodes (re-applying
-  // once more after the controller script has run, to win the race).
+  // Real billing data in the Billing tab: current plan, payment summary, billing
+  // history, and a working Upgrade/Cancel. The external account-settings.js fills
+  // these from demo data, so we fetch live data and overwrite the nodes (and
+  // re-apply once after the controller script runs, to win the race).
   useEffect(() => {
     const userId = localStorage.getItem('Userid');
     if (!userId) return;
     let cancelled = false;
     let timer;
+
+    const fmtDate = (d) => {
+      if (!d) return '—';
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return '—';
+      const dd = String(dt.getDate()).padStart(2, '0');
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      return `${dd}/${mm}/${dt.getFullYear()}`;
+    };
+
+    // Same sliding progress bar as the interview/micro menu loader (.cv-progress).
+    const PROGRESS =
+      '<div class="cv-progress" role="progressbar" aria-label="Loading" ' +
+      'style="margin:0 auto;"><div class="cv-progress-bar"></div></div>';
+
+    let dataReady = false;
+    const showLoading = () => {
+      const rows = document.getElementById('asBillingRows');
+      const payHint = document.getElementById('asPaymentHint');
+      const renewal = document.getElementById('asPlanRenewal');
+      const badge = document.getElementById('asPlanBadge');
+      if (rows) rows.innerHTML = `<tr><td colspan="4" class="as-billing-empty">${PROGRESS}</td></tr>`;
+      if (payHint) payHint.innerHTML = PROGRESS;
+      if (renewal) renewal.textContent = 'Loading…';
+      if (badge) badge.textContent = '…';
+    };
+    // Show the loader immediately and keep re-asserting it (so the external
+    // demo data never flashes) until the real data arrives.
+    showLoading();
+    const guard = setInterval(() => { if (!dataReady) showLoading(); }, 150);
+
     (async () => {
       let pkg = null;
       try {
@@ -69,34 +106,86 @@ export default function SettingsPage() {
       if (!pkg) {
         try { pkg = JSON.parse(localStorage.getItem('userpackagedetails') || 'null'); } catch (e) {}
       }
-      if (cancelled || !pkg) return;
 
-      const name = pkg.packageName || pkg.PackageName;
-      const end = pkg.endDate || pkg.EndDate;
-      // Treat as the free plan when it's the default package or it doesn't grant
-      // all-coding access (covers responses that omit IsDefault).
+      let history = [];
+      try {
+        const hres = await getUserTransactionHistory(userId);
+        if (hres?.status === 200 && Array.isArray(hres.data)) history = hres.data;
+      } catch (e) {}
+
+      dataReady = true;
+      clearInterval(guard);
+      if (cancelled) return;
+
+      const name = pkg ? (pkg.packageName || pkg.PackageName) : null;
+      const end = pkg ? (pkg.endDate || pkg.EndDate) : null;
+      const billingPeriod = pkg ? (pkg.billingPeriod || pkg.BillingPeriod) : null;
+      const price = pkg ? (pkg.price ?? pkg.Price) : null;
+      const activePkgId = pkg ? (pkg.id ?? pkg.Id) : null;
       const isFreePlan =
+        !pkg ||
         (pkg.isDefault ?? pkg.IsDefault) === true ||
         (pkg.isAccessToAllCodingQuestions ?? pkg.IsAccessToAllCodingQuestions) === false;
 
       const apply = () => {
         const badge = document.getElementById('asPlanBadge');
         const renewal = document.getElementById('asPlanRenewal');
-        if (badge && name) {
-          badge.textContent = name;
+        const payHint = document.getElementById('asPaymentHint');
+        const rows = document.getElementById('asBillingRows');
+        const upgradeBtn = document.getElementById('asUpgradeBtn');
+        const confirmCancel = document.getElementById('confirmCancelSub');
+
+        if (badge) {
+          badge.textContent = name || 'No plan';
           badge.className = 'as-plan-badge' + (isFreePlan ? ' free' : '');
         }
         if (renewal) {
-          renewal.textContent = isFreePlan
-            ? 'Free plan'
-            : (end ? `Active until ${new Date(end).toLocaleDateString()}` : 'Active');
+          renewal.textContent = !pkg
+            ? 'No active plan'
+            : isFreePlan
+              ? 'Free plan'
+              : (end ? `Active until ${fmtDate(end)}` : 'Active');
+        }
+        if (payHint) {
+          payHint.textContent =
+            !pkg || isFreePlan ? 'No paid subscription' : `$${price ?? 0} / ${billingPeriod || 'month'}`;
+        }
+        if (rows) {
+          if (!history.length) {
+            rows.innerHTML = '<tr><td colspan="4" class="as-billing-empty">No billing history yet</td></tr>';
+          } else {
+            rows.innerHTML = history
+              .map((h) => {
+                const d = fmtDate(h.startDate ?? h.StartDate);
+                const bp = h.billingPeriod ?? h.BillingPeriod;
+                const desc = (h.packageName ?? h.PackageName ?? 'Plan') + (bp ? ` (${bp})` : '');
+                const amt = h.price ?? h.Price ?? h.packageAmount ?? h.PackageAmount ?? 0;
+                const status =
+                  h.subscriptionstatus ?? h.Subscriptionstatus ?? ((h.isActive ?? h.IsActive) ? 'active' : '—');
+                return `<tr><td>${d}</td><td>${desc}</td><td>$${amt}</td><td>${status}</td></tr>`;
+              })
+              .join('');
+          }
+        }
+        if (upgradeBtn) {
+          upgradeBtn.onclick = () => navigate('/pricing');
+        }
+        if (confirmCancel) {
+          confirmCancel.onclick = async () => {
+            if (!activePkgId || isFreePlan) return;
+            confirmCancel.disabled = true;
+            try { await activepackagecancelByUser(activePkgId); } catch (e) {}
+            // Clear the cached package so the UI doesn't show the now-canceled plan.
+            try { localStorage.removeItem('userpackagedetails'); } catch (e) {}
+            window.location.reload();
+          };
         }
       };
       apply();
       timer = setTimeout(apply, 1500);
     })();
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, []);
+    return () => { cancelled = true; clearTimeout(timer); clearInterval(guard); };
+  }, [navigate]);
 
   useEffect(() => {
     if (initialized.current) return;

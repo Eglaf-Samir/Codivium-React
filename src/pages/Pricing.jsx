@@ -152,6 +152,10 @@ function PackageCard({ pkg, activePriceId }) {
   const handleSelect = async () => {
     if (purchasing || isActivePrice) return;
 
+    // Buying from the pricing page → after payment go to dashboard, not resume a
+    // stale locked-question intent from a previously abandoned popup.
+    try { localStorage.removeItem("pendingExercise"); } catch (e) {}
+
     const userId = localStorage.getItem("Userid");
 
     if (!userId) {

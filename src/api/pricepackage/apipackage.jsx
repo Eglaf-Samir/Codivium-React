@@ -246,3 +246,20 @@ export const activepackagecancelByUser = async (id) => {
     }
 }
 
+export const getUserTransactionHistory = async (userId) => {
+    var url = baseURL + "api/v1/userPayment/usertransactionhistory?id=" + userId;
+    let token = localStorage.getItem('LoginToken');
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }
+    try {
+        const res = await Axios.get(url, config);
+        return res;
+    } catch (e) {
+        return e.response;
+    }
+}
+

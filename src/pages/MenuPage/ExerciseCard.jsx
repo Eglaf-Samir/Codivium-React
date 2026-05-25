@@ -78,43 +78,46 @@ export default function ExerciseCard({ exercise: ex, returnUrl, onClick }) {
     >
       {ex.isFree && (
         <div
-          className="card-free-badge"
+          className="card-free-ribbon"
           aria-label="Free"
           style={{
             position: 'absolute',
-            top: 10,
-            left: 10,
-            zIndex: 5,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '4px 10px 4px 7px',
-            borderRadius: 999,
-            background: 'rgba(10,10,14,0.6)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            border: '1px solid rgba(255,255,255,0.14)',
-            boxShadow: '0 3px 10px rgba(0,0,0,0.35)',
+            top: 0,
+            right: 0,
+            width: 35,
+            height: 35,
+            zIndex: 6,
             pointerEvents: 'none',
+            overflow: 'hidden',
+            borderTopRightRadius: 'inherit',
           }}
         >
-          {/* Red gift/tag icon */}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"
-              stroke="#ff4d4f"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          {/* Quarter-circle red corner badge (like the reference image) */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background:
+                'radial-gradient(125% 125% at 100% 0%, #f25c5c 0%, #d62828 46%, #a01414 100%)',
+              borderBottomLeftRadius: '100%',
+              boxShadow: 'inset 2px -2px 7px rgba(0,0,0,0.28)',
+            }}
+          />
           <span
             style={{
+              position: 'absolute',
+              top: 8,
+              right: -15,
+              width: 60,
+              textAlign: 'center',
+              transform: 'rotate(41deg)',
+              transformOrigin: 'center',
+              color: '#fff',
               fontSize: 11,
               fontWeight: 800,
-              letterSpacing: '0.1em',
+              letterSpacing: '0.14em',
               textTransform: 'uppercase',
-              color: '#fff',
+              textShadow: '0 1px 1px rgba(0,0,0,0.4)',
             }}
           >
             Free
@@ -127,7 +130,12 @@ export default function ExerciseCard({ exercise: ex, returnUrl, onClick }) {
           dangerouslySetInnerHTML={{ __html: categoryPath }} />
       </div>
 
-      <div className={`card-status ${statusCls}`} aria-label={statusLabel}>
+      <div
+        className={`card-status ${statusCls}`}
+        aria-label={statusLabel}
+        // On free cards, drop the status icon below the corner ribbon so both stay visible.
+        style={ex.isFree ? { top: 18, right: 30 } : undefined}
+      >
         <svg fill="none" viewBox="0 0 24 24" aria-hidden="true"
           dangerouslySetInnerHTML={{ __html: statusPath }} />
       </div>
