@@ -6,7 +6,9 @@ import usePageMeta from "../hooks/usePageMeta";
 import {
   getpackageslist,
   createcheckout,
+  ActivePackagebyuserid,
 } from "../api/pricepackage/apipackage";
+import { isSuperAdmin } from "../utils/auth";
 
 const BILLING_ORDER = ["week", "month", "year"];
 
@@ -70,7 +72,7 @@ function CheckIcon() {
   );
 }
 
-function PackageCard({ pkg }) {
+function PackageCard({ pkg, activePriceId }) {
   const navigate = useNavigate();
   const [purchasing, setPurchasing] = useState(false);
 
@@ -116,6 +118,9 @@ function PackageCard({ pkg }) {
   const currencySymbol =
     currentPrice.currencyothername || currentPrice.currencyname || "";
   const isFree = base === 0 && finalPrice === 0;
+  // This exact price (package + billing period) is the user's active plan.
+  const isActivePrice =
+    activePriceId != null && Number(currentPrice.id) === Number(activePriceId);
 
   let discountText = "";
   if (hasDiscount) {
@@ -145,7 +150,7 @@ function PackageCard({ pkg }) {
   };
 
   const handleSelect = async () => {
-    if (purchasing) return;
+    if (purchasing || isActivePrice) return;
 
     const userId = localStorage.getItem("Userid");
 
@@ -211,7 +216,9 @@ function PackageCard({ pkg }) {
       {/* PLAN */}
       <div className="plan">
         <h2>{pkg.packageName}</h2>
-        <span className="tag">{isFree ? "Free" : TAG_LABELS[mode]}</span>
+        <span className="tag">
+          {isActivePrice ? "Active" : isFree ? "Free" : TAG_LABELS[mode]}
+        </span>
       </div>
 
       {/* BILLING */}
@@ -304,18 +311,27 @@ function PackageCard({ pkg }) {
         </li>
       </ul>
 
+      {/* Already-purchased note for the active billing period */}
+      {isActivePrice && (
+        <div className="note" style={{ color: "var(--color-text-accent, #d8b268)" }}>
+          You already have this plan — no need to buy it again.
+        </div>
+      )}
+
       {/* BUTTON */}
       <button
         className="select-btn select-btn-center"
         onClick={handleSelect}
-        disabled={purchasing}
+        disabled={purchasing || isActivePrice}
       >
         {" "}
-        {purchasing
-          ? "Processing…"
-          : isFree
-            ? "Get Started Free"
-            : SELECT_LABELS[mode]}
+        {isActivePrice
+          ? "✓ Current plan"
+          : purchasing
+            ? "Processing…"
+            : isFree
+              ? "Get Started Free"
+              : SELECT_LABELS[mode]}
       </button>
     </article>
   );
@@ -323,10 +339,51 @@ function PackageCard({ pkg }) {
 
 function Pricing() {
   usePageMeta("pricing");
+  const navigate = useNavigate();
+
+  // After signup the user lands here with ?welcome=1 — show a "Skip for now"
+  // button that takes them straight to the dashboard (they're already logged in).
+  const justSignedUp =
+    new URLSearchParams(window.location.search).get("welcome") === "1";
+
+  const skipForNow = () => {
+    navigate(isSuperAdmin() ? "/AdminDashboard" : "/adaptive-practice");
+  };
 
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // PackagePriceId of the user's currently active plan — the card whose price
+  // matches this is shown as "already active" and its buy button is disabled.
+  const [activePriceId, setActivePriceId] = useState(null);
+
+  useEffect(() => {
+    const pickPriceId = (d) =>
+      d ? (d.packagePriceId ?? d.PackagePriceId ?? null) : null;
+
+    const userId = localStorage.getItem("Userid");
+    if (!userId) {
+      try {
+        const cached = JSON.parse(
+          localStorage.getItem("userpackagedetails") || "null",
+        );
+        setActivePriceId(pickPriceId(cached));
+      } catch (e) {}
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await ActivePackagebyuserid(userId);
+        if (!cancelled && res?.status === 200 && res.data) {
+          setActivePriceId(pickPriceId(res.data));
+        }
+      } catch (e) {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -377,6 +434,26 @@ function Pricing() {
             <p className="sub">
               One plan. Full access to everything — choose the billing cadence that matches your practice rhythm.
             </p>
+            {justSignedUp && (
+              <div style={{ marginTop: 14 }}>
+                <button
+                  type="button"
+                  onClick={skipForNow}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid var(--color-border-default, rgba(255,255,255,0.3))",
+                    color: "inherit",
+                    padding: "10px 20px",
+                    borderRadius: 10,
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontFamily: "var(--body-serif)",
+                  }}
+                >
+                  Skip for now →
+                </button>
+              </div>
+            )}
           </header>
 
           {loading && <div className="note">Loading pricing…</div>}
@@ -390,7 +467,7 @@ function Pricing() {
           {!loading && !error && visiblePackages.length > 0 && (
             <div className="grid">
               {visiblePackages.map((pkg) => (
-                <PackageCard key={pkg.id} pkg={pkg} />
+                <PackageCard key={pkg.id} pkg={pkg} activePriceId={activePriceId} />
               ))}
             </div>
           )}

@@ -1,6 +1,8 @@
 import Axios from "axios";
-import { allpackages, allpackagefiltering, getepackagebyid, createpackage, getallepackage, updatepackage, deletepackage , getallCurrency, allpackagesBillingPeriod ,
-     packagepurchasecheckout, geteActivePackagebyuserid, ActivepackagecancelByUser} from './constants'
+import {
+    allpackages, allpackagefiltering, getepackagebyid, createpackage, getallepackage, updatepackage, deletepackage, getallCurrency, allpackagesBillingPeriod,
+    packagepurchasecheckout, geteActivePackagebyuserid, ActivepackagecancelByUser
+} from './constants'
 import { baseURL } from "../../config";
 
 export const getpackageslist = async () => {
@@ -20,7 +22,7 @@ export const getpackageslist = async () => {
 
 export const getpackageslistbybillingperiod = async (key) => {
     let token = localStorage.getItem('LoginToken');
-    var url = baseURL + allpackagesBillingPeriod+ key;
+    var url = baseURL + allpackagesBillingPeriod + key;
     const config = {
         headers: {
             'Content-Type': 'application/json',
@@ -105,7 +107,7 @@ export const packagedelete = async (id) => {
 export const createPackage = async (body) => {
     let token = localStorage.getItem('LoginToken');
 
-    var url = baseURL + createpackage;
+    var url = baseURL + createpackage + "/create";
     const config = {
         headers: {
             'Content-Type': 'application/json',
@@ -124,7 +126,7 @@ export const createPackage = async (body) => {
 export const createFreePackage = async (body) => {
     let token = localStorage.getItem('LoginToken');
 
-    var url = baseURL + createpackage +"/CreateFreePackage";
+    var url = baseURL + createpackage + "/free";
     const config = {
         headers: {
             'Content-Type': 'application/json',
@@ -190,6 +192,23 @@ export const createcheckout = async (body) => {
         return res;
     } catch (e) {
         throw e.response
+    }
+}
+
+export const verifycheckoutsession = async (sessionId) => {
+    let token = localStorage.getItem('LoginToken');
+    var url = baseURL + packagepurchasecheckout + "/verify?sessionId=" + encodeURIComponent(sessionId);
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }
+    try {
+        const res = await Axios.get(url, config);
+        return res;
+    } catch (e) {
+        return e.response;
     }
 }
 

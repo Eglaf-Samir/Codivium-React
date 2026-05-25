@@ -77,9 +77,27 @@ function Join() {
         rolename: role.User,
       });
 
-      if (res?.status === 200) {
+      if (res?.status === 200 && res?.data?.id) {
+        // Auto-login: the register endpoint now returns the same payload as
+        // login (token + role + active package). Store it exactly like Login.jsx
+        // so the user is signed in without a second login step.
+        const data = res.data;
+        localStorage.setItem("Userid", data.id);
+        localStorage.setItem("LoginToken", data.loginToken);
+        localStorage.setItem("UserRoleName", data.roleName);
+        if (data.activePackage) {
+          localStorage.setItem(
+            "userpackagedetails",
+            JSON.stringify(data.activePackage),
+          );
+        }
+
         toast.success("Account created successfully");
-        setTimeout(() => navigate("/login"), 2000);
+        // Send the new user to pricing; they can buy a package there or use
+        // the "Skip for now" button to go straight to the dashboard.
+        setTimeout(() => navigate("/pricing?welcome=1"), 800);
+      } else {
+        toast.error(res?.data || "Signup failed");
       }
     } catch (err) {
       toast.error(err?.response?.data || "Signup failed");

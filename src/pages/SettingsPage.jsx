@@ -1,5 +1,6 @@
 // SettingsPage.jsx — Account & Settings with working theme picker
 import React, { useEffect, useRef } from 'react';
+import { ActivePackagebyuserid } from '../api/pricepackage/apipackage';
 
 function loadScript(src, onload) {
   const s = document.createElement('script');
@@ -49,6 +50,53 @@ function setupCVTheme() {
 
 export default function SettingsPage() {
   const initialized = useRef(false);
+
+  // Reflect the user's REAL active package in the Billing tab. The external
+  // account-settings.js controller fills #asPlanBadge / #asPlanRenewal from demo
+  // data, so we fetch the live package and overwrite those nodes (re-applying
+  // once more after the controller script has run, to win the race).
+  useEffect(() => {
+    const userId = localStorage.getItem('Userid');
+    if (!userId) return;
+    let cancelled = false;
+    let timer;
+    (async () => {
+      let pkg = null;
+      try {
+        const res = await ActivePackagebyuserid(userId);
+        if (res?.status === 200 && res.data) pkg = res.data;
+      } catch (e) { /* fall back to cached */ }
+      if (!pkg) {
+        try { pkg = JSON.parse(localStorage.getItem('userpackagedetails') || 'null'); } catch (e) {}
+      }
+      if (cancelled || !pkg) return;
+
+      const name = pkg.packageName || pkg.PackageName;
+      const end = pkg.endDate || pkg.EndDate;
+      // Treat as the free plan when it's the default package or it doesn't grant
+      // all-coding access (covers responses that omit IsDefault).
+      const isFreePlan =
+        (pkg.isDefault ?? pkg.IsDefault) === true ||
+        (pkg.isAccessToAllCodingQuestions ?? pkg.IsAccessToAllCodingQuestions) === false;
+
+      const apply = () => {
+        const badge = document.getElementById('asPlanBadge');
+        const renewal = document.getElementById('asPlanRenewal');
+        if (badge && name) {
+          badge.textContent = name;
+          badge.className = 'as-plan-badge' + (isFreePlan ? ' free' : '');
+        }
+        if (renewal) {
+          renewal.textContent = isFreePlan
+            ? 'Free plan'
+            : (end ? `Active until ${new Date(end).toLocaleDateString()}` : 'Active');
+        }
+      };
+      apply();
+      timer = setTimeout(apply, 1500);
+    })();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, []);
 
   useEffect(() => {
     if (initialized.current) return;

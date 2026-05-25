@@ -15,6 +15,7 @@ import MenuHeader from './MenuHeader.jsx';
 import FilterDrawer from './FilterDrawer.jsx';
 import ExerciseGrid from './ExerciseGrid.jsx';
 import MenuTour from './MenuTour.jsx';
+import PackagePickerModal from './PackagePickerModal.jsx';
 
 const PREF_KEY = 'cv_menu_filters_v3';
 
@@ -164,6 +165,7 @@ export default function MenuPage() {
   const [oldcodeinfo, setOldcodeinfo] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [conformShow, setConformShow] = useState(false);
+  const [pkgModalOpen, setPkgModalOpen] = useState(false);
 
   const saved = loadPrefs();
   const [selectedCategoryIds, setSelectedCategoryIds] = useState(() => saved.categoryIds || ['all']);
@@ -435,6 +437,20 @@ export default function MenuPage() {
         }
         return;
       }
+
+      // Locked-question gate: if the active package does NOT grant access to all
+      // coding questions (i.e. the free/default plan) and this question is not
+      // flagged free, open the package picker instead of opening the question.
+      const hasAllCoding = !!(
+        activePackage.isAccessToAllCodingQuestions ??
+        activePackage.IsAccessToAllCodingQuestions
+      );
+      const isFreeQuestion = !!(exercise.isFree ?? item.isFree ?? item.IsFree);
+      if (!hasAllCoding && !isFreeQuestion) {
+        setPkgModalOpen(true);
+        return;
+      }
+
       if (item.isCoding === false) {
         navigate('/NonCoding', { state: { item } });
       } else {
@@ -580,6 +596,11 @@ export default function MenuPage() {
         />,
         document.body,
       )}
+
+      <PackagePickerModal
+        open={pkgModalOpen}
+        onClose={() => setPkgModalOpen(false)}
+      />
     </main>
   );
 }

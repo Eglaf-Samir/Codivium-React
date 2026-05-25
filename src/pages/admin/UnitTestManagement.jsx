@@ -37,6 +37,7 @@ const initialPrep = {
   isArrays: true,
   isCompleted: false,
   isSubmitted: false,
+  isFree: false,
   sequenceNo: 1,
   excerciseId: '',
   csInterviewPreprationId: '',
@@ -572,6 +573,13 @@ export default function UnitTestManagement() {
                 <div className="cv-admin-field is-full">
                   <label>Description</label>
                   <textarea rows={3} name="description" value={form.description} onChange={handleField} placeholder="Description" />
+                </div>
+
+                <div className="cv-admin-field is-full">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input type="checkbox" name="isFree" checked={!!form.isFree} onChange={handleField} />
+                    Free question (accessible to free-package users)
+                  </label>
                 </div>
 
                 <div className="cv-admin-field is-full">

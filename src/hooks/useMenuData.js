@@ -44,6 +44,7 @@ function mapExercise(item) {
     mentalModels: item.mentalModels || [],
     fontAwesomeIcon: item.fontAwesomeIcon,
     isCoding: item.isCoding,
+    isFree: item.isFree ?? item.IsFree ?? false,
     raw: item,
   };
 }
