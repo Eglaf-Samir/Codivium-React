@@ -263,3 +263,21 @@ export const getUserTransactionHistory = async (userId) => {
     }
 }
 
+// Fetches the Stripe hosted-invoice URL for one payment row, on demand.
+export const getInvoiceUrl = async (userPaymentId) => {
+    var url = baseURL + "api/v1/userPayment/invoiceurl?userPaymentId=" + userPaymentId;
+    let token = localStorage.getItem('LoginToken');
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }
+    try {
+        const res = await Axios.get(url, config);
+        return res;
+    } catch (e) {
+        return e.response;
+    }
+}
+
