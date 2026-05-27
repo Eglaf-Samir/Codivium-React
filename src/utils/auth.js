@@ -20,5 +20,7 @@ export function logout() {
     localStorage.removeItem("LoginToken");
     localStorage.removeItem("UserRoleName");
     localStorage.removeItem("userpackagedetails");
+    localStorage.removeItem("UserDisplayName");
+    localStorage.removeItem("UserEmail");
   } catch {}
 }

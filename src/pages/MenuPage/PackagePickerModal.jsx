@@ -5,6 +5,7 @@
 // Self-contained inline styles because the Pricing page CSS is scoped to
 // body[data-page="pricing"] and isn't available on the menu page.
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   getpackageslist,
   createcheckout,
@@ -235,6 +236,16 @@ export default function PackagePickerModal({ open, onClose }) {
     };
   }, [open]);
 
+  // Lock body scroll while the modal is open so the page behind doesn't move.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   // Hide the free/default package — only paid plans unlock locked questions.
@@ -248,7 +259,7 @@ export default function PackagePickerModal({ open, onClose }) {
     return !isFreePkg;
   });
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -257,11 +268,13 @@ export default function PackagePickerModal({ open, onClose }) {
         background: "rgba(0,0,0,0.55)",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: "grid",
+        placeItems: "center",
         zIndex: 1000,
-        padding: 16,
+        // Match the Welcome-back (.fb-overlay) insets so the popup centers in the
+        // content column: top = topbar + gap, left = current sidebar width.
+        padding:
+          "calc(var(--topbar-h, 82px) + 20px) 22px 22px calc(var(--content-left, var(--sidebar-w, 264px)) + 22px)",
       }}
     >
       <div
@@ -314,6 +327,7 @@ export default function PackagePickerModal({ open, onClose }) {
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

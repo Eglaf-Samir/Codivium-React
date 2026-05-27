@@ -6,6 +6,7 @@ import {
   getUserTransactionHistory,
   activepackagecancelByUser,
 } from '../api/pricepackage/apipackage';
+import { getUserById } from '../api/auth/apiauth';
 
 function loadScript(src, onload) {
   const s = document.createElement('script');
@@ -13,6 +14,40 @@ function loadScript(src, onload) {
   if (onload) s.onload = onload;
   document.body.appendChild(s);
   return s;
+}
+
+// ── Real-profile guard ─────────────────────────────────────────────
+// The demo script (account-settings-demo.js) seeds cv_profile_name with a
+// dummy ("Alex Thornton") and account-settings.js writes it into the shared
+// sidebar #profileName element — clobbering the real logged-in name. These
+// helpers force the REAL name/email (persisted at login as UserDisplayName/
+// UserEmail) back into both localStorage and the DOM.
+function getRealProfile() {
+  let name = '', email = '';
+  try {
+    name = (localStorage.getItem('UserDisplayName') || '').trim();
+    email = (localStorage.getItem('UserEmail') || '').trim();
+  } catch (_) { /* ignore */ }
+  return { name, email };
+}
+
+function applyRealProfileToStorage() {
+  const { name, email } = getRealProfile();
+  try {
+    if (name) localStorage.setItem('cv_profile_name', name);
+    if (email) localStorage.setItem('cv_profile_email', email);
+  } catch (_) { /* ignore */ }
+}
+
+function applyRealProfileToDom() {
+  applyRealProfileToStorage();
+  const { name, email } = getRealProfile();
+  const setText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && val) el.textContent = val;
+  };
+  if (name) { setText('profileName', name); setText('asDisplayNameVal', name); }
+  if (email) setText('asEmailVal', email);
 }
 
 // Set window.CVTheme directly — keys match the [data-theme="..."] rules in our CSS
@@ -194,9 +229,38 @@ export default function SettingsPage() {
     // Step 1: set window.CVTheme directly (no DOM injection = no React conflict)
     setupCVTheme();
 
-    // Step 2: load demo data, then load the settings controller
+    // If the real name isn't cached yet (e.g. an older session), fetch it once
+    // so the guard below has something to apply instead of the demo dummy.
+    if (!getRealProfile().name) {
+      try {
+        const uid = localStorage.getItem('Userid');
+        if (uid) {
+          getUserById(uid).then((res) => {
+            if (res?.status === 200 && res.data) {
+              const d = res.data;
+              const full = [d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ').trim();
+              if (full) localStorage.setItem('UserDisplayName', full);
+              if (d.email) localStorage.setItem('UserEmail', d.email);
+              applyRealProfileToDom();
+            }
+          });
+        }
+      } catch (_) { /* ignore */ }
+    }
+
+    // Step 2: load demo data, then load the settings controller. After each
+    // step, force the REAL profile back so the demo dummy never sticks in the
+    // sidebar (#profileName) or the settings fields.
+    applyRealProfileToStorage();
     const s1 = loadScript('/account-settings-demo.js', () => {
-      loadScript('/account-settings.js');
+      // Demo just overwrote cv_profile_name with the dummy — restore real value
+      // BEFORE the controller reads it.
+      applyRealProfileToStorage();
+      loadScript('/account-settings.js', () => {
+        applyRealProfileToDom();
+        setTimeout(applyRealProfileToDom, 150);
+        setTimeout(applyRealProfileToDom, 600);
+      });
     });
 
     return () => {
