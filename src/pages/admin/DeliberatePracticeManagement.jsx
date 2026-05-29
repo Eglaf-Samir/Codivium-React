@@ -37,6 +37,7 @@ const initialPrep = {
   isArrays: true,
   isCompleted: false,
   isSubmitted: false,
+  isFree: false,
   sequenceNo: 1,
   practiceId: '',
   deliberatePracticeid: '',
@@ -565,6 +566,32 @@ export default function DeliberatePracticeManagement() {
                 <div className="cv-admin-field is-full">
                   <label>Description</label>
                   <textarea rows={3} name="description" value={form.description} onChange={handleField} placeholder="Description" />
+                </div>
+
+                <div className="cv-admin-field is-full">
+                  <label
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: 'fit-content',
+                      cursor: 'pointer',
+                      textTransform: 'none',
+                      letterSpacing: 0,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: 'var(--color-text-secondary)',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      name="isFree"
+                      checked={!!form.isFree}
+                      onChange={handleField}
+                      style={{ width: 16, height: 16, flexShrink: 0, margin: 0 }}
+                    />
+                    <span>Free question</span>
+                  </label>
                 </div>
 
                 <div className="cv-admin-field is-full">

@@ -37,6 +37,8 @@ import Articles      from './pages/Articles.jsx';
 import Article       from './pages/Article.jsx';
 import ResetPassword  from './pages/ResetPassword.jsx';
 import ForgetPassword from './pages/ForgetPassword.jsx';
+import PaymentSuccess  from './pages/PaymentSuccess.jsx';
+import PaymentFailed   from './pages/PaymentFailed.jsx';
 
 const PAGE_TITLES = {
   '/':                  'Codivium',
@@ -198,6 +200,10 @@ export default function App() {
       <Route path="/UnitTestManagement"            element={<RequireSuperAdmin><AdminRoute component={UnitTestManagement} /></RequireSuperAdmin>} />
       <Route path="/DeliberatePracticeManagement"  element={<RequireSuperAdmin><AdminRoute component={DeliberatePracticeManagement} /></RequireSuperAdmin>} />
       <Route path="/FaqManagement"                 element={<RequireSuperAdmin><AdminRoute component={FaqManagement} /></RequireSuperAdmin>} />
+
+      {/* ── STRIPE CHECKOUT RETURN ── */}
+      <Route path="/success" element={<PaymentSuccess />} />
+      <Route path="/failer"  element={<PaymentFailed />} />
 
       {/* ── LEGACY REDIRECTS ── */}
       <Route path="/adaptive-practice.html"           element={<Navigate to="/adaptive-practice" replace />} />

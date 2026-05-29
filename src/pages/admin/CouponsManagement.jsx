@@ -7,7 +7,9 @@ import {
   putUpdateCoupon,
   couponDelete,
   createpromotioncodesodes,
-  getallPromocodelistbyCouponId,
+  getallcouponDetails,
+  getallTrackCoupon,
+  getallAdminuser,
   PromotionCodeActive,
   PromotionCodeDeActive,
 } from '../../api/coupon/apicoupon';
@@ -31,30 +33,63 @@ const initialCoupon = {
   packageId: [],
 };
 
+const initialPromo = {
+  codeName: '',
+  isAddExpirationDate: false,
+  expirationDate: '',
+  isFirstTimeOnly: false,
+  isRedeemed: false,
+  maxUses: 0,
+  isSpecificCustomer: false,
+  userId: '',
+};
+
 const DURATIONS = [
   { value: 'forever', label: 'Forever' },
   { value: 'once', label: 'Once' },
   { value: 'repeating', label: 'Repeating' },
 ];
 
+// dd/mm/yyyy — matches the rest of the billing UI.
+function fmtDate(value) {
+  if (!value) return 'N/A';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return 'N/A';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
 export default function CouponsManagement() {
   const navigate = useNavigate();
   const [coupons, setCoupons] = useState([]);
   const [packages, setPackages] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // Create / edit
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState(initialCoupon);
   const [saving, setSaving] = useState(false);
 
-  const [promoOpen, setPromoOpen] = useState(false);
-  const [promoCoupon, setPromoCoupon] = useState(null);
-  const [promoCode, setPromoCode] = useState('');
-  const [promoList, setPromoList] = useState([]);
+  // View details (coupon summary + applicable products + promo codes)
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewData, setViewData] = useState(null);
+  const [viewCouponId, setViewCouponId] = useState(0);
+  const [promoForm, setPromoForm] = useState(initialPromo);
   const [savingPromo, setSavingPromo] = useState(false);
+
+  // Track coupon usage
+  const [trackOpen, setTrackOpen] = useState(false);
+  const [trackCoupon, setTrackCoupon] = useState(null);
+  const [trackPromos, setTrackPromos] = useState([]);
+  const [trackPromoId, setTrackPromoId] = useState('');
+  const [trackRows, setTrackRows] = useState([]);
+  const [trackLoading, setTrackLoading] = useState(false);
 
   useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, []);
 
@@ -62,10 +97,15 @@ export default function CouponsManagement() {
 
   async function loadAll() {
     setLoading(true);
-    const [cRes, pRes] = await Promise.all([getallcouponlist(), getpackageslistbyadmin()]);
+    const [cRes, pRes, uRes] = await Promise.all([
+      getallcouponlist(),
+      getpackageslistbyadmin(),
+      getallAdminuser(),
+    ]);
     if (cRes?.status === 401) { authFail(); return; }
     setCoupons(Array.isArray(cRes?.data) ? cRes.data : []);
     if (Array.isArray(pRes?.data)) setPackages(pRes.data.filter(p => !p.isDefault));
+    if (Array.isArray(uRes?.data)) setAdminUsers(uRes.data);
     setLoading(false);
   }
 
@@ -79,6 +119,7 @@ export default function CouponsManagement() {
   const pageSafe = Math.min(page, pageCount - 1);
   const visible = filtered.slice(pageSafe * rowsPerPage, (pageSafe + 1) * rowsPerPage);
 
+  // ── Create / edit ──────────────────────────────────────────────
   function openNew() { setForm(initialCoupon); setEditOpen(true); }
   function openEdit(c) {
     setForm({
@@ -150,43 +191,121 @@ export default function CouponsManagement() {
     } else Swal.fire({ title: 'Error', text: res?.data || 'Delete failed.', icon: 'error' });
   }
 
-  // ── Promo codes ───────────────────────────────────────────────
-  async function openPromo(coupon) {
-    setPromoCoupon(coupon);
-    setPromoCode('');
-    setPromoList([]);
-    setPromoOpen(true);
-    const res = await getallPromocodelistbyCouponId(coupon.id);
-    if (res?.status === 200 && Array.isArray(res?.data)) setPromoList(res.data);
+  // ── View details ───────────────────────────────────────────────
+  async function openView(coupon) {
+    setViewCouponId(coupon.id);
+    setViewData(null);
+    setPromoForm(initialPromo);
+    setViewOpen(true);
+    await refreshView(coupon.id);
   }
 
-  function closePromo() { setPromoOpen(false); setPromoCoupon(null); setPromoCode(''); setPromoList([]); }
+  async function refreshView(couponId) {
+    setViewLoading(true);
+    const res = await getallcouponDetails(couponId);
+    if (res?.status === 401) { authFail(); return; }
+    if (res?.status === 200 && res?.data) setViewData(res.data);
+    setViewLoading(false);
+  }
+
+  function closeView() {
+    setViewOpen(false);
+    setViewData(null);
+    setViewCouponId(0);
+    setPromoForm(initialPromo);
+  }
+
+  function handlePromoField(e) {
+    const { name, value, type, checked } = e.target;
+    setPromoForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+  }
 
   async function addPromo(e) {
     e.preventDefault();
-    if (!promoCoupon?.id || !promoCode.trim()) return;
+    if (!viewCouponId || !promoForm.codeName.trim()) return;
     setSavingPromo(true);
+    // Backend binds PromotionCodesRequest: CodeName, ExpirationDate/IsAddExpirationDate,
+    // IsFirstTimeOnly, IsRedeemed + MaxUses (max redemptions), IsSpecificCustomer + UserId.
+    const body = {
+      couponId: viewCouponId,
+      codeName: promoForm.codeName.trim(),
+      isAddExpirationDate: !!promoForm.isAddExpirationDate,
+      expirationDate: promoForm.isAddExpirationDate && promoForm.expirationDate
+        ? new Date(promoForm.expirationDate).toISOString()
+        : null,
+      isFirstTimeOnly: !!promoForm.isFirstTimeOnly,
+      isRedeemed: !!promoForm.isRedeemed,
+      maxUses: promoForm.isRedeemed ? Number(promoForm.maxUses) || 0 : 0,
+      isSpecificCustomer: !!promoForm.isSpecificCustomer,
+      userId: promoForm.isSpecificCustomer && promoForm.userId ? promoForm.userId : null,
+    };
     let res;
     try {
-      res = await createpromotioncodesodes(JSON.stringify({ couponId: promoCoupon.id, promotionCode: promoCode.trim() }));
+      res = await createpromotioncodesodes(JSON.stringify(body));
     } catch (e) { res = e; }
     setSavingPromo(false);
-    if (res?.status === 200 && res?.data) {
-      const refreshed = await getallPromocodelistbyCouponId(promoCoupon.id);
-      if (Array.isArray(refreshed?.data)) setPromoList(refreshed.data);
-      setPromoCode('');
+
+    // Backend returns "true" on success, or an error string otherwise.
+    const ok = res?.status === 200 && (res.data === 'true' || res.data === true);
+    if (ok) {
+      setPromoForm(initialPromo);
+      await refreshView(viewCouponId);
       Swal.fire({ title: 'Promo code added', icon: 'success' });
     } else if (res?.status === 401) authFail();
-    else Swal.fire({ title: 'Error', text: res?.data || 'Could not add code.', icon: 'error' });
+    else Swal.fire({ title: 'Error', text: (res?.data && res.data !== 'false' ? res.data : 'Could not add code.'), icon: 'error' });
   }
 
   async function togglePromoActive(p) {
-    const fn = p.isActive ? PromotionCodeDeActive : PromotionCodeActive;
+    const isActive = (p.status || '').toLowerCase() === 'active';
+    const fn = isActive ? PromotionCodeDeActive : PromotionCodeActive;
     const res = await fn(p.id);
     if (res?.status === 401) { authFail(); return; }
-    const refreshed = await getallPromocodelistbyCouponId(promoCoupon.id);
-    if (Array.isArray(refreshed?.data)) setPromoList(refreshed.data);
+    await refreshView(viewCouponId);
   }
+
+  // ── Track coupon usage ─────────────────────────────────────────
+  async function openTrack(coupon) {
+    setTrackCoupon(coupon);
+    setTrackRows([]);
+    setTrackPromoId('');
+    setTrackPromos([]);
+    setTrackOpen(true);
+    // Load this coupon's promo codes for the dropdown.
+    const res = await getallcouponDetails(coupon.id);
+    if (res?.status === 200 && res?.data) {
+      const promos = res.data.couponPromotionCodeMappingResponses || [];
+      setTrackPromos(promos);
+    }
+    // Default view = "All codes": show every usage row for the coupon.
+    await loadTrack(coupon.id, 0);
+  }
+
+  async function loadTrack(couponId, promoId) {
+    if (!couponId) return;
+    setTrackLoading(true);
+    // PromoCodeID 0 = all usage for the coupon; otherwise scoped to one code.
+    const res = await getallTrackCoupon(couponId, promoId || 0);
+    if (res?.status === 401) { authFail(); return; }
+    setTrackRows(res?.status === 200 && Array.isArray(res.data) ? res.data : []);
+    setTrackLoading(false);
+  }
+
+  function closeTrack() {
+    setTrackOpen(false);
+    setTrackCoupon(null);
+    setTrackRows([]);
+    setTrackPromoId('');
+    setTrackPromos([]);
+  }
+
+  async function onTrackPromoChange(e) {
+    const promoId = e.target.value;
+    setTrackPromoId(promoId);
+    await loadTrack(trackCoupon?.id, promoId || 0);
+  }
+
+  // Helper accessors tolerant of the API's camelCase quirks.
+  const applySpecific = (d) => d?.iSApplySpecificProduct ?? d?.isApplySpecificProduct ?? false;
 
   return (
     <main className="main" id="main-content">
@@ -218,22 +337,23 @@ export default function CouponsManagement() {
               <table className="cv-admin-table">
                 <thead>
                   <tr>
-                    <th>Name</th><th>Discount</th><th>Duration</th><th>Redeem by</th><th>Max</th><th aria-label="Actions" />
+                    <th>Coupon</th><th>Percent Off</th><th>Redemptions</th><th>Duration</th><th>Expires</th><th aria-label="Actions" />
                   </tr>
                 </thead>
                 <tbody>
                   {visible.map(c => (
                     <tr key={c.id}>
                       <td className="cell-email">{c.couponName || '—'}</td>
-                      <td>{c.percentOff ? `${c.percentOff}%` : '—'}</td>
-                      <td className="cell-muted">{c.duration}{c.duration === 'repeating' && c.durationinMonths ? ` · ${c.durationinMonths}m` : ''}</td>
-                      <td className="cell-muted">{c.redeemBy ? new Date(c.redeemBy).toLocaleDateString() : '—'}</td>
-                      <td className="cell-muted">{c.maxRedeemed || '∞'}</td>
+                      <td>{c.percentOff ? `${c.percentOff} %` : '—'}</td>
+                      <td className="cell-muted">{c.maxRedeemed ? c.maxRedeemed : '∞'}</td>
+                      <td className="cell-muted">{c.duration}</td>
+                      <td className="cell-muted">{c.isLimitDateRange && c.redeemBy ? fmtDate(c.redeemBy) : 'N/A'}</td>
                       <td>
                         <div className="cv-admin-actions">
+                          <button type="button" className="cv-admin-btn" onClick={() => openView(c)}>View</button>
                           <button type="button" className="cv-admin-btn" onClick={() => openEdit(c)}>Edit</button>
-                          <button type="button" className="cv-admin-btn is-primary" onClick={() => openPromo(c)}>Promo Codes</button>
                           <button type="button" className="cv-admin-btn is-warn" onClick={() => remove(c.id)}>Delete</button>
+                          <button type="button" className="cv-admin-btn is-primary" onClick={() => openTrack(c)}>Track Coupon</button>
                         </div>
                       </td>
                     </tr>
@@ -255,20 +375,22 @@ export default function CouponsManagement() {
         </section>
       </div>
 
-      {/* Edit modal */}
+      {/* Create / edit modal */}
       <AdminModal open={editOpen} onClose={closeEdit}>
         <div className="cv-admin-modal" onClick={e => e.stopPropagation()}>
-            <div className="cv-admin-modal-head">
-              <h3>{form.id ? 'Edit Coupon' : 'New Coupon'}</h3>
-              <button type="button" className="cv-admin-modal-close" onClick={closeEdit}>×</button>
-            </div>
-            <form onSubmit={submitCoupon}>
-              <div className="cv-admin-modal-body">
-                <div className="cv-admin-form-grid">
-                  <div className="cv-admin-field is-full">
-                    <label>Coupon name</label>
-                    <input name="couponName" value={form.couponName} onChange={handleField} required />
-                  </div>
+          <div className="cv-admin-modal-head">
+            <h3>{form.id ? 'Edit Coupon' : 'New Coupon'}</h3>
+            <button type="button" className="cv-admin-modal-close" onClick={closeEdit}>×</button>
+          </div>
+          <form onSubmit={submitCoupon}>
+            <div className="cv-admin-modal-body">
+              <div className="cv-admin-form-grid">
+                <div className="cv-admin-field is-full">
+                  <label>Coupon name</label>
+                  <input name="couponName" value={form.couponName} onChange={handleField} required />
+                </div>
+                {/* On edit only the name is changeable (Stripe coupons are immutable). */}
+                {!form.id && (<>
                   <div className="cv-admin-field">
                     <label>Discount type</label>
                     <select name="discountType" value={form.discountType} onChange={handleField}>
@@ -333,53 +455,214 @@ export default function CouponsManagement() {
                       </div>
                     </div>
                   )}
-                </div>
+                </>)}
               </div>
-              <div className="cv-admin-modal-foot">
-                <button type="button" className="cv-admin-btn" onClick={closeEdit} disabled={saving}>Cancel</button>
-                <button type="submit" className="cv-admin-btn is-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-              </div>
-            </form>
-          </div>
+            </div>
+            <div className="cv-admin-modal-foot">
+              <button type="button" className="cv-admin-btn" onClick={closeEdit} disabled={saving}>Cancel</button>
+              <button type="submit" className="cv-admin-btn is-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+            </div>
+          </form>
+        </div>
       </AdminModal>
 
-      {/* Promo codes modal */}
-      <AdminModal open={promoOpen && !!promoCoupon} onClose={closePromo}>
-        {promoCoupon && (
-          <div className="cv-admin-modal" onClick={e => e.stopPropagation()}>
+      {/* View details modal: summary + applicable products + promo codes */}
+      <AdminModal open={viewOpen} onClose={closeView}>
+        <div className="cv-admin-modal" style={{ maxWidth: 980 }} onClick={e => e.stopPropagation()}>
+          <div className="cv-admin-modal-head">
+            <h3>{viewData?.couponName ? `Coupon — ${viewData.couponName}` : 'Coupon details'}</h3>
+            <button type="button" className="cv-admin-modal-close" onClick={closeView}>×</button>
+          </div>
+          <div className="cv-admin-modal-body">
+            {viewLoading || !viewData ? (
+              <div className="cv-admin-loading"><span className="cv-admin-spinner" />Loading…</div>
+            ) : (
+              <>
+                {/* Summary */}
+                <div className="cv-admin-form-grid" style={{ marginBottom: 18 }}>
+                  <div className="cv-admin-field"><label>Name</label><div>{viewData.couponName || '—'}</div></div>
+                  <div className="cv-admin-field"><label>Created</label><div>{fmtDate(viewData.createdAt)}</div></div>
+                  <div className="cv-admin-field"><label>Valid</label><div>{viewData.valid ? 'Yes' : 'No'}</div></div>
+                  <div className="cv-admin-field"><label>Percentage discount</label><div>{viewData.percentOff != null ? `${viewData.percentOff} %` : '—'}</div></div>
+                  <div className="cv-admin-field"><label>Duration</label><div>{viewData.duration}{viewData.duration === 'repeating' && viewData.durationinMonths ? ` · ${viewData.durationinMonths}m` : ''}</div></div>
+                  <div className="cv-admin-field"><label>Expires</label><div>{viewData.isLimitDateRange && viewData.redeemBy ? fmtDate(viewData.redeemBy) : 'N/A'}</div></div>
+                  <div className="cv-admin-field"><label>Max redemptions</label><div>{viewData.maxRedeemed != null ? viewData.maxRedeemed : '∞'}</div></div>
+                </div>
+
+                {/* Applicable products */}
+                {applySpecific(viewData) && (
+                  <>
+                    <h4 style={{ margin: '6px 0 8px', fontSize: 13, color: 'var(--color-text-accent)' }}>Applicable Products</h4>
+                    {(viewData.specificProductResponses || []).length === 0 ? (
+                      <div className="cv-admin-table-empty" style={{ marginBottom: 16 }}>No products linked.</div>
+                    ) : (
+                      <table className="cv-admin-table" style={{ marginBottom: 18 }}>
+                        <thead><tr><th>Name</th><th>Price</th><th>Updated</th></tr></thead>
+                        <tbody>
+                          {viewData.specificProductResponses.map(p => (
+                            <tr key={p.packageId}>
+                              <td className="cell-email">{p.packageName}</td>
+                              <td className="cell-muted">{(p.packageCurrencyothername || p.packageCurrencyname || '')}{p.packageAmount} {p.packageBillingPeriod ? `/ ${p.packageBillingPeriod}` : ''}</td>
+                              <td className="cell-muted">{fmtDate(p.packageModifiedAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </>
+                )}
+
+                {/* Promotion codes */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '6px 0 10px' }}>
+                  <h4 style={{ margin: 0, fontSize: 13, color: 'var(--color-text-accent)' }}>Promotion Codes</h4>
+                </div>
+
+                {/* Add promo */}
+                <form onSubmit={addPromo} className="cv-admin-form-grid" style={{ marginBottom: 16 }}>
+                  <div className="cv-admin-field">
+                    <label>New promotion code</label>
+                    <input name="codeName" value={promoForm.codeName} onChange={handlePromoField} placeholder="e.g. SAVE20" required />
+                  </div>
+                  <div className="cv-admin-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'end' }}>
+                    <input type="checkbox" id="pf-exp" name="isAddExpirationDate" checked={promoForm.isAddExpirationDate} onChange={handlePromoField} />
+                    <label htmlFor="pf-exp" style={{ margin: 0, textTransform: 'none', letterSpacing: 0, fontSize: 13 }}>Set expiry</label>
+                  </div>
+                  {promoForm.isAddExpirationDate && (
+                    <div className="cv-admin-field">
+                      <label>Expires on</label>
+                      <input type="date" name="expirationDate" value={promoForm.expirationDate} onChange={handlePromoField} />
+                    </div>
+                  )}
+                  <div className="cv-admin-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'end' }}>
+                    <input type="checkbox" id="pf-first" name="isFirstTimeOnly" checked={promoForm.isFirstTimeOnly} onChange={handlePromoField} />
+                    <label htmlFor="pf-first" style={{ margin: 0, textTransform: 'none', letterSpacing: 0, fontSize: 13 }}>First-time customers only</label>
+                  </div>
+                  <div className="cv-admin-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'end' }}>
+                    <input type="checkbox" id="pf-max" name="isRedeemed" checked={promoForm.isRedeemed} onChange={handlePromoField} />
+                    <label htmlFor="pf-max" style={{ margin: 0, textTransform: 'none', letterSpacing: 0, fontSize: 13 }}>Limit redemptions</label>
+                  </div>
+                  {promoForm.isRedeemed && (
+                    <div className="cv-admin-field">
+                      <label>Max redemptions</label>
+                      <input type="number" min="0" name="maxUses" value={promoForm.maxUses} onChange={handlePromoField} />
+                    </div>
+                  )}
+                  {adminUsers.length > 0 && (
+                    <>
+                      <div className="cv-admin-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'end' }}>
+                        <input type="checkbox" id="pf-spec" name="isSpecificCustomer" checked={promoForm.isSpecificCustomer} onChange={handlePromoField} />
+                        <label htmlFor="pf-spec" style={{ margin: 0, textTransform: 'none', letterSpacing: 0, fontSize: 13 }}>Specific customer</label>
+                      </div>
+                      {promoForm.isSpecificCustomer && (
+                        <div className="cv-admin-field">
+                          <label>Customer</label>
+                          <select name="userId" value={promoForm.userId} onChange={handlePromoField}>
+                            <option value="">Select customer…</option>
+                            {adminUsers.map(u => (
+                              <option key={u.id} value={u.id}>{u.email || u.userName || u.id}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="cv-admin-field is-full" style={{ alignItems: 'flex-start' }}>
+                    <button type="submit" className="cv-admin-btn is-primary" disabled={savingPromo || !promoForm.codeName.trim()}>
+                      {savingPromo ? 'Adding…' : '+ Add a promotion code'}
+                    </button>
+                  </div>
+                </form>
+
+                {(viewData.couponPromotionCodeMappingResponses || []).length === 0 ? (
+                  <div className="cv-admin-table-empty">No promo codes yet.</div>
+                ) : (
+                  <table className="cv-admin-table">
+                    <thead>
+                      <tr>
+                        <th>Promotion Code</th><th>Redemptions</th><th>Expires</th><th>Status</th>
+                        <th>Specific Customer</th><th>First Time Only</th><th>Created</th><th aria-label="Actions" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewData.couponPromotionCodeMappingResponses.map(p => {
+                        const isActive = (p.status || '').toLowerCase() === 'active';
+                        return (
+                          <tr key={p.id}>
+                            <td className="cell-email">{p.codeName}</td>
+                            <td className="cell-muted">{p.usedCount || 0}{p.maxUses ? ` / ${p.maxUses}` : ''}</td>
+                            <td className="cell-muted">{p.expirationDate ? fmtDate(p.expirationDate) : 'N/A'}</td>
+                            <td>
+                              <span className={`cv-admin-pill ${isActive ? 'is-active' : 'is-inactive'}`}>
+                                <span className="cv-admin-pill-dot" />{isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className="cell-muted">{p.isSpecificCustomer ? 'Yes' : 'No'}</td>
+                            <td className="cell-muted">{p.isFirstTimeOnly ? 'Yes' : 'No'}</td>
+                            <td className="cell-muted">{fmtDate(p.modifiedAt)}</td>
+                            <td>
+                              <button type="button" className={`cv-admin-btn ${isActive ? 'is-warn' : 'is-success'}`} onClick={() => togglePromoActive(p)}>
+                                {isActive ? 'Deactivate' : 'Activate'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </>
+            )}
+          </div>
+          <div className="cv-admin-modal-foot">
+            <button type="button" className="cv-admin-btn" onClick={closeView}>Close</button>
+          </div>
+        </div>
+      </AdminModal>
+
+      {/* Track coupon usage modal */}
+      <AdminModal open={trackOpen && !!trackCoupon} onClose={closeTrack}>
+        {trackCoupon && (
+          <div className="cv-admin-modal" style={{ maxWidth: 980 }} onClick={e => e.stopPropagation()}>
             <div className="cv-admin-modal-head">
-              <h3>Promo codes — {promoCoupon.couponName}</h3>
-              <button type="button" className="cv-admin-modal-close" onClick={closePromo}>×</button>
+              <h3>Track Coupon — {trackCoupon.couponName}</h3>
+              <button type="button" className="cv-admin-modal-close" onClick={closeTrack}>×</button>
             </div>
             <div className="cv-admin-modal-body">
-              <form onSubmit={addPromo} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16 }}>
-                <div className="cv-admin-field" style={{ flex: 1 }}>
-                  <label>New promotion code</label>
-                  <input value={promoCode} onChange={e => setPromoCode(e.target.value)} placeholder="e.g. SAVE20" required />
-                </div>
-                <button type="submit" className="cv-admin-btn is-primary" disabled={savingPromo || !promoCode.trim()}>
-                  {savingPromo ? 'Adding…' : 'Add'}
-                </button>
-              </form>
-              {promoList.length === 0 ? (
-                <div className="cv-admin-table-empty">No promo codes yet.</div>
+              <div className="cv-admin-field" style={{ maxWidth: 320, marginBottom: 16 }}>
+                <label>Promotion code</label>
+                <select value={trackPromoId} onChange={onTrackPromoChange}>
+                  <option value="">All codes</option>
+                  {trackPromos.map(p => (
+                    <option key={p.id} value={p.id}>{p.codeName}</option>
+                  ))}
+                </select>
+              </div>
+              {trackLoading ? (
+                <div className="cv-admin-loading"><span className="cv-admin-spinner" />Loading…</div>
+              ) : trackRows.length === 0 ? (
+                <div className="cv-admin-table-empty">No usage records yet.</div>
               ) : (
-                <table className="cv-admin-table" style={{ minWidth: 0 }}>
-                  <thead><tr><th>Code</th><th>Status</th><th aria-label="Actions" /></tr></thead>
+                <table className="cv-admin-table">
+                  <thead>
+                    <tr>
+                      <th>Full Name</th><th>Email</th><th>Date Of Coupon Use</th><th>Coupon Name</th><th>Promocode Name</th><th>Package</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {promoList.map(p => (
-                      <tr key={p.id}>
-                        <td className="cell-email">{p.promotionCode}</td>
-                        <td>
-                          <span className={`cv-admin-pill ${p.isActive ? 'is-active' : 'is-inactive'}`}>
-                            <span className="cv-admin-pill-dot" />
-                            {p.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td>
-                          <button type="button" className={`cv-admin-btn ${p.isActive ? 'is-warn' : 'is-success'}`} onClick={() => togglePromoActive(p)}>
-                            {p.isActive ? 'Deactivate' : 'Activate'}
-                          </button>
+                    {trackRows.map((r, i) => (
+                      <tr key={i}>
+                        <td className="cell-email">{
+                          [r.firstName, r.middleName, r.lastName].filter(Boolean).join(' ')
+                          || (r.userName && !String(r.userName).includes('@') ? r.userName : '')
+                          || '—'
+                        }</td>
+                        <td className="cell-muted">{r.email || '—'}</td>
+                        <td className="cell-muted">{fmtDate(r.dateOfCouponUse)}</td>
+                        <td className="cell-muted">{r.couponName || '—'}</td>
+                        <td className="cell-muted">{r.couponPromotionCodeName || '—'}</td>
+                        <td className="cell-muted">
+                          {r.packageName || '—'}
+                          {r.billingPeriod ? ` / ${r.billingPeriod}` : ''}
                         </td>
                       </tr>
                     ))}
@@ -388,7 +671,7 @@ export default function CouponsManagement() {
               )}
             </div>
             <div className="cv-admin-modal-foot">
-              <button type="button" className="cv-admin-btn" onClick={closePromo}>Close</button>
+              <button type="button" className="cv-admin-btn" onClick={closeTrack}>Close</button>
             </div>
           </div>
         )}

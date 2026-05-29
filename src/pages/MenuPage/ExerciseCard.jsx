@@ -76,12 +76,66 @@ export default function ExerciseCard({ exercise: ex, returnUrl, onClick }) {
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
     >
+      {ex.isFree && (
+        <div
+          className="card-free-ribbon"
+          aria-label="Free"
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: 35,
+            height: 35,
+            zIndex: 6,
+            pointerEvents: 'none',
+            overflow: 'hidden',
+            borderTopRightRadius: 'inherit',
+          }}
+        >
+          {/* Quarter-circle red corner badge (like the reference image) */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background:
+                'radial-gradient(125% 125% at 100% 0%, #f25c5c 0%, #d62828 46%, #a01414 100%)',
+              borderBottomLeftRadius: '100%',
+              boxShadow: 'inset 2px -2px 7px rgba(0,0,0,0.28)',
+            }}
+          />
+          <span
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: -15,
+              width: 60,
+              textAlign: 'center',
+              transform: 'rotate(41deg)',
+              transformOrigin: 'center',
+              color: '#fff',
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              textShadow: '0 1px 1px rgba(0,0,0,0.4)',
+            }}
+          >
+            Free
+          </span>
+        </div>
+      )}
+
       <div className="card-icon" aria-hidden="true">
         <svg fill="none" viewBox="0 0 24 24" aria-hidden="true"
           dangerouslySetInnerHTML={{ __html: categoryPath }} />
       </div>
 
-      <div className={`card-status ${statusCls}`} aria-label={statusLabel}>
+      <div
+        className={`card-status ${statusCls}`}
+        aria-label={statusLabel}
+        // On free cards, drop the status icon below the corner ribbon so both stay visible.
+        style={ex.isFree ? { top: 18, right: 30 } : undefined}
+      >
         <svg fill="none" viewBox="0 0 24 24" aria-hidden="true"
           dangerouslySetInnerHTML={{ __html: statusPath }} />
       </div>

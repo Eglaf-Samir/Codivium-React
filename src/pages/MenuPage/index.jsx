@@ -15,6 +15,7 @@ import MenuHeader from './MenuHeader.jsx';
 import FilterDrawer from './FilterDrawer.jsx';
 import ExerciseGrid from './ExerciseGrid.jsx';
 import MenuTour from './MenuTour.jsx';
+import PackagePickerModal from './PackagePickerModal.jsx';
 
 const PREF_KEY = 'cv_menu_filters_v3';
 
@@ -164,6 +165,7 @@ export default function MenuPage() {
   const [oldcodeinfo, setOldcodeinfo] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [conformShow, setConformShow] = useState(false);
+  const [pkgModalOpen, setPkgModalOpen] = useState(false);
 
   const saved = loadPrefs();
   const [selectedCategoryIds, setSelectedCategoryIds] = useState(() => saved.categoryIds || ['all']);
@@ -173,6 +175,7 @@ export default function MenuPage() {
   const [selectedMentalModelIds, setSelectedMentalModelIds] = useState(() => saved.mentalModelIds || ['all']);
   const [sortOrder, setSortOrder] = useState(() => saved.sortOrder || 'ASC');
   const [sortField, setSortField] = useState(() => saved.sortField || 'title');
+  const [isFreeFirst, setIsFreeFirst] = useState(() => !!saved.freeFirst);
   const [searchTerm, setSearchTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tourActive, setTourActive] = useState(false);
@@ -251,6 +254,7 @@ export default function MenuPage() {
         mentalModelIds: selectedMentalModelIds,
         sortOrder,
         sortField,
+        freeFirst: isFreeFirst,
         ...next,
       });
     },
@@ -262,7 +266,16 @@ export default function MenuPage() {
       selectedMentalModelIds,
       sortOrder,
       sortField,
+      isFreeFirst,
     ],
+  );
+
+  const updateFreeFirst = useCallback(
+    (v) => {
+      setIsFreeFirst(v);
+      persist({ freeFirst: v });
+    },
+    [persist],
   );
 
   const toggleCategories = useCallback(
@@ -419,30 +432,61 @@ export default function MenuPage() {
     async (exercise) => {
       const item = exercise.raw || exercise;
       console.log('[MenuPage] card clicked, item:', item, 'activePackage:', activePackage);
-      if (!activePackage) {
-        const result = await Swal.fire({
-          title: 'Purchase Package?',
-          text: 'Please purchase package',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'OK !',
-          cancelButtonText: 'No, cancel!',
-          reverseButtons: true,
-        });
-        if (result.isConfirmed) {
-          localStorage.setItem('gotopage', location.pathname + location.search);
-          navigate('/price');
-        }
+
+      // Access gate:
+      //  • Free (isFree) questions open for everyone — even with no package.
+      //  • Non-free questions need a package that grants all coding questions.
+      //    If the user has no such package, show the package picker popup.
+      const isFreeQuestion = !!(exercise.isFree ?? item.isFree ?? item.IsFree);
+      const hasAllCoding = !!(
+        activePackage?.isAccessToAllCodingQuestions ??
+        activePackage?.IsAccessToAllCodingQuestions
+      );
+      if (!isFreeQuestion && !hasAllCoding) {
+        // Remember what the user was trying to open so we can resume it after a
+        // successful payment from the popup (see resume effect + PaymentSuccess).
+        try {
+          localStorage.setItem(
+            'pendingExercise',
+            JSON.stringify({ id: item.id ?? exercise.id, track }),
+          );
+        } catch (e) {}
+        setPkgModalOpen(true);
         return;
       }
+
       if (item.isCoding === false) {
         navigate('/NonCoding', { state: { item } });
       } else {
         await checkAlreadyCodeAdd(item);
       }
     },
-    [activePackage, checkAlreadyCodeAdd, location.pathname, location.search, navigate],
+    [activePackage, checkAlreadyCodeAdd, location.pathname, location.search, navigate, track],
   );
+
+  // Resume after payment: if the user bought from the popup, PaymentSuccess sends
+  // them back to /menu. Once the list is loaded and they now have access, auto-open
+  // the question they originally clicked.
+  useEffect(() => {
+    let pending = null;
+    try { pending = JSON.parse(localStorage.getItem('pendingExercise') || 'null'); } catch (e) {}
+    if (!pending || pending.track !== track) return;
+    if (!exercises || exercises.length === 0) return;
+
+    const ex = exercises.find((e) => String(e.id) === String(pending.id));
+    if (!ex) return;
+
+    const hasAllCoding = !!(
+      activePackage?.isAccessToAllCodingQuestions ??
+      activePackage?.IsAccessToAllCodingQuestions
+    );
+    const isFree = !!(ex.isFree ?? ex.raw?.isFree);
+    // Only resume once access is actually granted — avoids re-opening the popup.
+    if (!isFree && !hasAllCoding) return;
+
+    try { localStorage.removeItem('pendingExercise'); } catch (e) {}
+    handleCardClick(ex);
+  }, [exercises, activePackage, track, handleCardClick]);
 
   const handleCloseRunningCode = useCallback(() => {
     setConformShow(false);
@@ -452,13 +496,57 @@ export default function MenuPage() {
 
   const filteredExercises = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return exercises;
-    return exercises.filter((ex) => {
-      const n = (ex.name || '').toLowerCase();
-      const d = (ex.shortDescription || '').toLowerCase();
-      return n.includes(q) || d.includes(q);
+    const list = !q
+      ? exercises
+      : exercises.filter((ex) => {
+          const n = (ex.name || '').toLowerCase();
+          const d = (ex.shortDescription || '').toLowerCase();
+          return n.includes(q) || d.includes(q);
+        });
+
+    // Client-side sort so ALL sort fields work (backend only sorts by title).
+    const desc = sortOrder === 'DESC';
+    const diffRank = (d) => {
+      const x = (d || '').toLowerCase();
+      if (x.startsWith('basic') || x.startsWith('begin')) return 1;
+      if (x.startsWith('inter')) return 2;
+      if (x.startsWith('adv')) return 3;
+      return 99;
+    };
+    const compRank = (s) => {
+      const x = (s || '').toLowerCase();
+      if (x === 'not_started') return 0;
+      if (x === 'attempted') return 1;
+      if (x === 'completed') return 2;
+      return 99;
+    };
+
+    return [...list].sort((a, b) => {
+      // When enabled, free questions always float to the top; the chosen
+      // sort still applies within the free and non-free groups.
+      if (isFreeFirst) {
+        const f = (b.isFree ? 1 : 0) - (a.isFree ? 1 : 0);
+        if (f !== 0) return f;
+      }
+      let cmp = 0;
+      switch (sortField) {
+        case 'category':
+          cmp = (a.category || '').localeCompare(b.category || '');
+          break;
+        case 'level':
+          cmp = diffRank(a.difficulty) - diffRank(b.difficulty);
+          break;
+        case 'completeness':
+          cmp = compRank(a.completionStatus) - compRank(b.completionStatus);
+          break;
+        case 'title':
+        default:
+          cmp = (a.name || '').localeCompare(b.name || '');
+          break;
+      }
+      return desc ? -cmp : cmp;
     });
-  }, [exercises, searchTerm]);
+  }, [exercises, searchTerm, sortField, sortOrder, isFreeFirst]);
 
   useEffect(() => {
     if (trackLabel) document.body.dataset.page = trackLabel;
@@ -497,6 +585,8 @@ export default function MenuPage() {
         selectedMentalModels={selectedMentalModelIds}
         sortField={sortField}
         sortDir={sortOrder === 'DESC' ? 'desc' : 'asc'}
+        isFreeFirst={isFreeFirst}
+        onToggleFreeFirst={updateFreeFirst}
         toggleCategories={toggleCategories}
         toggleLevels={toggleLevels}
         toggleCompleteness={toggleCompleteness}
@@ -580,6 +670,11 @@ export default function MenuPage() {
         />,
         document.body,
       )}
+
+      <PackagePickerModal
+        open={pkgModalOpen}
+        onClose={() => setPkgModalOpen(false)}
+      />
     </main>
   );
 }

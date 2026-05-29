@@ -11,26 +11,37 @@ import { logout } from '../../utils/auth';
 import AdminPager from '../../components/AdminPager.jsx';
 import AdminModal from '../../components/AdminModal.jsx';
 
+const emptyPrice = {
+  billingPeriod: 'month',
+  price: '',
+  discountType: 'None',
+  discountValue: 0,
+  isDiscountedPriceOnRenewal: false,
+};
+
 const initialForm = {
   id: 0,
   packageName: '',
   description: '',
-  cost: 0,
-  sequenceNo: 1,
-  license: '',
-  billingPeriod: 'month',
-  isAccessToAllMCQ: false,
-  isAccessToAllCodingQuestions: false,
-  isDashboardShouldBeViewable: false,
-  isAccountPageShouldBeViewable: false,
-  isBlogShouldBeViewable: false,
-  isTutorialsPageViewable: false,
-  isAllOtherPageViewable: false,
+  isAccessToAllMCQ: true,
+  isAccessToAllCodingQuestions: true,
+  isDashboardShouldBeViewable: true,
+  isAccountPageShouldBeViewable: true,
+  isBlogShouldBeViewable: true,
+  isTutorialsPageViewable: true,
+  isAllOtherPageViewable: true,
   isCancellationPossible: false,
   isRefundPossible: false,
-  isRecurring: false,
+  isRecurring: true,
   refundOfDays: 0,
+  packages: [{ ...emptyPrice }],
 };
+
+const DISCOUNT_TYPES = [
+  { value: 'None', label: 'No discount' },
+  { value: 'Percent', label: 'Percent (%)' },
+  { value: 'Amount', label: 'Amount ($)' },
+];
 
 const BILLING_PERIODS = [
   { value: 'week', label: 'Weekly' },
@@ -38,14 +49,17 @@ const BILLING_PERIODS = [
   { value: 'year', label: 'Yearly' },
 ];
 
-const ACCESS_FLAGS = [
-  ['isAccessToAllMCQ', 'All MCQs'],
-  ['isAccessToAllCodingQuestions', 'All coding questions'],
-  ['isDashboardShouldBeViewable', 'Dashboard'],
-  ['isAccountPageShouldBeViewable', 'Account page'],
-  ['isBlogShouldBeViewable', 'Blog'],
-  ['isTutorialsPageViewable', 'Tutorials'],
-  ['isAllOtherPageViewable', 'All other pages'],
+const ALL_FLAGS = [
+  ['isAccessToAllMCQ', 'Access to all MCQ'],
+  ['isAccessToAllCodingQuestions', 'Access to all Coding questions'],
+  ['isDashboardShouldBeViewable', 'Dashboard should be viewable'],
+  ['isAccountPageShouldBeViewable', 'My account page also viewable'],
+  ['isBlogShouldBeViewable', 'Blog should be viewable'],
+  ['isTutorialsPageViewable', 'Tutorials page should be viewable'],
+  ['isAllOtherPageViewable', 'All other pages should be viewable'],
+  ['isCancellationPossible', 'Cancellation should be possible'],
+  ['isRecurring', 'Recurring should be possible'],
+  ['isRefundPossible', 'Refund should be possible'],
 ];
 
 export default function PackageManagement() {
@@ -55,7 +69,6 @@ export default function PackageManagement() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -96,15 +109,40 @@ export default function PackageManagement() {
     setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
   }
 
+  function updatePriceRow(idx, key, value) {
+    setForm(f => ({
+      ...f,
+      packages: f.packages.map((p, i) => (i === idx ? { ...p, [key]: value } : p)),
+    }));
+  }
+  function addPriceRow() {
+    setForm(f => {
+      if (f.packages.length >= BILLING_PERIODS.length) return f;
+      const used = f.packages.map(p => p.billingPeriod);
+      const next = BILLING_PERIODS.find(b => !used.includes(b.value));
+      if (!next) return f;
+      return { ...f, packages: [...f.packages, { ...emptyPrice, billingPeriod: next.value }] };
+    });
+  }
+  function removePriceRow(idx) {
+    setForm(f => ({
+      ...f,
+      packages: f.packages.length > 1 ? f.packages.filter((_, i) => i !== idx) : f.packages,
+    }));
+  }
+
   async function submit(e) {
     e.preventDefault();
     if (!form.packageName.trim()) {
       Swal.fire({ title: 'Missing name', icon: 'warning' });
       return;
     }
-    if (!isEditMode && (!form.cost || Number(form.cost) <= 0)) {
-      Swal.fire({ title: 'Cost required', text: 'Cost must be greater than 0.', icon: 'warning' });
-      return;
+    if (!isEditMode) {
+      const validRows = form.packages.filter(p => Number(p.price) > 0);
+      if (validRows.length === 0) {
+        Swal.fire({ title: 'Price required', text: 'Add at least one price greater than 0.', icon: 'warning' });
+        return;
+      }
     }
     if (form.isRefundPossible && (!form.refundOfDays || Number(form.refundOfDays) <= 0)) {
       Swal.fire({ title: 'Refund days required', icon: 'warning' });
@@ -125,13 +163,31 @@ export default function PackageManagement() {
         res = await updatePackage(JSON.stringify(body));
       } else {
         const body = {
-          ...form,
-          cost: Number(form.cost) || 0,
-          sequenceNo: Number(form.sequenceNo) || 1,
+          id: 0,
+          packageName: form.packageName,
+          description: form.description,
+          isAccessToAllMCQ: form.isAccessToAllMCQ,
+          isAccessToAllCodingQuestions: form.isAccessToAllCodingQuestions,
+          isDashboardShouldBeViewable: form.isDashboardShouldBeViewable,
+          isAccountPageShouldBeViewable: form.isAccountPageShouldBeViewable,
+          isBlogShouldBeViewable: form.isBlogShouldBeViewable,
+          isTutorialsPageViewable: form.isTutorialsPageViewable,
+          isAllOtherPageViewable: form.isAllOtherPageViewable,
+          isCancellationPossible: form.isCancellationPossible,
+          isRefundPossible: form.isRefundPossible,
+          isRecurring: form.isRecurring,
           refundOfDays: Number(form.refundOfDays) || 0,
           createdby: userId,
           modifiedBy: userId,
-          packagePriceList: [],
+          packages: form.packages
+            .filter(p => Number(p.price) > 0)
+            .map(p => ({
+              billingPeriod: p.billingPeriod,
+              price: Number(p.price) || 0,
+              discountType: p.discountType === 'None' ? '' : p.discountType,
+              discountValue: Number(p.discountValue) || 0,
+              isDiscountedPriceOnRenewal: !!p.isDiscountedPriceOnRenewal,
+            })),
         };
         res = await createPackage(JSON.stringify(body));
       }
@@ -189,7 +245,9 @@ export default function PackageManagement() {
             ) : (
               <table className="cv-admin-table">
                 <thead>
-                  <tr><th>Name</th><th>Billing</th><th>Pricing</th><th>Recurring</th><th>Refund</th><th aria-label="Actions" /></tr>
+                  <tr><th>Name</th><th>Billing</th><th>Pricing</th>
+                  {/* <th>Recurring</th> */}
+                  <th aria-label="Actions" >Action</th></tr>
                 </thead>
                 <tbody>
                   {visible.map(p => (
@@ -198,16 +256,24 @@ export default function PackageManagement() {
                         {p.packageName || '—'}
                         {p.description && <div className="cell-muted" style={{ fontSize: 12, fontWeight: 400, marginTop: 2 }}>{p.description}</div>}
                       </td>
-                      <td className="cell-muted">{p.billingPeriod || '—'}</td>
                       <td className="cell-muted">
-                        {Array.isArray(p.packagePriceList) && p.packagePriceList.length > 0 ? (
-                          p.packagePriceList.map((pr, i) => (
-                            <div key={i}>{pr.currencylogo || ''}{pr.price ?? pr.cost ?? ''}</div>
-                          ))
-                        ) : (p.cost ? <span>{p.cost}</span> : '—')}
+                        {Array.isArray(p.packagePriceList) && p.packagePriceList.length > 0
+                          ? (p.packagePriceList
+                              .filter(pr => !pr.isdeleted)
+                              .map(pr => pr.billingPeriod)
+                              .filter(Boolean)
+                              .join(', ') || '—')
+                          : (p.billingPeriod || '—')}
                       </td>
-                      <td className="cell-muted">{p.isRecurring ? 'Yes' : 'No'}</td>
-                      <td className="cell-muted">{p.isRefundPossible ? `${p.refundOfDays || 0}d` : 'No'}</td>
+                      <td className="cell-muted">
+                        {Array.isArray(p.packagePriceList) && p.packagePriceList.length > 0
+                          ? (p.packagePriceList
+                              .filter(pr => !pr.isdeleted)
+                              .map(pr => `${pr.currencyothername || pr.currencylogo || ''}${pr.price ?? pr.cost ?? ''}`)
+                              .join(', ') || '—')
+                          : (p.cost ? `${p.cost}` : '—')}
+                      </td>
+                      {/* <td className="cell-muted">{p.isRecurring ? 'Yes' : 'No'}</td> */}
                       <td>
                         <div className="cv-admin-actions">
                           <button type="button" className="cv-admin-btn" onClick={() => openEdit(p)}>Edit</button>
@@ -241,7 +307,7 @@ export default function PackageManagement() {
             </div>
             <form onSubmit={submit}>
               <div className="cv-admin-modal-body">
-                <div className="cv-admin-form-grid">
+                <div className="cv-admin-form-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
                   <div className="cv-admin-field is-full">
                     <label>Package name</label>
                     <input name="packageName" value={form.packageName} onChange={handleField} required />
@@ -253,51 +319,86 @@ export default function PackageManagement() {
 
                   {!isEditMode && (
                     <>
-                      <div className="cv-admin-field">
-                        <label>Cost</label>
-                        <input type="number" min="0" step="0.01" name="cost" value={form.cost} onChange={handleField} required />
-                      </div>
-                      <div className="cv-admin-field">
-                        <label>Billing period</label>
-                        <select name="billingPeriod" value={form.billingPeriod} onChange={handleField}>
-                          {BILLING_PERIODS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
-                        </select>
-                      </div>
-                      <div className="cv-admin-field">
-                        <label>Sequence #</label>
-                        <input type="number" min="1" name="sequenceNo" value={form.sequenceNo} onChange={handleField} />
-                      </div>
-                      <div className="cv-admin-field">
-                        <label>License</label>
-                        <input name="license" value={form.license} onChange={handleField} />
-                      </div>
-
                       <fieldset className="cv-admin-field is-full" style={{ border: '1px solid var(--color-border-default)', borderRadius: 12, padding: 12, margin: 0 }}>
-                        <legend style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '0 6px' }}>Access flags</legend>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 8 }}>
-                          {ACCESS_FLAGS.map(([key, label]) => (
-                            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--color-text-secondary)' }}>
-                              <input type="checkbox" name={key} checked={!!form[key]} onChange={handleField} />
-                              {label}
+                        <legend style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '0 6px' }}>Plans &amp; pricing (USD · recurring)</legend>
+                        {form.packages.map((p, idx) => {
+                          const usedByOthers = form.packages.filter((_, i) => i !== idx).map(x => x.billingPeriod);
+                          const periodOpts = BILLING_PERIODS.filter(b => b.value === p.billingPeriod || !usedByOthers.includes(b.value));
+                          return (
+                            <div key={idx} style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 8, alignItems: 'end', marginBottom: 10, paddingTop: form.packages.length > 1 ? 6 : 0, paddingBottom: 10, borderBottom: idx < form.packages.length - 1 ? '1px dashed var(--color-border-default)' : 'none' }}>
+                              {/* Remove (×) — only when more than one row; at least one must always remain */}
+                              {form.packages.length > 1 && (
+                                <button
+                                  type="button"
+                                  aria-label="Remove this plan"
+                                  title="Remove"
+                                  onClick={() => removePriceRow(idx)}
+                                  style={{ position: 'absolute', top: 0, right: 0, width: 22, height: 22, lineHeight: '20px', textAlign: 'center', borderRadius: '50%', border: '1px solid var(--color-border-default)', background: 'rgba(0,0,0,0.3)', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, zIndex: 2 }}
+                                >
+                                  ×
+                                </button>
+                              )}
+                              <div className="cv-admin-field" style={{ margin: 0 }}>
+                                <label>Billing period</label>
+                                <select value={p.billingPeriod} onChange={e => updatePriceRow(idx, 'billingPeriod', e.target.value)}>
+                                  {periodOpts.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+                                </select>
+                              </div>
+                              <div className="cv-admin-field" style={{ margin: 0 }}>
+                                <label>Price ($)</label>
+                                <input type="number" min="0" step="0.01" value={p.price} onChange={e => updatePriceRow(idx, 'price', e.target.value)} />
+                              </div>
+                              <div className="cv-admin-field" style={{ margin: 0 }}>
+                                <label>Discount type</label>
+                                <select value={p.discountType} onChange={e => updatePriceRow(idx, 'discountType', e.target.value)}>
+                                  {DISCOUNT_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                                </select>
+                              </div>
+                              {p.discountType !== 'None' && (
+                                <div className="cv-admin-field" style={{ margin: 0 }}>
+                                  <label>Discount value</label>
+                                  <input type="number" min="0" step="0.01" value={p.discountValue} onChange={e => updatePriceRow(idx, 'discountValue', e.target.value)} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {form.packages.length < BILLING_PERIODS.length && (
+                          <button type="button" className="cv-admin-btn" onClick={addPriceRow}>+ Add plan price</button>
+                        )}
+                      </fieldset>
+
+                      <div className="cv-admin-field is-full">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', columnGap: 16, rowGap: 14 }}>
+                          {ALL_FLAGS.map(([key, label]) => (
+                            <label
+                              key={key}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: 10,
+                                minWidth: 0,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                letterSpacing: 0,
+                                textTransform: 'none',
+                                lineHeight: 1.3,
+                                color: 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                name={key}
+                                checked={!!form[key]}
+                                onChange={handleField}
+                                style={{ flexShrink: 0, width: 16, height: 16, marginTop: 1 }}
+                              />
+                              <span style={{ minWidth: 0 }}>{label}</span>
                             </label>
                           ))}
                         </div>
-                      </fieldset>
-
-                      <fieldset className="cv-admin-field is-full" style={{ border: '1px solid var(--color-border-default)', borderRadius: 12, padding: 12, margin: 0 }}>
-                        <legend style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '0 6px' }}>Billing options</legend>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 13, color: 'var(--color-text-secondary)' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <input type="checkbox" name="isRecurring" checked={form.isRecurring} onChange={handleField} /> Recurring
-                          </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <input type="checkbox" name="isCancellationPossible" checked={form.isCancellationPossible} onChange={handleField} /> Cancellation allowed
-                          </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <input type="checkbox" name="isRefundPossible" checked={form.isRefundPossible} onChange={handleField} /> Refund allowed
-                          </label>
-                        </div>
-                      </fieldset>
+                      </div>
 
                       {form.isRefundPossible && (
                         <div className="cv-admin-field">
