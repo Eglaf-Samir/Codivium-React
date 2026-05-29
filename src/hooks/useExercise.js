@@ -40,8 +40,13 @@ export function renderMd(text, opts) {
   }
 }
 
+function unitTestsListFrom(detail) {
+  // Interview returns `unitTests`; deliberate practice returns `deliberateUnitTests`.
+  return detail?.unitTests || detail?.deliberateUnitTests || [];
+}
+
 function unitTestsSourceFrom(detail) {
-  const list = detail?.unitTests || [];
+  const list = unitTestsListFrom(detail);
   if (!list.length) return '';
   return list
     .map((u, i) => {
@@ -65,6 +70,7 @@ function difficultyLabel(raw) {
 
 function mapExerciseDetail(detail, item, track) {
   if (!detail) return null;
+  const unitTests = unitTestsListFrom(detail);
   return {
     id: detail.id || item?.id,
     name: detail.title || detail.name || item?.title || '',
@@ -76,7 +82,7 @@ function mapExerciseDetail(detail, item, track) {
         item?.difficultyLevel?.name ||
         '',
     ),
-    testsTotal: (detail.unitTests || []).length,
+    testsTotal: unitTests.length,
     problemStatement: detail.instructions || detail.problemStatement || '',
     isInstructionHtml: detail.isInstructionHtml ?? false,
     hints: detail.hints || '',
@@ -90,7 +96,7 @@ function mapExerciseDetail(detail, item, track) {
     suggestedSolution:
       detail.suggestedSolution || detail.manualSuggestedSolution || '',
     unitTestsSource: unitTestsSourceFrom(detail),
-    unitTests: detail.unitTests || [],
+    unitTests,
     priorAttempts: item?.runCount || 0,
     track,
     raw: detail,

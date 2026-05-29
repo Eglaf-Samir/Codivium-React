@@ -11,9 +11,11 @@
     "start": "vite"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-react": "^11.1.2",
     "ace-builds": "^1.43.6",
     "axios": "^1.15.0",
     "chart.js": "^4.5.1",
+    "ckeditor5": "^48.0.1",
     "marked": "^18.0.0",
     "react": "^18.3.1",
     "react-ace": "^14.0.1",

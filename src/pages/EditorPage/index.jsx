@@ -238,17 +238,15 @@ export default function EditorPage() {
       const onStreamEvent = (evt) => {
         if (!evt) return;
         if (evt.type === 'progress') {
-          const label = evt.name || `test_${evt.index}`;
           setSubmitStatus({
             type: 'running',
-            message: `Running test ${evt.index} / ${evt.total}: ${label}`,
+            message: `Running ${evt.index} / ${evt.total}`,
           });
         } else if (evt.type === 'testResult') {
           const verb = evt.passed ? '✓' : '✗';
-          const label = evt.name || `test_${evt.index}`;
           setSubmitStatus({
             type: 'running',
-            message: `${verb} ${evt.index} / ${evt.total}: ${label}`,
+            message: `${verb} ${evt.index} / ${evt.total}`,
           });
         }
       };
@@ -298,16 +296,11 @@ export default function EditorPage() {
       };
       setTestResults(mapped);
 
+      // Clear the status pill once results are in — the Result tab is the
+      // single source of truth for what happened on this attempt.
+      setSubmitStatus(null);
       if (mapped.accepted) {
-        // Surface the confirmation modal instead of asking the user to click
-        // the header button a second time.
-        setSubmitStatus(null);
         setShowSubmitConfirm(true);
-      } else {
-        setSubmitStatus({
-          type: 'fail',
-          message: `${mapped.testsPassed} / ${mapped.testsTotal} tests passed — keep going.`,
-        });
       }
     } catch (err) {
       setSubmitting(false);

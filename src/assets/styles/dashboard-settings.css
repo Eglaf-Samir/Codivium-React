@@ -1,10 +1,12 @@
 /* Dashboard View Settings (localStorage-based) */
 
-body{
-  margin:0;
-  font-family: var(--font-ui, 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif);
-  background: var(--bg);
-  color: var(--text);
+@layer base {
+  body.cv-app{
+    margin:0;
+    font-family: var(--font-ui, 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif);
+    background: var(--bg);
+    color: var(--text);
+  }
 }
 
 .cvSetWrap{

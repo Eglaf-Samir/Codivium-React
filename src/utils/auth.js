@@ -6,11 +6,21 @@ export function isLoggedIn() {
   }
 }
 
+export function isSuperAdmin() {
+  try {
+    return (localStorage.getItem("UserRoleName") || "").toLowerCase() === "superadmin";
+  } catch {
+    return false;
+  }
+}
+
 export function logout() {
   try {
     localStorage.removeItem("Userid");
     localStorage.removeItem("LoginToken");
     localStorage.removeItem("UserRoleName");
     localStorage.removeItem("userpackagedetails");
+    localStorage.removeItem("UserDisplayName");
+    localStorage.removeItem("UserEmail");
   } catch {}
 }

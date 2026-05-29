@@ -10,6 +10,7 @@
 @import './base.css';
 @import './logo.css';
 @import './topbar.css';
+@import './pricing.css';
 @import './sidebar.css';
 @import './menu-overrides.css';
 @import './tour.css';
@@ -36,4 +37,5 @@
 @import './dashboard-settings.css';
 @import './dashboard-shell.css';
 @import './dashboard-analyse.css';
+@import './admin.css';
 @import './responsive.css';
