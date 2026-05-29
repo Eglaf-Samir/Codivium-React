@@ -37,3 +37,5 @@ export const visitlogcreate = "api/v1/visitlog/createvisit";
 
 export const updatepassword = "api/v1/account/updatepassword";
 export const createusernew = "api/v1/account/register-simple";
+export const sendverifyemail = "api/v1/account/send-verify-email";
+export const verifyemailtoken = "api/v1/account/verify-email?token=";
