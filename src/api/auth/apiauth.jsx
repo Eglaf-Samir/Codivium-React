@@ -20,7 +20,9 @@ import {
   updateuserDetails,
   visitlogcreate,
   updatepassword,
-  createusernew
+  createusernew,
+  sendverifyemail,
+  verifyemailtoken,
 } from "./constants";
 import { baseURL } from "../../config";
 
@@ -390,6 +392,30 @@ export const CreateUserNew = async (body) => {
   };
   try {
     const res = await Axios.post(url, body, config);
+    return res;
+  } catch (e) {
+    return e.response;
+  }
+};
+
+// ── Verify-email-first signup ────────────────────────────────────────
+// POST { email } → backend sends a verification link (24h validity).
+export const SendVerifyEmail = async (email) => {
+  var url = baseURL + sendverifyemail;
+  const config = { headers: { "Content-Type": "application/json" } };
+  try {
+    const res = await Axios.post(url, { email }, config);
+    return res;
+  } catch (e) {
+    return e.response;
+  }
+};
+
+// GET ?token=… → backend marks the token verified and returns { email, ok }.
+export const VerifyEmailToken = async (token) => {
+  var url = baseURL + verifyemailtoken + encodeURIComponent(token || "");
+  try {
+    const res = await Axios.get(url);
     return res;
   } catch (e) {
     return e.response;

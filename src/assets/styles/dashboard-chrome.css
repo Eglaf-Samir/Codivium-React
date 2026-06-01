@@ -47,11 +47,20 @@
 }
 
 /* Reserve space on the right of main content so the preset dock never
-   overlaps the dashboard panels. Dock is ~100px wide + 18px gap + breathing. */
-@media (min-width: 921px) {
-  body[data-page="Performance Insights"] .main {
-    padding-right: 142px;
-  }
+   overlaps the dashboard panels. Dock is ~100px wide + 18px gap + breathing.
+   Applies at ALL widths (no min-width gate) so the dock keeps its own gutter
+   even when the window is narrow. The ≤920px reinforcement lives in
+   responsive.css, where it can out-rank the generic mobile `.main` padding.
+
+   Scoped via :has(#ciMount) — #ciMount is the dashboard root that always
+   exists on the insights page, so this does NOT depend on the JS-set
+   body[data-page] attribute (which may not apply in time / at all). The
+   data-page rule is kept as a fallback for browsers without :has(). */
+.main:has(#ciMount) {
+  padding-right: 150px;
+}
+body[data-page="Performance Insights"] .main {
+  padding-right: 150px;
 }
 
 /* info_only (Summary View): dock stays at the same right position */

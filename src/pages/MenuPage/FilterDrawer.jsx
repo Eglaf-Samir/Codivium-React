@@ -27,8 +27,8 @@ function normalizeOption(opt) {
 
 function FilterGroup({ name, label, tooltip, options, selected, onToggle }) {
   const allSelected = selected.includes('all') || selected.length === 0;
-  const normalized  = options.map(normalizeOption);
-  const allValues   = normalized.map(o => o.value);
+  const normalized = options.map(normalizeOption);
+  const allValues = normalized.map(o => o.value);
 
   function handleChange(value) {
     onToggle(value, allValues);
@@ -93,6 +93,8 @@ export default function FilterDrawer({
   difficultyLevels,
   exerciseTypes,   // present only on micro track
   mentalModels,    // present only on micro track
+  areas,           // present only on micro track
+  subCategories,   // present only on micro track
   completionOptions,
   isMicro,
   // Current selections
@@ -101,20 +103,26 @@ export default function FilterDrawer({
   selectedCompleteness,
   selectedExerciseTypes,
   selectedMentalModels,
+  selectedAreas,
+  selectedSubCategories,
   sortField,
   sortDir,
+  isFreeFirst,
+  onToggleFreeFirst,
   // Setters
   toggleCategories,
   toggleLevels,
   toggleCompleteness,
   toggleExerciseTypes,
   toggleMentalModels,
+  toggleAreas,
+  toggleSubCategories,
   updateSortField,
   updateSortDir,
   onReset,
 }) {
   const drawerRef = useRef(null);
-  const tabRef    = useRef(null);
+  const tabRef = useRef(null);
 
   // ── Sync body class ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -134,19 +142,19 @@ export default function FilterDrawer({
   const updateMetrics = useCallback(() => {
     const drawer = drawerRef.current;
     if (!drawer) return;
-    const cs      = getComputedStyle(document.documentElement);
+    const cs = getComputedStyle(document.documentElement);
     const topbarH = parseFloat(cs.getPropertyValue('--topbar-h')) || 56;
-    const gap     = parseFloat(cs.getPropertyValue('--drawer-gap')) || 0;
+    const gap = parseFloat(cs.getPropertyValue('--drawer-gap')) || 0;
     const paletteH = drawer.getBoundingClientRect().height || 0;
 
     const hideShift = Math.max(0, paletteH + gap - 2);
     const desiredTop = window.innerHeight * 0.5 - paletteH * 0.5;
-    const minShift   = 8;
-    const maxShift   = Math.max(minShift, window.innerHeight - paletteH - 8 - topbarH);
-    const openShift  = Math.max(minShift, Math.min(maxShift, desiredTop - topbarH));
+    const minShift = 8;
+    const maxShift = Math.max(minShift, window.innerHeight - paletteH - 8 - topbarH);
+    const openShift = Math.max(minShift, Math.min(maxShift, desiredTop - topbarH));
 
     document.documentElement.style.setProperty('--drawer-hide-shift', `${hideShift}px`);
-    document.documentElement.style.setProperty('--drawer-open-shift',  `${openShift}px`);
+    document.documentElement.style.setProperty('--drawer-open-shift', `${openShift}px`);
   }, []);
 
   useEffect(() => {
@@ -160,15 +168,15 @@ export default function FilterDrawer({
     const ro = new ResizeObserver(updateMetrics);
     if (drawerRef.current) ro.observe(drawerRef.current);
 
-    window.addEventListener('resize',           updateMetrics, { passive: true });
-    window.addEventListener('pageshow',         updateMetrics, { passive: true });
+    window.addEventListener('resize', updateMetrics, { passive: true });
+    window.addEventListener('pageshow', updateMetrics, { passive: true });
     document.addEventListener('visibilitychange', updateMetrics);
 
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      window.removeEventListener('resize',           updateMetrics);
-      window.removeEventListener('pageshow',         updateMetrics);
+      window.removeEventListener('resize', updateMetrics);
+      window.removeEventListener('pageshow', updateMetrics);
       document.removeEventListener('visibilitychange', updateMetrics);
     };
   }, [updateMetrics]);
@@ -202,24 +210,24 @@ export default function FilterDrawer({
     lastDX: 0, lastDY: 0,
     startCollapsed: true,
   });
-  const DRAG_MAX_PX    = 96 / 2.54; // ≈ 37.8px
-  const DRAG_TRIGGER   = 10;
-  const VERT_BIAS      = 0.85;
-  const suppressRef    = useRef(false);
+  const DRAG_MAX_PX = 96 / 2.54; // ≈ 37.8px
+  const DRAG_TRIGGER = 10;
+  const VERT_BIAS = 0.85;
+  const suppressRef = useRef(false);
 
   const onTabPointerDown = useCallback((e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const d = dragState.current;
-    d.active        = true;
-    d.pointerId     = e.pointerId;
-    d.startX        = e.clientX;
-    d.startY        = e.clientY;
-    d.lastDX        = 0;
-    d.lastDY        = 0;
+    d.active = true;
+    d.pointerId = e.pointerId;
+    d.startX = e.clientX;
+    d.startY = e.clientY;
+    d.lastDX = 0;
+    d.lastDY = 0;
     d.startCollapsed = !open;
     tabRef.current?.classList.add('is-dragging');
     tabRef.current?.style.setProperty('--drawer-tab-dy', '0px');
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) { }
   }, [open]);
 
   const onTabPointerMove = useCallback((e) => {
@@ -248,12 +256,12 @@ export default function FilterDrawer({
   const onTabPointerUp = useCallback((e) => {
     const d = dragState.current;
     if (d.pointerId !== e.pointerId) return;
-    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) {}
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) { }
     const dy = d.lastDY;
     const isVert = Math.abs(dy) >= Math.abs(d.lastDX) * VERT_BIAS;
     if (isVert && Math.abs(dy) >= DRAG_TRIGGER) {
       suppressRef.current = true;
-      if (d.startCollapsed && dy > 0) { onOpen();  resetDrag(); return; }
+      if (d.startCollapsed && dy > 0) { onOpen(); resetDrag(); return; }
       if (!d.startCollapsed && dy < 0) { onClose(); resetDrag(); return; }
     }
     resetDrag();
@@ -265,7 +273,7 @@ export default function FilterDrawer({
   }, [open, onOpen, onClose]);
 
   // ── Levels and completeness options ─────────────────────────────────────────
-  const levelOptions        = difficultyLevels || ['beginner', 'intermediate', 'advanced'];
+  const levelOptions = difficultyLevels || ['beginner', 'intermediate', 'advanced'];
   const completenessOptions = completionOptions || ['Completed', 'Attempted', 'Not started'];
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -306,6 +314,18 @@ export default function FilterDrawer({
                 selected={selectedCategories}
                 onToggle={toggleCategories}
               />
+
+              {/* SubCategory — micro track only */}
+              {isMicro && subCategories && subCategories.length > 0 && (
+                <FilterGroup
+                  name="subcategory"
+                  label="SubCategory"
+                  tooltip="Filter by sub-topic within a category. Choose multiple subcategories."
+                  options={subCategories}
+                  selected={selectedSubCategories}
+                  onToggle={toggleSubCategories}
+                />
+              )}
 
               {/* Proficiency Level */}
               <FilterGroup
@@ -350,43 +370,71 @@ export default function FilterDrawer({
                   onToggle={toggleMentalModels}
                 />
               )}
+
+              {/* Area — micro track only. Always shown (even with no options
+                  yet) so the filter is visible before any Area values exist. */}
+              {isMicro && (
+                <FilterGroup
+                  name="area"
+                  label="Area"
+                  tooltip="Filter by area. Choose multiple areas. Micro Challenges only."
+                  options={areas || []}
+                  selected={selectedAreas}
+                  onToggle={toggleAreas}
+                />
+              )}
             </div>
 
             {/* Sort + Apply */}
-            <div className="filter-actions">
-              <div className="sort-controls" aria-label="Sorting controls">
-                <label className="sort-label" htmlFor="sortField">Sort by</label>
-                <select
-                  id="sortField"
-                  name="sortField"
-                  aria-label="Sort by"
-                  value={sortField}
-                  onChange={e => updateSortField(e.target.value)}
-                >
-                  <option value="title">A–Z</option>
-                  <option value="category">Category</option>
-                  <option value="level">Proficiency</option>
-                  <option value="completeness">Completeness</option>
-                </select>
-                <select
-                  id="sortDir"
-                  name="sortDir"
-                  aria-label="Sort direction"
-                  value={sortDir}
-                  onChange={e => updateSortDir(e.target.value)}
-                >
-                  <option value="asc">Asc</option>
-                  <option value="desc">Desc</option>
-                </select>
-              </div>
-              <button
-                className="apply-btn"
-                id="applyFilters"
-                type="button"
-                onClick={onClose}
+            <div className="filter-actions" style={{justifyContent:'space-between',alignItems:'center'}}>
+              <label
+                className="sort-free-first"
+                title="Show free questions first"
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer', marginRight: 8 }}
               >
-                Apply
-              </button>
+                <input
+                  type="checkbox"
+                  checked={!!isFreeFirst}
+                  onChange={e => onToggleFreeFirst && onToggleFreeFirst(e.target.checked)}
+                />
+                Free first
+              </label>
+              <div style={{display:'flex',flexDirection:'row',alignItems:'center'}}>
+                <div className="sort-controls" aria-label="Sorting controls" style={{marginRight:20}}>
+
+                  <label className="sort-label" htmlFor="sortField">Sort by</label>
+                  <select
+                    id="sortField"
+                    name="sortField"
+                    aria-label="Sort by"
+                    value={sortField}
+                    onChange={e => updateSortField(e.target.value)}
+                  >
+                    <option value="title">A–Z</option>
+                    <option value="category">Category</option>
+                    <option value="level">Proficiency</option>
+                    <option value="completeness">Completeness</option>
+                  </select>
+                  <select
+                    id="sortDir"
+                    name="sortDir"
+                    aria-label="Sort direction"
+                    value={sortDir}
+                    onChange={e => updateSortDir(e.target.value)}
+                  >
+                    <option value="asc">Asc</option>
+                    <option value="desc">Desc</option>
+                  </select>
+                </div>
+                <button
+                  className="apply-btn"
+                  id="applyFilters"
+                  type="button"
+                  onClick={onClose}
+                >
+                  Apply
+                </button>
+              </div>
             </div>
           </div>
         </div>

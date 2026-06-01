@@ -1051,6 +1051,12 @@ body.cv-no-drawer-trans .drawer-tab {
 
 .filter-drawer{
   height: auto ;
+  /* Never grow taller than the viewport — scroll the palette internally
+     instead of overflowing off-screen when there are many filter groups. */
+  max-height: calc(100vh - 120px) ;
+  overflow-y: auto ;
+  overflow-x: hidden ;
+  overscroll-behavior: contain ;
   background: linear-gradient(180deg, rgb(18,18,22), rgb(0,0,0)) ;
   opacity: 1 ;
   -webkit-backdrop-filter: none ;
@@ -1363,6 +1369,11 @@ body:not(.drawer-collapsed) .grid-scroll{
   border: 1px solid rgba(255,255,255,0.10);
   border-radius: 0;
   padding: 10px 10px;
+  /* When a single filter has many options, scroll inside the list rather
+     than letting it stretch the whole palette. */
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Palette actions */
