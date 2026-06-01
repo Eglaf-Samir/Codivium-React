@@ -228,12 +228,8 @@ export default function MenuPage() {
       CategoryIds: toBackendIds(selectedCategoryIds, categoryOptions),
       SubCategoryIds: isMicro ? toOptionalIds(selectedSubCategoryIds) : [],
       CompletionIds: toBackendIds(selectedCompletionIds, completionOptions),
-      ExerciseTypeIds: isMicro
-        ? toBackendIds(selectedExerciseTypeIds, exerciseTypeOptions)
-        : [],
-      MentalModelIds: isMicro
-        ? toBackendIds(selectedMentalModelIds, mentalModelOptions)
-        : [],
+      ExerciseTypeIds: isMicro ? toOptionalIds(selectedExerciseTypeIds) : [],
+      MentalModelIds: isMicro ? toOptionalIds(selectedMentalModelIds) : [],
       AreaIds: isMicro ? toOptionalIds(selectedAreaIds) : [],
       SortOrder: sortOrder,
     }),

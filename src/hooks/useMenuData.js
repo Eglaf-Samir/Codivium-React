@@ -198,6 +198,12 @@ export function useMenuData() {
           AreaIds: (body.AreaIds || [])
             .map((v) => Number(v))
             .filter((n) => !Number.isNaN(n)),
+          ExerciseTypeIds: (body.ExerciseTypeIds || [])
+            .map((v) => Number(v))
+            .filter((n) => !Number.isNaN(n)),
+          MentalModelIds: (body.MentalModelIds || [])
+            .map((v) => Number(v))
+            .filter((n) => !Number.isNaN(n)),
           CompletionIds: (body.CompletionIds || [])
             .map((v) => Number(v))
             .filter((n) => !Number.isNaN(n)),

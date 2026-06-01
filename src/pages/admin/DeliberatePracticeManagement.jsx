@@ -314,7 +314,7 @@ export default function DeliberatePracticeManagement() {
       name: newSubCategory.trim(),
       otherName: newSubCategory.trim(),
       description: '',
-      parentId: form.categoriesId,
+      parentId: Number(form.categoriesId) || 0,
       category: ParamMasterKey.SubCategories,
     };
     try {
@@ -419,7 +419,25 @@ export default function DeliberatePracticeManagement() {
     e.preventDefault();
     if (!form.title.trim()) { Swal.fire({ title: 'Name required', icon: 'warning' }); return; }
     setSaving(true);
-    const body = { ...form, isInstructionHtml, isTutorialHtml };
+    // Selects store ids as strings (e.target.value). Send them as real numbers
+    // (or null) so the backend reliably binds the *Id fields — a string like
+    // "5" can be dropped by a strict JSON deserializer, leaving the value unsaved.
+    const toId = (v) => {
+      if (v === '' || v === undefined || v === null) return null;
+      const n = Number(v);
+      return Number.isNaN(n) ? null : n;
+    };
+    const body = {
+      ...form,
+      isInstructionHtml,
+      isTutorialHtml,
+      difficultyLevelId: toId(form.difficultyLevelId),
+      categoriesId: toId(form.categoriesId),
+      subCategoriesId: toId(form.subCategoriesId),
+      exerciseTypeId: toId(form.exerciseTypeId),
+      mentalModelId: toId(form.mentalModelId),
+      areaId: toId(form.areaId),
+    };
     let res;
     try {
       res = (Number(form.id) > 0)
