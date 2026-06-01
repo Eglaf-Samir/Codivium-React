@@ -25,7 +25,7 @@ export default function McqQuizPage() {
   useGlowFollow();
 
   const tourState = useMcqTour({ onParent: false });
-  const { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart } = useQuiz();
+  const { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart, saveAndExit } = useQuiz();
   const { phase, questions, index, settings } = state;
   const q = questions[index];
 
@@ -38,6 +38,23 @@ export default function McqQuizPage() {
     const tid = setTimeout(() => advance(), reduced ? 600 : 2400);
     return () => clearTimeout(tid);
   }, [state.locked, state.answers.length, phase]); // eslint-disable-line
+
+  // Mid-quiz leave guard: while the quiz is in progress, expose a global
+  // saveAndExit() the sidebar/topbar leave guard can invoke before
+  // navigating away. We tear it down once the quiz reaches summary (so
+  // the regular result-post handles the save) or on unmount.
+  useEffect(() => {
+    if (phase !== 'active') {
+      if (typeof window !== 'undefined') delete window.__cvMcqSaveAndExit;
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      window.__cvMcqSaveAndExit = saveAndExit;
+    }
+    return () => {
+      if (typeof window !== 'undefined') delete window.__cvMcqSaveAndExit;
+    };
+  }, [phase, saveAndExit]);
 
   const handleSubmit = useCallback((sel) => submit(sel, false), [submit]);
   const handlePeekConfirm = useCallback((sel) => submit(sel, true), [submit]);
