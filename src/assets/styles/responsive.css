@@ -54,6 +54,18 @@ body.cv-app .sidebar-handle {
   body.cv-app.sidebar-collapsed .as-wrap {
     left: 0 !important;
   }
+  /* Performance Insights: keep the right gutter for the fixed layout-preset
+     dock even on narrow widths. The generic `.main` padding above forces 12px
+     with !important, so these scoped !important rules are required to win and
+     stop the dock from overlapping dashboard content. Scoped via :has(#ciMount)
+     (no dependency on the JS-set data-page), with the data-page form kept as a
+     fallback for browsers without :has(). */
+  .main:has(#ciMount) {
+    padding-right: 132px !important;
+  }
+  body.cv-app[data-page="Performance Insights"] .main {
+    padding-right: 132px !important;
+  }
   /* Hamburger shown */
   .mobile-menu-btn {
     display: flex !important;

@@ -292,6 +292,27 @@ export default function InsightsDashboard() {
     };
   }, []);
 
+  // Reserve a right gutter on the scroll rail so the fixed layout-preset dock
+  // (position:fixed, right:18px, ~100px wide) never overlaps dashboard content.
+  // Enforced in JS as the source of truth: inline padding-right with `important`
+  // out-ranks every stylesheet rule and does NOT depend on the body[data-page]
+  // attribute, @layer order, or CSS @import hot-reload — all of which made the
+  // pure-CSS reservation unreliable. The CSS rules remain as a fallback.
+  useLayoutEffect(() => {
+    const mainEl = document.getElementById('ciMount')?.closest('main.main');
+    if (!mainEl) return undefined;
+    const apply = () => {
+      const gutter = window.innerWidth <= 920 ? 132 : 150;
+      mainEl.style.setProperty('padding-right', `${gutter}px`, 'important');
+    };
+    apply();
+    window.addEventListener('resize', apply, { passive: true });
+    return () => {
+      window.removeEventListener('resize', apply);
+      mainEl.style.removeProperty('padding-right');
+    };
+  }, []);
+
   // ── Apply data-layout, data-cv-panels, body class, grid layout ────────────
   useLayoutEffect(() => {
     const mount = document.getElementById('ciMount');

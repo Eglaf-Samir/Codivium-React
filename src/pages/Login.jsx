@@ -52,6 +52,13 @@ function Login() {
           localStorage.setItem("Userid", response.data.id);
           localStorage.setItem("LoginToken", response.data.loginToken);
           localStorage.setItem("UserRoleName", response.data.roleName);
+          // Persist the real name/email so the sidebar profile can show it.
+          {
+            const d = response.data;
+            const fullName = [d.firstName, d.middleName, d.lastName].filter(Boolean).join(" ").trim();
+            localStorage.setItem("UserDisplayName", fullName);
+            localStorage.setItem("UserEmail", d.email || "");
+          }
 
           if (response.data.activePackage) {
             localStorage.setItem(

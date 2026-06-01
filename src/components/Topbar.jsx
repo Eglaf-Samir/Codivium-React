@@ -100,7 +100,7 @@ export default function Topbar({ onMenuOpen }) {
           onClick={(e) => onLinkClick(e, '/pricing')}
           className={({ isActive }) => (isActive ? "active" : "")}
         >
-          Prices
+          {loggedIn ? "Upgrade" : "Prices"}
         </NavLink>
 
         <NavLink

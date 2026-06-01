@@ -26,6 +26,7 @@ export const ParamMasterKey = {
   Countries: "Country",
   ExerciseType: "ExerciseType",
   MentalModel: "MentalModel",
+  Area: "Area",
 };
 
 export const DifficultyLevelColor = {

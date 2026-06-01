@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEditorLeaveGuard } from '../hooks/useEditorLeaveGuard';
 import { logout } from '../utils/auth';
+import { getUserById } from '../api/auth/apiauth';
 
 const NAV_ITEMS = [
   { section: 'adaptive', to: '/adaptive-practice', tip: 'Adaptive Practice', icon: 'icon-adaptive', label: 'Adaptive Practice', twoLine: true },
@@ -47,6 +48,45 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
   const navigate = useNavigate();
   const active = getActiveSection(location.pathname, location.search);
+
+  // Logged-in user's display name for the profile card. Stored at login/signup
+  // (UserDisplayName); falls back to the email local-part, then "Profile".
+  function computeName() {
+    try {
+      const name = (localStorage.getItem('UserDisplayName') || '').trim();
+      if (name) return name;
+      const email = (localStorage.getItem('UserEmail') || '').trim();
+      if (email) return email.split('@')[0];
+    } catch { /* ignore */ }
+    return 'Profile';
+  }
+  const [profileName, setProfileName] = useState(computeName);
+
+  // For sessions that logged in before the name was persisted (or just to keep
+  // it fresh), fetch the user once and cache the real name.
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      if ((localStorage.getItem('UserDisplayName') || '').trim()) return;
+      const uid = localStorage.getItem('Userid');
+      if (!uid) return;
+      (async () => {
+        const res = await getUserById(uid);
+        if (cancelled || res?.status !== 200 || !res.data) return;
+        const d = res.data;
+        const full = [d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ').trim();
+        if (full) {
+          localStorage.setItem('UserDisplayName', full);
+          if (d.email) localStorage.setItem('UserEmail', d.email);
+          setProfileName(full);
+        } else if (d.email) {
+          localStorage.setItem('UserEmail', d.email);
+          setProfileName(d.email.split('@')[0]);
+        }
+      })();
+    } catch { /* ignore */ }
+    return () => { cancelled = true; };
+  }, []);
 
   // Editor leave-confirmation — see useEditorLeaveGuard for behaviour.
   const { inEditor, onLinkClick: onNavLinkClick, confirm } = useEditorLeaveGuard();
@@ -239,7 +279,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </div>
             <div className="profile-meta">
               <div className="profile-kicker">Profile</div>
-              <div className="profile-name" id="profileName">Profile</div>
+              <div className="profile-name" id="profileName" title={profileName}>{profileName}</div>
             </div>
           </div>
         </nav>

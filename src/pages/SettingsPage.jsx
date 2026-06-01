@@ -1,5 +1,13 @@
 // SettingsPage.jsx — Account & Settings with working theme picker
 import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ActivePackagebyuserid,
+  getUserTransactionHistory,
+  activepackagecancelByUser,
+  getInvoiceUrl,
+} from '../api/pricepackage/apipackage';
+import { getUserById } from '../api/auth/apiauth';
 
 function loadScript(src, onload) {
   const s = document.createElement('script');
@@ -7,6 +15,40 @@ function loadScript(src, onload) {
   if (onload) s.onload = onload;
   document.body.appendChild(s);
   return s;
+}
+
+// ── Real-profile guard ─────────────────────────────────────────────
+// The demo script (account-settings-demo.js) seeds cv_profile_name with a
+// dummy ("Alex Thornton") and account-settings.js writes it into the shared
+// sidebar #profileName element — clobbering the real logged-in name. These
+// helpers force the REAL name/email (persisted at login as UserDisplayName/
+// UserEmail) back into both localStorage and the DOM.
+function getRealProfile() {
+  let name = '', email = '';
+  try {
+    name = (localStorage.getItem('UserDisplayName') || '').trim();
+    email = (localStorage.getItem('UserEmail') || '').trim();
+  } catch (_) { /* ignore */ }
+  return { name, email };
+}
+
+function applyRealProfileToStorage() {
+  const { name, email } = getRealProfile();
+  try {
+    if (name) localStorage.setItem('cv_profile_name', name);
+    if (email) localStorage.setItem('cv_profile_email', email);
+  } catch (_) { /* ignore */ }
+}
+
+function applyRealProfileToDom() {
+  applyRealProfileToStorage();
+  const { name, email } = getRealProfile();
+  const setText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && val) el.textContent = val;
+  };
+  if (name) { setText('profileName', name); setText('asDisplayNameVal', name); }
+  if (email) setText('asEmailVal', email);
 }
 
 // Set window.CVTheme directly — keys match the [data-theme="..."] rules in our CSS
@@ -49,6 +91,232 @@ function setupCVTheme() {
 
 export default function SettingsPage() {
   const initialized = useRef(false);
+  const navigate = useNavigate();
+
+  // Real billing data in the Billing tab: current plan, payment summary, billing
+  // history, and a working Upgrade/Cancel. The external account-settings.js fills
+  // these from demo data, so we fetch live data and overwrite the nodes (and
+  // re-apply once after the controller script runs, to win the race).
+  useEffect(() => {
+    const userId = localStorage.getItem('Userid');
+    if (!userId) return;
+    let cancelled = false;
+    let timer;
+
+    const fmtDate = (d) => {
+      if (!d) return '—';
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return '—';
+      const dd = String(dt.getDate()).padStart(2, '0');
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      return `${dd}/${mm}/${dt.getFullYear()}`;
+    };
+
+    // Same sliding progress bar as the interview/micro menu loader (.cv-progress).
+    const PROGRESS =
+      '<div class="cv-progress" role="progressbar" aria-label="Loading" ' +
+      'style="margin:0 auto;"><div class="cv-progress-bar"></div></div>';
+
+    let dataReady = false;
+    const showLoading = () => {
+      const rows = document.getElementById('asBillingRows');
+      const payHint = document.getElementById('asPaymentHint');
+      const renewal = document.getElementById('asPlanRenewal');
+      const badge = document.getElementById('asPlanBadge');
+      if (rows) rows.innerHTML = `<tr><td colspan="6" class="as-billing-empty">${PROGRESS}</td></tr>`;
+      if (payHint) payHint.innerHTML = PROGRESS;
+      if (renewal) renewal.textContent = 'Loading…';
+      if (badge) badge.textContent = '…';
+    };
+    // Show the loader immediately and keep re-asserting it (so the external
+    // demo data never flashes) until the real data arrives.
+    showLoading();
+    const guard = setInterval(() => { if (!dataReady) showLoading(); }, 150);
+
+    (async () => {
+      let pkg = null;
+      try {
+        const res = await ActivePackagebyuserid(userId);
+        if (res?.status === 200 && res.data) pkg = res.data;
+      } catch (e) { /* fall back to cached */ }
+      if (!pkg) {
+        try { pkg = JSON.parse(localStorage.getItem('userpackagedetails') || 'null'); } catch (e) {}
+      }
+
+      let history = [];
+      try {
+        const hres = await getUserTransactionHistory(userId);
+        if (hres?.status === 200 && Array.isArray(hres.data)) history = hres.data;
+      } catch (e) {}
+
+      dataReady = true;
+      clearInterval(guard);
+      if (cancelled) return;
+
+      const name = pkg ? (pkg.packageName || pkg.PackageName) : null;
+      const end = pkg ? (pkg.endDate || pkg.EndDate) : null;
+      const billingPeriod = pkg ? (pkg.billingPeriod || pkg.BillingPeriod) : null;
+      const price = pkg ? (pkg.price ?? pkg.Price) : null;
+      const activePkgId = pkg ? (pkg.id ?? pkg.Id) : null;
+      const isFreePlan =
+        !pkg ||
+        (pkg.isDefault ?? pkg.IsDefault) === true ||
+        (pkg.isAccessToAllCodingQuestions ?? pkg.IsAccessToAllCodingQuestions) === false;
+
+      const apply = () => {
+        const badge = document.getElementById('asPlanBadge');
+        const renewal = document.getElementById('asPlanRenewal');
+        const payHint = document.getElementById('asPaymentHint');
+        const rows = document.getElementById('asBillingRows');
+        const upgradeBtn = document.getElementById('asUpgradeBtn');
+        const confirmCancel = document.getElementById('confirmCancelSub');
+
+        if (badge) {
+          badge.textContent = name || 'No plan';
+          badge.className = 'as-plan-badge' + (isFreePlan ? ' free' : '');
+        }
+        // Money helper: round to whole dollars with a $ prefix.
+        const money = (v) => `$${Math.round(Number(v) || 0)}`;
+        const num = (v) => Number(v) || 0;
+
+        // Latest active transaction row — carries amount/discount/coupon/next date.
+        const active = history.find(
+          (h) => (h.isActive ?? h.IsActive) && (h.subscriptionstatus ?? h.Subscriptionstatus ?? '').toLowerCase() !== 'canceled',
+        ) || history[0];
+        const activeStatus = (active && (active.subscriptionstatus ?? active.Subscriptionstatus) || '').toLowerCase();
+        const isCanceled = activeStatus === 'canceled' || activeStatus === 'cancelled';
+        const isRecurring =
+          (pkg ? ((pkg.isRecurring ?? pkg.IsRecurring) || (pkg.isautorenewal ?? pkg.Isautorenewal)) : false)
+          || (active ? (active.isautorenewal ?? active.Isautorenewal) : false);
+        const nextDate = active ? (active.nextPaymentDate ?? active.NextPaymentDate) : null;
+
+        // Renewal amount: full base, minus the discount if the coupon keeps
+        // applying ("forever"/"repeating"); "once" reverts to full price.
+        const renewBase = active ? num(active.packageAmount ?? active.PackageAmount ?? active.price ?? active.Price) : num(price);
+        const renewDisc = active ? num(active.discountAmount ?? active.DiscountAmount) : 0;
+        const couponDur = (active && (active.couponDuration ?? active.CouponDuration) || '').toLowerCase();
+        const renewAmt =
+          renewDisc > 0 && (couponDur === 'forever' || couponDur === 'repeating')
+            ? Math.max(0, renewBase - renewDisc)
+            : renewBase;
+        const renewBp = (active && (active.billingPeriod ?? active.BillingPeriod)) || billingPeriod || 'month';
+
+        if (renewal) {
+          // Show the next-payment date (+ amount) when the plan will renew.
+          renewal.textContent = !pkg
+            ? 'No active plan'
+            : isFreePlan
+              ? 'Free plan'
+              : isCanceled
+                ? (end ? `Cancels — access until ${fmtDate(end)}` : 'Cancelled')
+                : nextDate
+                  ? `Next payment ${fmtDate(nextDate)} — ${money(renewAmt)} / ${renewBp}`
+                  : (end ? `Active until ${fmtDate(end)}` : 'Active');
+        }
+
+        if (payHint) {
+          payHint.textContent =
+            !pkg || isFreePlan ? 'No paid subscription' : `${money(price ?? 0)} / ${billingPeriod || 'month'}`;
+        }
+
+        // ── Pricing breakdown for the active plan (coupon-aware) ──
+        const pricingRow = document.getElementById('asPlanPricingRow');
+        const pricing = document.getElementById('asPlanPricing');
+        if (pricing && pricingRow) {
+          const discount = active ? num(active.discountAmount ?? active.DiscountAmount) : 0;
+          const coupon = active
+            ? (active.couponName ?? active.CouponName ?? active.couponPromotionCodeName ?? active.CouponPromotionCodeName ?? '')
+            : '';
+          // Suggestion 4: lifetime savings across all paid history.
+          const totalSaved = history.reduce((sum, h) => sum + num(h.discountAmount ?? h.DiscountAmount), 0);
+          const parts = [];
+          if (!isFreePlan && active && discount > 0) {
+            const original = num(active.packageAmount ?? active.PackageAmount ?? active.price ?? active.Price);
+            const paid = Math.max(0, original - discount);
+            // Suggestion 2: show the discount as a percentage too.
+            const pct = original > 0 ? Math.round((discount / original) * 100) : 0;
+            const offLabel = pct > 0 ? `−${money(discount)} (${pct}% off)` : `−${money(discount)} off`;
+            const bp = (active.billingPeriod ?? active.BillingPeriod ?? billingPeriod) || 'month';
+            parts.push(
+              `<span style="text-decoration:line-through;opacity:.6">${money(original)}</span> ` +
+              `<strong>${money(paid)}</strong> / ${bp}` +
+              ` &middot; <span style="color:var(--color-text-accent,#d8b268)">${coupon ? coupon + ': ' : ''}${offLabel}</span>`,
+            );
+          }
+          if (totalSaved > 0) {
+            parts.push(`<span style="opacity:.85">You've saved <strong>${money(totalSaved)}</strong> with coupons</span>`);
+          }
+          if (parts.length) {
+            pricing.innerHTML = parts.join('<br/>');
+            pricingRow.hidden = false;
+          } else {
+            pricingRow.hidden = true;
+          }
+        }
+
+        if (rows) {
+          if (!history.length) {
+            rows.innerHTML = '<tr><td colspan="6" class="as-billing-empty">No billing history yet</td></tr>';
+          } else {
+            rows.innerHTML = history
+              .map((h) => {
+                const d = fmtDate(h.startDate ?? h.StartDate);
+                const bp = h.billingPeriod ?? h.BillingPeriod;
+                const coupon = h.couponName ?? h.CouponName ?? h.couponPromotionCodeName ?? h.CouponPromotionCodeName ?? '';
+                const desc = (h.packageName ?? h.PackageName ?? 'Plan') + (bp ? ` (${bp})` : '') +
+                  (coupon ? ` · <span style="color:var(--color-text-accent,#d8b268)">${coupon}</span>` : '');
+                const discount = num(h.discountAmount ?? h.DiscountAmount);
+                const baseAmt = num(h.packageAmount ?? h.PackageAmount ?? h.price ?? h.Price);
+                const paid = Math.max(0, baseAmt - discount);
+                const status =
+                  h.subscriptionstatus ?? h.Subscriptionstatus ?? ((h.isActive ?? h.IsActive) ? 'active' : '—');
+                // Suggestion 3: on-demand Stripe hosted-invoice link.
+                const pid = h.userPaymentId ?? h.UserPaymentId ?? 0;
+                const invoiceCell = pid > 0
+                  ? `<a href="#" class="as-invoice-link" data-payment-id="${pid}" style="color:var(--color-text-accent,#d8b268)">View</a>`
+                  : '—';
+                return `<tr><td>${d}</td><td>${desc}</td><td>${discount > 0 ? '−' + money(discount) : '—'}</td><td>${money(paid)}</td><td>${status}</td><td>${invoiceCell}</td></tr>`;
+              })
+              .join('');
+
+            // Delegated handler: fetch the invoice URL on click and open it.
+            rows.onclick = async (ev) => {
+              const link = ev.target.closest && ev.target.closest('.as-invoice-link');
+              if (!link) return;
+              ev.preventDefault();
+              const pid = Number(link.getAttribute('data-payment-id'));
+              if (!pid) return;
+              const original = link.textContent;
+              link.textContent = 'Opening…';
+              try {
+                const r = await getInvoiceUrl(pid);
+                const u = r?.status === 200 ? (r.data?.url || r.data?.Url) : null;
+                if (u) window.open(u, '_blank', 'noopener');
+                else link.textContent = original;
+              } catch (_) { link.textContent = original; }
+              if (link.isConnected) link.textContent = original;
+            };
+          }
+        }
+        if (upgradeBtn) {
+          upgradeBtn.onclick = () => navigate('/pricing');
+        }
+        if (confirmCancel) {
+          confirmCancel.onclick = async () => {
+            if (!activePkgId || isFreePlan) return;
+            confirmCancel.disabled = true;
+            try { await activepackagecancelByUser(activePkgId); } catch (e) {}
+            // Clear the cached package so the UI doesn't show the now-canceled plan.
+            try { localStorage.removeItem('userpackagedetails'); } catch (e) {}
+            window.location.reload();
+          };
+        }
+      };
+      apply();
+      timer = setTimeout(apply, 1500);
+    })();
+    return () => { cancelled = true; clearTimeout(timer); clearInterval(guard); };
+  }, [navigate]);
 
   useEffect(() => {
     if (initialized.current) return;
@@ -57,9 +325,38 @@ export default function SettingsPage() {
     // Step 1: set window.CVTheme directly (no DOM injection = no React conflict)
     setupCVTheme();
 
-    // Step 2: load demo data, then load the settings controller
+    // If the real name isn't cached yet (e.g. an older session), fetch it once
+    // so the guard below has something to apply instead of the demo dummy.
+    if (!getRealProfile().name) {
+      try {
+        const uid = localStorage.getItem('Userid');
+        if (uid) {
+          getUserById(uid).then((res) => {
+            if (res?.status === 200 && res.data) {
+              const d = res.data;
+              const full = [d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ').trim();
+              if (full) localStorage.setItem('UserDisplayName', full);
+              if (d.email) localStorage.setItem('UserEmail', d.email);
+              applyRealProfileToDom();
+            }
+          });
+        }
+      } catch (_) { /* ignore */ }
+    }
+
+    // Step 2: load demo data, then load the settings controller. After each
+    // step, force the REAL profile back so the demo dummy never sticks in the
+    // sidebar (#profileName) or the settings fields.
+    applyRealProfileToStorage();
     const s1 = loadScript('/account-settings-demo.js', () => {
-      loadScript('/account-settings.js');
+      // Demo just overwrote cv_profile_name with the dummy — restore real value
+      // BEFORE the controller reads it.
+      applyRealProfileToStorage();
+      loadScript('/account-settings.js', () => {
+        applyRealProfileToDom();
+        setTimeout(applyRealProfileToDom, 150);
+        setTimeout(applyRealProfileToDom, 600);
+      });
     });
 
     return () => {
@@ -199,6 +496,13 @@ export default function SettingsPage() {
                       <span className="as-plan-badge" id="asPlanBadge">—</span>
                       <button className="as-btn primary" type="button" id="asUpgradeBtn">Upgrade</button>
                     </div>
+                    {/* Pricing breakdown — shown when a coupon/discount applies. */}
+                    <div className="as-row" id="asPlanPricingRow" hidden>
+                      <div className="as-row-text" style={{ width: '100%' }}>
+                        <div className="as-row-label">Pricing</div>
+                        <div className="as-row-hint" id="asPlanPricing">—</div>
+                      </div>
+                    </div>
                     <div className="as-row">
                       <div className="as-row-text">
                         <div className="as-row-label">Payment method</div>
@@ -208,9 +512,9 @@ export default function SettingsPage() {
                     </div>
                     <div className="as-scroll-x">
                       <table className="as-billing-table" aria-label="Billing history">
-                        <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Invoice</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Description</th><th>Discount</th><th>Paid</th><th>Status</th><th>Invoice</th></tr></thead>
                         <tbody id="asBillingRows">
-                          <tr><td colSpan="4" className="as-billing-empty">No billing history yet</td></tr>
+                          <tr><td colSpan="6" className="as-billing-empty">No billing history yet</td></tr>
                         </tbody>
                       </table>
                     </div>

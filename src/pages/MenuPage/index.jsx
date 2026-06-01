@@ -15,6 +15,7 @@ import MenuHeader from './MenuHeader.jsx';
 import FilterDrawer from './FilterDrawer.jsx';
 import ExerciseGrid from './ExerciseGrid.jsx';
 import MenuTour from './MenuTour.jsx';
+import PackagePickerModal from './PackagePickerModal.jsx';
 
 const PREF_KEY = 'cv_menu_filters_v3';
 
@@ -151,6 +152,16 @@ function toBackendIds(selected, options) {
   return selected.filter((v) => v !== 'all');
 }
 
+// For optional refinement filters (SubCategory, Area): "All"/none → empty array
+// (no filter) instead of every id. Sending all ids would wrongly exclude
+// exercises that have no subcategory/area assigned.
+function toOptionalIds(selected) {
+  if (!selected || selected.includes('all') || selected.length === 0) {
+    return [];
+  }
+  return selected.filter((v) => v !== 'all');
+}
+
 export default function MenuPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -164,6 +175,7 @@ export default function MenuPage() {
   const [oldcodeinfo, setOldcodeinfo] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [conformShow, setConformShow] = useState(false);
+  const [pkgModalOpen, setPkgModalOpen] = useState(false);
 
   const saved = loadPrefs();
   const [selectedCategoryIds, setSelectedCategoryIds] = useState(() => saved.categoryIds || ['all']);
@@ -171,8 +183,11 @@ export default function MenuPage() {
   const [selectedCompletionIds, setSelectedCompletionIds] = useState(() => saved.completionIds || ['all']);
   const [selectedExerciseTypeIds, setSelectedExerciseTypeIds] = useState(() => saved.exerciseTypeIds || ['all']);
   const [selectedMentalModelIds, setSelectedMentalModelIds] = useState(() => saved.mentalModelIds || ['all']);
+  const [selectedAreaIds, setSelectedAreaIds] = useState(() => saved.areaIds || ['all']);
+  const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState(() => saved.subCategoryIds || ['all']);
   const [sortOrder, setSortOrder] = useState(() => saved.sortOrder || 'ASC');
   const [sortField, setSortField] = useState(() => saved.sortField || 'title');
+  const [isFreeFirst, setIsFreeFirst] = useState(() => !!saved.freeFirst);
   const [searchTerm, setSearchTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tourActive, setTourActive] = useState(false);
@@ -186,23 +201,36 @@ export default function MenuPage() {
     difficultyOptions,
     exerciseTypeOptions,
     mentalModelOptions,
+    areaOptions,
+    subCategoryOptions,
+    loadSubCategories,
     completionOptions,
     runFilter,
     optionsReady,
   } = useMenuData();
 
+  // Resolved category ids the subcategory filter should reflect: the selected
+  // categories, or all categories when none are picked ("All"). SubCategory is
+  // category-dependent — it only shows subcategories of these categories.
+  const resolvedCategoryIds = useMemo(
+    () => toBackendIds(selectedCategoryIds, categoryOptions),
+    [selectedCategoryIds, categoryOptions],
+  );
+
+  useEffect(() => {
+    if (!optionsReady || !isMicro) return;
+    loadSubCategories(resolvedCategoryIds);
+  }, [resolvedCategoryIds, optionsReady, isMicro, loadSubCategories]);
+
   const filterBody = useMemo(
     () => ({
       DifficultyLabels: toBackendIds(selectedDifficultyIds, difficultyOptions),
       CategoryIds: toBackendIds(selectedCategoryIds, categoryOptions),
-      SubCategoryIds: [],
+      SubCategoryIds: isMicro ? toOptionalIds(selectedSubCategoryIds) : [],
       CompletionIds: toBackendIds(selectedCompletionIds, completionOptions),
-      ExerciseTypeIds: isMicro
-        ? toBackendIds(selectedExerciseTypeIds, exerciseTypeOptions)
-        : [],
-      MentalModelIds: isMicro
-        ? toBackendIds(selectedMentalModelIds, mentalModelOptions)
-        : [],
+      ExerciseTypeIds: isMicro ? toOptionalIds(selectedExerciseTypeIds) : [],
+      MentalModelIds: isMicro ? toOptionalIds(selectedMentalModelIds) : [],
+      AreaIds: isMicro ? toOptionalIds(selectedAreaIds) : [],
       SortOrder: sortOrder,
     }),
     [
@@ -211,6 +239,8 @@ export default function MenuPage() {
       selectedCompletionIds,
       selectedExerciseTypeIds,
       selectedMentalModelIds,
+      selectedAreaIds,
+      selectedSubCategoryIds,
       sortOrder,
       categoryOptions,
       difficultyOptions,
@@ -249,8 +279,11 @@ export default function MenuPage() {
         completionIds: selectedCompletionIds,
         exerciseTypeIds: selectedExerciseTypeIds,
         mentalModelIds: selectedMentalModelIds,
+        areaIds: selectedAreaIds,
+        subCategoryIds: selectedSubCategoryIds,
         sortOrder,
         sortField,
+        freeFirst: isFreeFirst,
         ...next,
       });
     },
@@ -260,18 +293,32 @@ export default function MenuPage() {
       selectedCompletionIds,
       selectedExerciseTypeIds,
       selectedMentalModelIds,
+      selectedAreaIds,
+      selectedSubCategoryIds,
       sortOrder,
       sortField,
+      isFreeFirst,
     ],
+  );
+
+  const updateFreeFirst = useCallback(
+    (v) => {
+      setIsFreeFirst(v);
+      persist({ freeFirst: v });
+    },
+    [persist],
   );
 
   const toggleCategories = useCallback(
     (value, allOptions) => {
       setSelectedCategoryIds((prev) => {
         const next = toggleFilter(prev, value, allOptions);
-        persist({ categoryIds: next });
+        // Category changed → its subcategories change too, so reset the
+        // subcategory selection to "All" (stale picks no longer apply).
+        persist({ categoryIds: next, subCategoryIds: ['all'] });
         return next;
       });
+      setSelectedSubCategoryIds(['all']);
     },
     [persist],
   );
@@ -320,6 +367,28 @@ export default function MenuPage() {
     [persist],
   );
 
+  const toggleAreas = useCallback(
+    (value, allOptions) => {
+      setSelectedAreaIds((prev) => {
+        const next = toggleFilter(prev, value, allOptions);
+        persist({ areaIds: next });
+        return next;
+      });
+    },
+    [persist],
+  );
+
+  const toggleSubCategories = useCallback(
+    (value, allOptions) => {
+      setSelectedSubCategoryIds((prev) => {
+        const next = toggleFilter(prev, value, allOptions);
+        persist({ subCategoryIds: next });
+        return next;
+      });
+    },
+    [persist],
+  );
+
   const updateSortField = useCallback(
     (v) => {
       setSortField(v);
@@ -343,6 +412,8 @@ export default function MenuPage() {
     setSelectedCompletionIds(['all']);
     setSelectedExerciseTypeIds(['all']);
     setSelectedMentalModelIds(['all']);
+    setSelectedAreaIds(['all']);
+    setSelectedSubCategoryIds(['all']);
     setSortOrder('ASC');
     setSortField('title');
     savePrefs({});
@@ -419,30 +490,61 @@ export default function MenuPage() {
     async (exercise) => {
       const item = exercise.raw || exercise;
       console.log('[MenuPage] card clicked, item:', item, 'activePackage:', activePackage);
-      if (!activePackage) {
-        const result = await Swal.fire({
-          title: 'Purchase Package?',
-          text: 'Please purchase package',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'OK !',
-          cancelButtonText: 'No, cancel!',
-          reverseButtons: true,
-        });
-        if (result.isConfirmed) {
-          localStorage.setItem('gotopage', location.pathname + location.search);
-          navigate('/price');
-        }
+
+      // Access gate:
+      //  • Free (isFree) questions open for everyone — even with no package.
+      //  • Non-free questions need a package that grants all coding questions.
+      //    If the user has no such package, show the package picker popup.
+      const isFreeQuestion = !!(exercise.isFree ?? item.isFree ?? item.IsFree);
+      const hasAllCoding = !!(
+        activePackage?.isAccessToAllCodingQuestions ??
+        activePackage?.IsAccessToAllCodingQuestions
+      );
+      if (!isFreeQuestion && !hasAllCoding) {
+        // Remember what the user was trying to open so we can resume it after a
+        // successful payment from the popup (see resume effect + PaymentSuccess).
+        try {
+          localStorage.setItem(
+            'pendingExercise',
+            JSON.stringify({ id: item.id ?? exercise.id, track }),
+          );
+        } catch (e) {}
+        setPkgModalOpen(true);
         return;
       }
+
       if (item.isCoding === false) {
         navigate('/NonCoding', { state: { item } });
       } else {
         await checkAlreadyCodeAdd(item);
       }
     },
-    [activePackage, checkAlreadyCodeAdd, location.pathname, location.search, navigate],
+    [activePackage, checkAlreadyCodeAdd, location.pathname, location.search, navigate, track],
   );
+
+  // Resume after payment: if the user bought from the popup, PaymentSuccess sends
+  // them back to /menu. Once the list is loaded and they now have access, auto-open
+  // the question they originally clicked.
+  useEffect(() => {
+    let pending = null;
+    try { pending = JSON.parse(localStorage.getItem('pendingExercise') || 'null'); } catch (e) {}
+    if (!pending || pending.track !== track) return;
+    if (!exercises || exercises.length === 0) return;
+
+    const ex = exercises.find((e) => String(e.id) === String(pending.id));
+    if (!ex) return;
+
+    const hasAllCoding = !!(
+      activePackage?.isAccessToAllCodingQuestions ??
+      activePackage?.IsAccessToAllCodingQuestions
+    );
+    const isFree = !!(ex.isFree ?? ex.raw?.isFree);
+    // Only resume once access is actually granted — avoids re-opening the popup.
+    if (!isFree && !hasAllCoding) return;
+
+    try { localStorage.removeItem('pendingExercise'); } catch (e) {}
+    handleCardClick(ex);
+  }, [exercises, activePackage, track, handleCardClick]);
 
   const handleCloseRunningCode = useCallback(() => {
     setConformShow(false);
@@ -452,13 +554,57 @@ export default function MenuPage() {
 
   const filteredExercises = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return exercises;
-    return exercises.filter((ex) => {
-      const n = (ex.name || '').toLowerCase();
-      const d = (ex.shortDescription || '').toLowerCase();
-      return n.includes(q) || d.includes(q);
+    const list = !q
+      ? exercises
+      : exercises.filter((ex) => {
+          const n = (ex.name || '').toLowerCase();
+          const d = (ex.shortDescription || '').toLowerCase();
+          return n.includes(q) || d.includes(q);
+        });
+
+    // Client-side sort so ALL sort fields work (backend only sorts by title).
+    const desc = sortOrder === 'DESC';
+    const diffRank = (d) => {
+      const x = (d || '').toLowerCase();
+      if (x.startsWith('basic') || x.startsWith('begin')) return 1;
+      if (x.startsWith('inter')) return 2;
+      if (x.startsWith('adv')) return 3;
+      return 99;
+    };
+    const compRank = (s) => {
+      const x = (s || '').toLowerCase();
+      if (x === 'not_started') return 0;
+      if (x === 'attempted') return 1;
+      if (x === 'completed') return 2;
+      return 99;
+    };
+
+    return [...list].sort((a, b) => {
+      // When enabled, free questions always float to the top; the chosen
+      // sort still applies within the free and non-free groups.
+      if (isFreeFirst) {
+        const f = (b.isFree ? 1 : 0) - (a.isFree ? 1 : 0);
+        if (f !== 0) return f;
+      }
+      let cmp = 0;
+      switch (sortField) {
+        case 'category':
+          cmp = (a.category || '').localeCompare(b.category || '');
+          break;
+        case 'level':
+          cmp = diffRank(a.difficulty) - diffRank(b.difficulty);
+          break;
+        case 'completeness':
+          cmp = compRank(a.completionStatus) - compRank(b.completionStatus);
+          break;
+        case 'title':
+        default:
+          cmp = (a.name || '').localeCompare(b.name || '');
+          break;
+      }
+      return desc ? -cmp : cmp;
     });
-  }, [exercises, searchTerm]);
+  }, [exercises, searchTerm, sortField, sortOrder, isFreeFirst]);
 
   useEffect(() => {
     if (trackLabel) document.body.dataset.page = trackLabel;
@@ -488,6 +634,8 @@ export default function MenuPage() {
         difficultyLevels={difficultyOptions}
         exerciseTypes={exerciseTypeOptions}
         mentalModels={mentalModelOptions}
+        areas={areaOptions}
+        subCategories={subCategoryOptions}
         completionOptions={completionOptions}
         isMicro={isMicro}
         selectedCategories={selectedCategoryIds}
@@ -495,13 +643,19 @@ export default function MenuPage() {
         selectedCompleteness={selectedCompletionIds}
         selectedExerciseTypes={selectedExerciseTypeIds}
         selectedMentalModels={selectedMentalModelIds}
+        selectedAreas={selectedAreaIds}
+        selectedSubCategories={selectedSubCategoryIds}
         sortField={sortField}
         sortDir={sortOrder === 'DESC' ? 'desc' : 'asc'}
+        isFreeFirst={isFreeFirst}
+        onToggleFreeFirst={updateFreeFirst}
         toggleCategories={toggleCategories}
         toggleLevels={toggleLevels}
         toggleCompleteness={toggleCompleteness}
         toggleExerciseTypes={toggleExerciseTypes}
         toggleMentalModels={toggleMentalModels}
+        toggleAreas={toggleAreas}
+        toggleSubCategories={toggleSubCategories}
         updateSortField={updateSortField}
         updateSortDir={updateSortDir}
         onReset={resetFilters}
@@ -580,6 +734,11 @@ export default function MenuPage() {
         />,
         document.body,
       )}
+
+      <PackagePickerModal
+        open={pkgModalOpen}
+        onClose={() => setPkgModalOpen(false)}
+      />
     </main>
   );
 }

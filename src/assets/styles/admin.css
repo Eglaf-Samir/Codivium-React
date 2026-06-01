@@ -620,6 +620,20 @@
 
 .cv-admin-field input::placeholder { color: var(--color-text-muted); }
 
+/* Checkboxes/radios must not inherit the full-width text-input styling above,
+   otherwise they render as large stretched boxes. Keep them native-sized. */
+.cv-admin-field input[type="checkbox"],
+.cv-admin-field input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  flex: 0 0 auto;
+  padding: 0;
+  border-radius: 4px;
+  accent-color: var(--color-accent, #d8b268);
+  cursor: pointer;
+}
+
 .cv-admin-field input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.7) sepia(0.4) saturate(2) hue-rotate(7deg);
   cursor: pointer;
