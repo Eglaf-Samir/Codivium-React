@@ -93,6 +93,8 @@ export default function FilterDrawer({
   difficultyLevels,
   exerciseTypes,   // present only on micro track
   mentalModels,    // present only on micro track
+  areas,           // present only on micro track
+  subCategories,   // present only on micro track
   completionOptions,
   isMicro,
   // Current selections
@@ -101,6 +103,8 @@ export default function FilterDrawer({
   selectedCompleteness,
   selectedExerciseTypes,
   selectedMentalModels,
+  selectedAreas,
+  selectedSubCategories,
   sortField,
   sortDir,
   isFreeFirst,
@@ -111,6 +115,8 @@ export default function FilterDrawer({
   toggleCompleteness,
   toggleExerciseTypes,
   toggleMentalModels,
+  toggleAreas,
+  toggleSubCategories,
   updateSortField,
   updateSortDir,
   onReset,
@@ -309,6 +315,18 @@ export default function FilterDrawer({
                 onToggle={toggleCategories}
               />
 
+              {/* SubCategory — micro track only */}
+              {isMicro && subCategories && subCategories.length > 0 && (
+                <FilterGroup
+                  name="subcategory"
+                  label="SubCategory"
+                  tooltip="Filter by sub-topic within a category. Choose multiple subcategories."
+                  options={subCategories}
+                  selected={selectedSubCategories}
+                  onToggle={toggleSubCategories}
+                />
+              )}
+
               {/* Proficiency Level */}
               <FilterGroup
                 name="level"
@@ -350,6 +368,19 @@ export default function FilterDrawer({
                   options={mentalModels}
                   selected={selectedMentalModels}
                   onToggle={toggleMentalModels}
+                />
+              )}
+
+              {/* Area — micro track only. Always shown (even with no options
+                  yet) so the filter is visible before any Area values exist. */}
+              {isMicro && (
+                <FilterGroup
+                  name="area"
+                  label="Area"
+                  tooltip="Filter by area. Choose multiple areas. Micro Challenges only."
+                  options={areas || []}
+                  selected={selectedAreas}
+                  onToggle={toggleAreas}
                 />
               )}
             </div>

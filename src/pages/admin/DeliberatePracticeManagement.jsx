@@ -44,6 +44,9 @@ const initialPrep = {
   difficultyLevelId: null,
   categoriesId: null,
   subCategoriesId: null,
+  exerciseTypeId: null,
+  mentalModelId: null,
+  areaId: null,
   hints: '',
   miniTutorial: '',
   manualSuggestedSolution: '',
@@ -85,11 +88,20 @@ export default function DeliberatePracticeManagement() {
   const [difficultyLevels, setDifficultyLevels] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
+  const [exerciseTypeList, setExerciseTypeList] = useState([]);
+  const [mentalModelList, setMentalModelList] = useState([]);
+  const [areaList, setAreaList] = useState([]);
 
   const [showCategoryInput, setShowCategoryInput] = useState(false);
   const [showSubCategoryInput, setShowSubCategoryInput] = useState(false);
+  const [showExerciseTypeInput, setShowExerciseTypeInput] = useState(false);
+  const [showMentalModelInput, setShowMentalModelInput] = useState(false);
+  const [showAreaInput, setShowAreaInput] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [newSubCategory, setNewSubCategory] = useState('');
+  const [newExerciseType, setNewExerciseType] = useState('');
+  const [newMentalModel, setNewMentalModel] = useState('');
+  const [newArea, setNewArea] = useState('');
 
   // IsHTML toggles + dual content buffers (matches source: each mode keeps
   // its own text, toggle just switches which buffer is shown; the active
@@ -115,6 +127,9 @@ export default function DeliberatePracticeManagement() {
     loadAll();
     loadDifficultyLevels();
     loadCategories();
+    loadExerciseTypes();
+    loadMentalModels();
+    loadAreas();
     /* eslint-disable-next-line */
   }, []);
 
@@ -147,6 +162,24 @@ export default function DeliberatePracticeManagement() {
     else setSubCategoryList([]);
   }
 
+  async function loadExerciseTypes() {
+    const res = await GetallDifficultyLevel(ParamMasterKey.ExerciseType);
+    if (res?.status === 200 && Array.isArray(res?.data)) setExerciseTypeList(res.data);
+    else setExerciseTypeList([]);
+  }
+
+  async function loadMentalModels() {
+    const res = await GetallDifficultyLevel(ParamMasterKey.MentalModel);
+    if (res?.status === 200 && Array.isArray(res?.data)) setMentalModelList(res.data);
+    else setMentalModelList([]);
+  }
+
+  async function loadAreas() {
+    const res = await GetallDifficultyLevel(ParamMasterKey.Area);
+    if (res?.status === 200 && Array.isArray(res?.data)) setAreaList(res.data);
+    else setAreaList([]);
+  }
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return items;
@@ -161,8 +194,14 @@ export default function DeliberatePracticeManagement() {
     setForm(initialPrep);
     setShowCategoryInput(false);
     setShowSubCategoryInput(false);
+    setShowExerciseTypeInput(false);
+    setShowMentalModelInput(false);
+    setShowAreaInput(false);
     setNewCategory('');
     setNewSubCategory('');
+    setNewExerciseType('');
+    setNewMentalModel('');
+    setNewArea('');
     setIsInstructionHtml(false);
     setIsTutorialHtml(false);
     setInstructionHtml('');
@@ -190,6 +229,9 @@ export default function DeliberatePracticeManagement() {
           difficultyLevelId: d.difficultyLevelId ?? d.difficultyLevel?.id ?? null,
           categoriesId: d.categoriesId ?? d.categories?.id ?? null,
           subCategoriesId: d.subCategoriesId ?? d.subCategories?.id ?? null,
+          exerciseTypeId: d.exerciseTypeId ?? d.exerciseType?.id ?? null,
+          mentalModelId: d.mentalModelId ?? d.mentalModel?.id ?? null,
+          areaId: d.areaId ?? d.area?.id ?? null,
         };
       }
     } catch { /* fallback */ }
@@ -286,6 +328,90 @@ export default function DeliberatePracticeManagement() {
       else Swal.fire({ title: 'Error', text: 'Could not add subcategory.', icon: 'error' });
     } catch {
       Swal.fire({ title: 'Error', text: 'Could not add subcategory.', icon: 'error' });
+    }
+  }
+
+  function handleExerciseType(e) {
+    setForm(f => ({ ...f, exerciseTypeId: e.target.value }));
+  }
+
+  function handleMentalModel(e) {
+    setForm(f => ({ ...f, mentalModelId: e.target.value }));
+  }
+
+  async function handleAddExerciseType() {
+    if (!newExerciseType.trim()) return;
+    const body = {
+      name: newExerciseType.trim(),
+      otherName: newExerciseType.trim(),
+      description: '',
+      parentId: 0,
+      category: ParamMasterKey.ExerciseType,
+      mode: MODE,
+    };
+    try {
+      const res = await createparamasync(JSON.stringify(body));
+      if (res?.status === 200 && res?.data) {
+        await loadExerciseTypes();
+        setForm(f => ({ ...f, exerciseTypeId: res.data.id }));
+        setNewExerciseType('');
+        setShowExerciseTypeInput(false);
+      } else if (res?.status === 401) authFail();
+      else Swal.fire({ title: 'Error', text: 'Could not add exercise type.', icon: 'error' });
+    } catch {
+      Swal.fire({ title: 'Error', text: 'Could not add exercise type.', icon: 'error' });
+    }
+  }
+
+  async function handleAddMentalModel() {
+    if (!newMentalModel.trim()) return;
+    const body = {
+      name: newMentalModel.trim(),
+      otherName: newMentalModel.trim(),
+      description: '',
+      parentId: 0,
+      category: ParamMasterKey.MentalModel,
+      mode: MODE,
+    };
+    try {
+      const res = await createparamasync(JSON.stringify(body));
+      if (res?.status === 200 && res?.data) {
+        await loadMentalModels();
+        setForm(f => ({ ...f, mentalModelId: res.data.id }));
+        setNewMentalModel('');
+        setShowMentalModelInput(false);
+      } else if (res?.status === 401) authFail();
+      else Swal.fire({ title: 'Error', text: 'Could not add mental model.', icon: 'error' });
+    } catch {
+      Swal.fire({ title: 'Error', text: 'Could not add mental model.', icon: 'error' });
+    }
+  }
+
+  function handleArea(e) {
+    setForm(f => ({ ...f, areaId: e.target.value }));
+  }
+
+  async function handleAddArea() {
+    if (!newArea.trim()) return;
+    const body = {
+      name: newArea.trim(),
+      otherName: newArea.trim(),
+      description: '',
+      parentId: 0,
+      category: ParamMasterKey.Area,
+      mode: MODE,
+    };
+    try {
+      const res = await createparamasync(JSON.stringify(body));
+      if (res?.status === 200 && res?.data) {
+        await loadAreas();
+        setForm(f => ({ ...f, areaId: res.data.id }));
+        setNewArea('');
+        setShowAreaInput(false);
+      } else if (res?.status === 401) authFail();
+      else Swal.fire({ title: 'Error', text: 'Could not add area.', icon: 'error' });
+    } catch {
+      Swal.fire({ title: 'Error', text: 'Could not add area.', icon: 'error' });
     }
   }
 
@@ -646,6 +772,78 @@ export default function DeliberatePracticeManagement() {
                       <input style={{ flex: 1 }} placeholder="Enter new subcategory" value={newSubCategory}
                         onChange={e => setNewSubCategory(e.target.value)} />
                       <button type="button" className="cv-admin-btn is-primary" onClick={handleAddSubCategory} disabled={!newSubCategory.trim()}>
+                        Save
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="cv-admin-field is-full">
+                  <label>Select Exercise Type</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <select style={{ flex: 1 }} value={form.exerciseTypeId || ''} onChange={handleExerciseType}>
+                      <option value="">—</option>
+                      {exerciseTypeList.map(t => (
+                        <option key={t.id} value={t.id}>{t.name || t.value}</option>
+                      ))}
+                    </select>
+                    <button type="button" className="cv-admin-btn is-primary" onClick={() => setShowExerciseTypeInput(s => !s)}>
+                      {showExerciseTypeInput ? 'Cancel' : 'Add'}
+                    </button>
+                  </div>
+                  {showExerciseTypeInput && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <input style={{ flex: 1 }} placeholder="Enter new exercise type" value={newExerciseType}
+                        onChange={e => setNewExerciseType(e.target.value)} />
+                      <button type="button" className="cv-admin-btn is-primary" onClick={handleAddExerciseType} disabled={!newExerciseType.trim()}>
+                        Save
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="cv-admin-field is-full">
+                  <label>Select Mental Model</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <select style={{ flex: 1 }} value={form.mentalModelId || ''} onChange={handleMentalModel}>
+                      <option value="">—</option>
+                      {mentalModelList.map(m => (
+                        <option key={m.id} value={m.id}>{m.name || m.value}</option>
+                      ))}
+                    </select>
+                    <button type="button" className="cv-admin-btn is-primary" onClick={() => setShowMentalModelInput(s => !s)}>
+                      {showMentalModelInput ? 'Cancel' : 'Add'}
+                    </button>
+                  </div>
+                  {showMentalModelInput && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <input style={{ flex: 1 }} placeholder="Enter new mental model" value={newMentalModel}
+                        onChange={e => setNewMentalModel(e.target.value)} />
+                      <button type="button" className="cv-admin-btn is-primary" onClick={handleAddMentalModel} disabled={!newMentalModel.trim()}>
+                        Save
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="cv-admin-field is-full">
+                  <label>Select Area</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <select style={{ flex: 1 }} value={form.areaId || ''} onChange={handleArea}>
+                      <option value="">—</option>
+                      {areaList.map(a => (
+                        <option key={a.id} value={a.id}>{a.name || a.value}</option>
+                      ))}
+                    </select>
+                    <button type="button" className="cv-admin-btn is-primary" onClick={() => setShowAreaInput(s => !s)}>
+                      {showAreaInput ? 'Cancel' : 'Add'}
+                    </button>
+                  </div>
+                  {showAreaInput && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <input style={{ flex: 1 }} placeholder="Enter new area" value={newArea}
+                        onChange={e => setNewArea(e.target.value)} />
+                      <button type="button" className="cv-admin-btn is-primary" onClick={handleAddArea} disabled={!newArea.trim()}>
                         Save
                       </button>
                     </div>
