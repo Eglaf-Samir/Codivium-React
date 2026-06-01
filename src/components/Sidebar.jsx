@@ -89,7 +89,7 @@ export default function Sidebar({ isOpen, onClose }) {
   }, []);
 
   // Editor leave-confirmation — see useEditorLeaveGuard for behaviour.
-  const { inEditor, onLinkClick: onNavLinkClick, confirm } = useEditorLeaveGuard();
+  // const { inEditor, onLinkClick: onNavLinkClick, confirm } = useEditorLeaveGuard();
 
   // Editor / MCQ-quiz leave-confirmation — see useEditorLeaveGuard.
   // We use the live probe functions instead of the snapshot booleans so
