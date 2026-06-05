@@ -43,6 +43,10 @@ function Join() {
   // "Verified Successfully" screen with a "Go to Registration" button, so the
   // user can continue here even if the original signup tab was closed.
   const [showVerifiedLanding, setShowVerifiedLanding] = useState(false);
+  // True when the verification link was already used to create an account
+  // (email already registered). The form stays "verified — locked" but Join is
+  // disabled; the user should log in instead.
+  const [linkUsed, setLinkUsed] = useState(false);
 
   // Step 2 entry: the user opened /join?verify=TOKEN from their inbox.
   useEffect(() => {
@@ -57,19 +61,26 @@ function Join() {
       const ok = res?.status === 200 && (res.data?.ok === true || res.data?.email);
       if (ok) {
         const email = res.data.email || "";
+        const used = res.data.alreadyRegistered === true;
         setForm((prev) => ({ ...prev, email }));
         setVerifyToken(token);
         setEmailVerified(true);
         setVerifyError("");
-        // Show the "Verified Successfully" landing on THIS device so the user
-        // can continue registration here (even if the original tab is closed).
-        setShowVerifiedLanding(true);
+        if (used) {
+          // Link already used to create the account — keep "verified — locked"
+          // but block Join (show the form, not the success popup).
+          setLinkUsed(true);
+        } else {
+          // Fresh verification — show the "Verified Successfully" landing on THIS
+          // device so the user can continue registration here.
+          setShowVerifiedLanding(true);
+        }
         // Also tell any other open /join tab (the original signup window) so it
         // can continue there too — bonus for same-browser, harmless otherwise.
         try {
           localStorage.setItem(
             "cv_verify_signal",
-            JSON.stringify({ email, token, ts: Date.now() }),
+            JSON.stringify({ email, token, used, ts: Date.now() }),
           );
         } catch (_) { /* ignore */ }
       } else {
@@ -96,6 +107,7 @@ function Join() {
         setVerifyToken(obj.token);
         setEmailVerified(true);
         setVerifyError("");
+        if (obj.used === true) setLinkUsed(true);
         try { window.focus(); } catch (_) {}
       } catch (_) { /* ignore */ }
     }
@@ -130,6 +142,7 @@ function Join() {
         setVerifyToken(res.data.token);
         setEmailVerified(true);
         setVerifyError("");
+        if (res.data.alreadyRegistered === true) setLinkUsed(true);
       } else if (elapsed >= MAX_MS) {
         stopped = true;
         clearInterval(id);
@@ -211,11 +224,15 @@ function Join() {
       newErrors.email = "Email is required";
     }
 
-    if (form.firstName && form.firstName.length < 2) {
+    if (!form.firstName || !form.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    } else if (form.firstName.trim().length < 2) {
       newErrors.firstName = "First name must be at least 2 characters";
     }
 
-    if (form.lastName && form.lastName.length < 2) {
+    if (!form.lastName || !form.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    } else if (form.lastName.trim().length < 2) {
       newErrors.lastName = "Last name must be at least 2 characters";
     }
 
@@ -294,6 +311,19 @@ function Join() {
       setLoading(false);
     }
   };
+
+  // Join is allowed only when: email is verified AND the link wasn't already
+  // used to register, first + last name are filled, password is set and matches,
+  // and the terms are accepted.
+  const canSubmit =
+    emailVerified &&
+    !!verifyToken &&
+    !linkUsed &&
+    !!(form.firstName || "").trim() &&
+    !!(form.lastName || "").trim() &&
+    !!form.password &&
+    form.password === form.confirmPassword &&
+    !!form.agree;
 
   // Verified screen as a standalone full-screen popup. Portaled to document.body
   // so it positions against the VIEWPORT (an ancestor transform/filter on the
@@ -474,6 +504,7 @@ function Join() {
                                 setVerifyToken('');
                                 setVerifyMessage('');
                                 setVerifyError('');
+                                setLinkUsed(false);
                                 setCooldown(0);
                                 if (cooldownTimerRef.current) {
                                   clearInterval(cooldownTimerRef.current);
@@ -535,7 +566,7 @@ function Join() {
                   {emailVerified && (
                   <>
                   <div className="field">
-                    <label for="firstName">First name (optional)</label>
+                    <label for="firstName">First name</label>
                     <input
                       name="firstName"
                       value={form.firstName}
@@ -550,7 +581,7 @@ function Join() {
                     )}
                   </div>
                   <div className="field">
-                    <label for="lastName">Surname (optional)</label>
+                    <label for="lastName">Surname</label>
                     <input
                       name="lastName"
                       value={form.lastName}
@@ -656,11 +687,18 @@ function Join() {
                     </p>
                   </div>
                 </div>
+                {linkUsed && (
+                  <p className="error" style={{ marginBottom: 8 }}>
+                    This email is already registered — this verification link has
+                    already been used. Please <Link to="/login">log in</Link> instead,
+                    or use “Change email” above to sign up with a different email.
+                  </p>
+                )}
                 <div className="form-actions">
                   <button
-                    aria-disabled={loading}
+                    aria-disabled={loading || !canSubmit}
                     aria-busy={loading}
-                    disabled={loading}
+                    disabled={loading || !canSubmit}
                     id="subscribeBtn"
                     type="submit"
                   >

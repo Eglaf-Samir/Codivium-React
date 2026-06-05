@@ -9,6 +9,12 @@ import {
 } from '../api/pricepackage/apipackage';
 import { getUserById } from '../api/auth/apiauth';
 
+// Temporarily force the "no package" billing view for everyone — hides the
+// active-subscription details, billing history, and the Cancel option. The
+// billing management feature isn't being exposed to clients yet. Set this back
+// to false to restore the real billing view.
+const FORCE_NO_PACKAGE_BILLING = true;
+
 function loadScript(src, onload) {
   const s = document.createElement('script');
   s.src = src + '?v=' + Date.now();
@@ -148,6 +154,10 @@ export default function SettingsPage() {
         const hres = await getUserTransactionHistory(userId);
         if (hres?.status === 200 && Array.isArray(hres.data)) history = hres.data;
       } catch (e) {}
+
+      // Force the empty "no package" view: pretend there's no plan and no
+      // billing history, so the active-subscription UI never shows.
+      if (FORCE_NO_PACKAGE_BILLING) { pkg = null; history = []; }
 
       dataReady = true;
       clearInterval(guard);
@@ -518,7 +528,7 @@ export default function SettingsPage() {
                         </tbody>
                       </table>
                     </div>
-                    <div className="as-row">
+                    <div className="as-row" hidden={FORCE_NO_PACKAGE_BILLING}>
                       <div className="as-row-text">
                         <div className="as-row-label">Cancel subscription</div>
                         <div className="as-row-hint">You'll keep access until the end of the current billing period</div>
