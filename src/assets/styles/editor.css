@@ -45,9 +45,13 @@
       margin: 0;
       line-height: 1.6;
     }
+    /* Scoped to the editor page only (it renders #mainWorkspace). Without this
+       scope the rule blanked EVERY page on screens ≤1024px, because editor.css
+       is loaded app-wide — hiding the join/menu/etc. content (and portaled
+       popups) on phones. */
     @media (max-width: 1024px) {
-      #cvd-unsupported-screen { display: flex; }
-      body > *:not(#cvd-unsupported-screen) { visibility: hidden; }
+      body:has(#mainWorkspace) #cvd-unsupported-screen { display: flex; }
+      body:has(#mainWorkspace) > *:not(#cvd-unsupported-screen) { visibility: hidden; }
     }
 
     /* A31: Respect prefers-reduced-motion */
