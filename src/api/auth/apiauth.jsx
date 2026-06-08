@@ -23,6 +23,7 @@ import {
   createusernew,
   sendverifyemail,
   verifyemailtoken,
+  checkverifystatus,
 } from "./constants";
 import { baseURL } from "../../config";
 
@@ -414,6 +415,18 @@ export const SendVerifyEmail = async (email) => {
 // GET ?token=… → backend marks the token verified and returns { email, ok }.
 export const VerifyEmailToken = async (token) => {
   var url = baseURL + verifyemailtoken + encodeURIComponent(token || "");
+  try {
+    const res = await Axios.get(url);
+    return res;
+  } catch (e) {
+    return e.response;
+  }
+};
+
+// GET ?email=… → cross-device poll. Returns { isVerified, token, email } once the
+// link has been opened on ANY device, so the original signup window can advance.
+export const CheckVerifyStatus = async (email) => {
+  var url = baseURL + checkverifystatus + encodeURIComponent(email || "");
   try {
     const res = await Axios.get(url);
     return res;
