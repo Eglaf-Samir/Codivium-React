@@ -302,7 +302,6 @@ export const UpdateActiveInactive = async (id, IsActive) => {
 };
 
 export const SuperAdminUpdatePassword = async (body) => {
-  debugger;
   var url = baseURL + updateuserpassword;
   let token = localStorage.getItem("LoginToken");
   const config = {
@@ -320,7 +319,6 @@ export const SuperAdminUpdatePassword = async (body) => {
 };
 
 export const SuperAdminUpdateUserDetails = async (id, body) => {
-  debugger;
   var url = baseURL + updateuserDetails + id;
   let token = localStorage.getItem("LoginToken");
   const config = {

@@ -279,7 +279,7 @@ export default function UnitTestManagement() {
       name: newSubCategory.trim(),
       otherName: newSubCategory.trim(),
       description: '',
-      parentId: form.categoriesId,
+      parentId: Number(form.categoriesId) || 0,
       category: ParamMasterKey.SubCategories,
     };
     try {
@@ -300,7 +300,23 @@ export default function UnitTestManagement() {
     e.preventDefault();
     if (!form.title.trim()) { Swal.fire({ title: 'Name required', icon: 'warning' }); return; }
     setSaving(true);
-    const body = { ...form, isInstructionHtml, isTutorialHtml };
+    // Selects yield strings and `id` is the '0' sentinel on create; coerce to
+    // numbers (or null) so the backend reliably binds the int / int? *Id fields
+    // — a strict JSON deserializer rejects a string like "5" and returns 400.
+    const toId = (v) => {
+      if (v === '' || v === undefined || v === null) return null;
+      const n = Number(v);
+      return Number.isNaN(n) ? null : n;
+    };
+    const body = {
+      ...form,
+      isInstructionHtml,
+      isTutorialHtml,
+      id: Number(form.id) || 0,
+      difficultyLevelId: toId(form.difficultyLevelId),
+      categoriesId: toId(form.categoriesId),
+      subCategoriesId: toId(form.subCategoriesId),
+    };
     let res;
     try {
       res = (Number(form.id) > 0)
@@ -814,7 +830,7 @@ export default function UnitTestManagement() {
                 <button
                   type="button"
                   className="cv-admin-btn"
-                  onClick={() => downloadFile(baseURL + 'Emoji/SampleFile/SampleDeliberatePracticePreprationUnitTest.xlsx', 'SampleUnitTest.xlsx')}
+                  onClick={() => downloadFile(baseURL + 'Emoji/SampleFile/SampleInterviewPreprationUnitTest.xlsx', 'SampleInterviewUnitTest.xlsx')}
                 >↓ Download sample</button>
                 <input ref={fileInputUnitTestRef} type="file" accept=".xls,.xlsx" style={{ display: 'none' }} onChange={bulkUploadUnits} />
                 <button type="button" className="cv-admin-btn is-primary" onClick={() => fileInputUnitTestRef.current?.click()} disabled={uploadingUnit}>

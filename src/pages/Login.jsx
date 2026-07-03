@@ -30,7 +30,6 @@ function Login() {
   };
 
   const handleSubmit = async (e) => {
-    debugger;
     e.preventDefault();
     let gotologintoPrice = localStorage.getItem("gotologintoPrice");
     const validationErrors = validateLoginForm(logindata);

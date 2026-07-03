@@ -121,7 +121,6 @@ export default function UserManagement() {
 
   // ── Edit ───────────────────────────────────────────────────────
   function openEdit(user) {
-    console.log('user==>', user)
     setAccount({
       id: user.id || '',
       email: user.email || '',
@@ -158,9 +157,20 @@ export default function UserManagement() {
     e.preventDefault();
     if (!account.id) return;
     setSavingEdit(true);
+    // country / occupation / programmingLevel are int? on the backend; the
+    // inputs/selects yield strings, which a strict JSON deserializer rejects
+    // (400). Coerce to number or null so the update binds reliably.
+    const toId = (v) => {
+      if (v === '' || v === undefined || v === null) return null;
+      const n = Number(v);
+      return Number.isNaN(n) ? null : n;
+    };
     const payload = {
       ...account,
       dateOfBirth: account.dateOfBirth ? new Date(account.dateOfBirth).toISOString() : null,
+      country: toId(account.country),
+      occupationId: toId(account.occupationId),
+      programmingLevel: toId(account.programmingLevel),
     };
     const res = await SuperAdminUpdateUserDetails(account.id, JSON.stringify(payload));
     setSavingEdit(false);
@@ -240,7 +250,6 @@ export default function UserManagement() {
       Swal.fire({ title: 'Error', text: 'Action failed.', icon: 'error' });
     }
   }
-  console.log('account', account)
   return (
     <main className="main" id="main-content">
       <div className="cv-admin-page">
@@ -318,7 +327,7 @@ export default function UserManagement() {
                             Password
                           </button>
                           <button type="button" className="cv-admin-btn" onClick={() => openEdit(user)}>
-                            View
+                            Edit
                           </button>
                           <button
                             type="button"
@@ -438,9 +447,9 @@ export default function UserManagement() {
               <button type="button" className="cv-admin-btn" onClick={closeEdit} disabled={savingEdit}>
                 Close
               </button>
-              {/* <button type="submit" className="cv-admin-btn is-primary" disabled={savingEdit}>
+              <button type="submit" className="cv-admin-btn is-primary" disabled={savingEdit}>
                 {savingEdit ? 'Saving…' : 'Save changes'}
-              </button> */}
+              </button>
             </div>
           </form>
         </div>

@@ -108,7 +108,10 @@ export default function McqManagement() {
 
   // ── Filter handlers ─────────────────────────────────────────
   function handleFilter(field, value) {
-    const next = { ...filterData, [field]: value || null };
+    // Coerce select values (always strings) to numbers so the backend's
+    // int? filter DTO binds — a string like "5" is rejected by the strict
+    // JSON deserializer (400), which would blank the whole list.
+    const next = { ...filterData, [field]: value ? Number(value) : null };
     if (field === 'difficultyLevelId') { next.categoryId = null; next.subcategoryId = null; setSubCategories([]); loadCats(value, 'filter'); }
     if (field === 'categoryId') { next.subcategoryId = null; loadSubs(value, 'filter'); }
     setFilterData(next);
@@ -249,6 +252,10 @@ export default function McqManagement() {
     const userId = localStorage.getItem('Userid');
     const body = {
       ...form,
+      // Selects yield strings; the backend DTO expects int for these ids.
+      difficultyLevelId: Number(form.difficultyLevelId) || 0,
+      categoriesId: Number(form.categoriesId) || 0,
+      subCategoriesId: Number(form.subCategoriesId) || 0,
       createdBy: form.createdBy || userId,
       modifiedBy: userId,
       questionOptions: options,
