@@ -6,14 +6,15 @@ import {
   getUserTransactionHistory,
   activepackagecancelByUser,
   getInvoiceUrl,
+  createBillingPortalSession,
 } from '../api/pricepackage/apipackage';
-import { getUserById } from '../api/auth/apiauth';
+import { getUserById, ForgetPasswordApi } from '../api/auth/apiauth';
+import { GetAllUserSettings, SaveUserSetting } from '../api/usersettings/apiusersettings';
 
-// Temporarily force the "no package" billing view for everyone — hides the
-// active-subscription details, billing history, and the Cancel option. The
-// billing management feature isn't being exposed to clients yet. Set this back
-// to false to restore the real billing view.
-const FORCE_NO_PACKAGE_BILLING = true;
+// Billing is now live: the Billing tab shows the real active plan, payment
+// summary, billing history, and a working Manage/Upgrade/Cancel. Set this to
+// true to temporarily force the empty "no package" view again if ever needed.
+const FORCE_NO_PACKAGE_BILLING = false;
 
 function loadScript(src, onload) {
   const s = document.createElement('script');
@@ -240,18 +241,30 @@ export default function SettingsPage() {
           // Suggestion 4: lifetime savings across all paid history.
           const totalSaved = history.reduce((sum, h) => sum + num(h.discountAmount ?? h.DiscountAmount), 0);
           const parts = [];
-          if (!isFreePlan && active && discount > 0) {
-            const original = num(active.packageAmount ?? active.PackageAmount ?? active.price ?? active.Price);
-            const paid = Math.max(0, original - discount);
-            // Suggestion 2: show the discount as a percentage too.
-            const pct = original > 0 ? Math.round((discount / original) * 100) : 0;
-            const offLabel = pct > 0 ? `−${money(discount)} (${pct}% off)` : `−${money(discount)} off`;
-            const bp = (active.billingPeriod ?? active.BillingPeriod ?? billingPeriod) || 'month';
-            parts.push(
-              `<span style="text-decoration:line-through;opacity:.6">${money(original)}</span> ` +
-              `<strong>${money(paid)}</strong> / ${bp}` +
-              ` &middot; <span style="color:var(--color-text-accent,#d8b268)">${coupon ? coupon + ': ' : ''}${offLabel}</span>`,
-            );
+          // Billing period for the price line (active row → plan → default).
+          const bp = (active && (active.billingPeriod ?? active.BillingPeriod)) || billingPeriod || 'month';
+          // Base price for the plan: the active transaction amount, else the plan price.
+          const basePrice = num(
+            (active && (active.packageAmount ?? active.PackageAmount ?? active.price ?? active.Price)) ?? price,
+          );
+          // Always show the price line for any active paid plan — with the
+          // strikethrough + coupon breakdown when a discount applies, otherwise
+          // just the plain price. (Hidden only for the free / no-plan case.)
+          if (!isFreePlan && pkg) {
+            if (discount > 0) {
+              const original = basePrice;
+              const paid = Math.max(0, original - discount);
+              // Suggestion 2: show the discount as a percentage too.
+              const pct = original > 0 ? Math.round((discount / original) * 100) : 0;
+              const offLabel = pct > 0 ? `−${money(discount)} (${pct}% off)` : `−${money(discount)} off`;
+              parts.push(
+                `<span style="text-decoration:line-through;opacity:.6">${money(original)}</span> ` +
+                `<strong>${money(paid)}</strong> / ${bp}` +
+                ` &middot; <span style="color:var(--color-text-accent,#d8b268)">${coupon ? coupon + ': ' : ''}${offLabel}</span>`,
+              );
+            } else {
+              parts.push(`<strong>${money(basePrice)}</strong> / ${bp}`);
+            }
           }
           if (totalSaved > 0) {
             parts.push(`<span style="opacity:.85">You've saved <strong>${money(totalSaved)}</strong> with coupons</span>`);
@@ -311,6 +324,30 @@ export default function SettingsPage() {
         if (upgradeBtn) {
           upgradeBtn.onclick = () => navigate('/pricing');
         }
+        // "Manage payment →" (inside the Payment method modal) opens the Stripe
+        // Customer Portal, where the user updates their card, views invoices, and
+        // can cancel/change the subscription. If there's no billing account yet
+        // (free/no plan), fall back to the pricing page to subscribe first.
+        const goToPayment = document.getElementById('goToPayment');
+        if (goToPayment) {
+          goToPayment.onclick = async () => {
+            if (goToPayment.disabled) return;
+            const orig = goToPayment.textContent;
+            goToPayment.disabled = true;
+            goToPayment.textContent = 'Opening…';
+            try {
+              const r = await createBillingPortalSession(userId);
+              const url = r?.status === 200 ? (r.data?.responseUrl || r.data?.ResponseUrl) : null;
+              if (url) { window.location.href = url; return; }
+              navigate('/pricing');
+            } catch (_) {
+              navigate('/pricing');
+            } finally {
+              goToPayment.disabled = false;
+              goToPayment.textContent = orig;
+            }
+          };
+        }
         if (confirmCancel) {
           confirmCancel.onclick = async () => {
             if (!activePkgId || isFreePlan) return;
@@ -353,6 +390,40 @@ export default function SettingsPage() {
         }
       } catch (_) { /* ignore */ }
     }
+
+    // Bridge the real API service to the external controller script. The plain
+    // account-settings.js can't import our axios modules, so we hand it the one
+    // action the profile section needs — emailing a password-reset link — on
+    // window before it loads. Set BEFORE loadScript so the controller finds it.
+    //
+    // Resolve the email from the backend (by Userid) rather than trusting the
+    // cached localStorage value: a stale session (logged in before UserEmail was
+    // persisted) or the demo seeder can leave a blank/dummy email there, which
+    // the backend can't find and reports as "User not found".
+    const sendPasswordResetForCurrentUser = async () => {
+      const uid = localStorage.getItem('Userid');
+      let email = (localStorage.getItem('UserEmail') || '').trim();
+      if (uid) {
+        try {
+          const res = await getUserById(uid);
+          if (res?.status === 200 && res.data?.email) {
+            email = String(res.data.email).trim();
+            // Refresh the cache so the rest of the page shows the real address.
+            localStorage.setItem('UserEmail', email);
+            localStorage.setItem('cv_profile_email', email);
+          }
+        } catch (_) { /* fall back to cached email */ }
+      }
+      if (!email) return { status: 400, data: 'No email address on file for your account.' };
+      return ForgetPasswordApi(email);
+    };
+    window.CV_PROFILE_API = {
+      sendPasswordReset: sendPasswordResetForCurrentUser,
+      // Appearance persistence: the controller hydrates from these on load and
+      // upserts changed preferences to the backend on change.
+      getAppearanceSettings: GetAllUserSettings,
+      saveAppearanceSetting: SaveUserSetting,
+    };
 
     // Step 2: load demo data, then load the settings controller. After each
     // step, force the REAL profile back so the demo dummy never sticks in the
@@ -452,22 +523,20 @@ export default function SettingsPage() {
                         <div className="as-row-hint">Your profile name</div>
                       </div>
                       <span className="as-row-value" id="asDisplayNameVal">—</span>
-                      <button className="as-btn" type="button" data-modal="displayName">Change</button>
                     </div>
                     <div className="as-row">
                       <div className="as-row-text"><div className="as-row-label">Email address</div></div>
                       <span className="as-row-value" id="asEmailVal">—</span>
-                      <button className="as-btn" type="button" data-modal="email">Change</button>
                     </div>
                     <div className="as-row">
                       <div className="as-row-text">
                         <div className="as-row-label">Password</div>
-                        <div className="as-row-hint">Use a strong password you don't use elsewhere</div>
+                        <div className="as-row-hint">We'll email you a secure link to set a new password</div>
                       </div>
                       <span className="as-row-value">••••••••</span>
-                      <button className="as-btn" type="button" data-modal="password">Change</button>
+                      <button className="as-btn" type="button" id="asChangePasswordBtn">Change</button>
                     </div>
-                    <p className="as-note">Changes to email or password require your current password to confirm.</p>
+                    <p className="as-note">To change your password, we send a reset link to your email address. Open it to set a new password.</p>
                   </section>
                   <section className="as-section as-danger-zone" aria-label="Danger zone">
                     <div className="as-section-head">
@@ -732,51 +801,6 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Modals ── */}
-      <div className="as-modal-backdrop" id="modal-displayName" role="dialog" aria-modal="true" aria-labelledby="mdnTitle">
-        <div className="as-modal">
-          <div className="as-modal-title" id="mdnTitle">Change display name</div>
-          <div className="as-modal-body">This name appears in your profile and session history.</div>
-          <label className="as-field-label" htmlFor="asNewDisplayName">New display name</label>
-          <input className="as-field" type="text" id="asNewDisplayName" placeholder="Your name" maxLength="60" autoComplete="name"/>
-          <div className="as-modal-actions">
-            <button className="as-btn" type="button" data-close-modal="">Cancel</button>
-            <button className="as-btn primary" type="button" id="saveDisplayName">Save</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="as-modal-backdrop" id="modal-email" role="dialog" aria-modal="true" aria-labelledby="mdeTitle">
-        <div className="as-modal">
-          <div className="as-modal-title" id="mdeTitle">Change email address</div>
-          <div className="as-modal-body">A verification link will be sent to your new address.</div>
-          <label className="as-field-label" htmlFor="asNewEmail">New email address</label>
-          <input className="as-field" type="email" id="asNewEmail" placeholder="you@example.com" maxLength="254" autoComplete="email"/>
-          <label className="as-field-label" htmlFor="asEmailPassword">Current password</label>
-          <input className="as-field" type="password" id="asEmailPassword" placeholder="Current password" autoComplete="current-password" maxLength="128"/>
-          <div className="as-modal-actions">
-            <button className="as-btn" type="button" data-close-modal="">Cancel</button>
-            <button className="as-btn primary" type="button" id="saveEmail">Send verification</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="as-modal-backdrop" id="modal-password" role="dialog" aria-modal="true" aria-labelledby="mdpTitle">
-        <div className="as-modal">
-          <div className="as-modal-title" id="mdpTitle">Change password</div>
-          <div className="as-modal-body">Use a strong password that you don't use on other sites.</div>
-          <label className="as-field-label" htmlFor="asCurrentPassword">Current password</label>
-          <input className="as-field" type="password" id="asCurrentPassword" placeholder="Current password" autoComplete="current-password" maxLength="128"/>
-          <label className="as-field-label" htmlFor="asNewPassword">New password</label>
-          <input className="as-field" type="password" id="asNewPassword" placeholder="New password (min. 8 characters)" autoComplete="new-password" maxLength="128"/>
-          <label className="as-field-label" htmlFor="asConfirmPassword">Confirm new password</label>
-          <input className="as-field" type="password" id="asConfirmPassword" placeholder="Repeat new password" autoComplete="new-password" maxLength="128"/>
-          <div className="as-modal-actions">
-            <button className="as-btn" type="button" data-close-modal="">Cancel</button>
-            <button className="as-btn primary" type="button" id="savePassword">Update password</button>
-          </div>
-        </div>
-      </div>
-
       <div className="as-modal-backdrop" id="modal-payment" role="dialog" aria-modal="true" aria-labelledby="mdpaTitle">
         <div className="as-modal">
           <div className="as-modal-title" id="mdpaTitle">Payment method</div>

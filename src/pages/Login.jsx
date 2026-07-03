@@ -3,6 +3,7 @@ import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { Link, useNavigate } from "react-router-dom";
 import { Loginuser } from "../api/auth/apiauth";
+import { hydrateAppearanceSettings } from "../api/usersettings/apiusersettings";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
 import { validateLoginForm } from "../utils/validation";
@@ -64,6 +65,15 @@ function Login() {
               "userpackagedetails",
               JSON.stringify(response.data.activePackage),
             );
+          }
+
+          // Pull the user's saved appearance settings into localStorage so their
+          // theme/editor/dashboard setup follows them to this device. Best-effort:
+          // never block or fail login if the settings call errors.
+          try {
+            await hydrateAppearanceSettings();
+          } catch (_) {
+            /* ignore */
           }
 
           if (gotologintoPrice === "true") {

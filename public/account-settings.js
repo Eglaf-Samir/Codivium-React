@@ -931,79 +931,58 @@
     });
   }
 
+  /* ── Profile API bridge ───────────────────────────────────────
+   * The React page hands us the one action the profile section needs on
+   * window.CV_PROFILE_API.sendPasswordReset() (see SettingsPage.jsx). It resolves
+   * the signed-in user's real email from the backend, emails a secure reset link
+   * (/resetPassword?uniquecode=…) and returns an axios-style response
+   * ({ status, data }) — data === true on success. */
+  function profileApi() { return window.CV_PROFILE_API || null; }
+
   /* ── Modal actions ────────────────────────────────────────── */
   function initModalActions() {
 
-    // Display name save
-    var saveNameBtn = el('saveDisplayName');
-    if (saveNameBtn) {
-      saveNameBtn.addEventListener('click', function () {
-        var val = (el('asNewDisplayName').value || '').trim();
-        if (!val) { el('asNewDisplayName').focus(); return; }
-        if (val.length > 60) {
-          showToast('Display name must be 60 characters or fewer.', 'error');
-          el('asNewDisplayName').focus(); return;
+    // Change password — email a reset link to the signed-in user. They set the
+    // new password from that link (new + confirm) on the reset page.
+    var changePwBtn = el('asChangePasswordBtn');
+    if (changePwBtn) {
+      changePwBtn.addEventListener('click', function () {
+        if (changePwBtn.disabled) return;               // ignore double-clicks
+        var api = profileApi();
+        if (!api || typeof api.sendPasswordReset !== 'function') {
+          showToast('You must be signed in to change your password.', true);
+          return;
         }
-        set('cv_profile_name', val);
-        if (el('asDisplayNameVal')) el('asDisplayNameVal').textContent = val;
-        if (el('profileName')) el('profileName').textContent = val;
-        closeAllModals();
-        showToast('Display name updated.');
+
+        // Show an inline loader on the button while the email is being sent.
+        var originalHtml = changePwBtn.innerHTML;
+        changePwBtn.disabled = true;
+        changePwBtn.setAttribute('aria-busy', 'true');
+        changePwBtn.innerHTML = '<span class="as-btn-spinner" aria-hidden="true"></span>Sending…';
+
+        var restore = function () {
+          changePwBtn.innerHTML = originalHtml;
+          changePwBtn.removeAttribute('aria-busy');
+          changePwBtn.disabled = false;
+        };
+
+        api.sendPasswordReset().then(function (res) {
+          if (res && res.status === 200 && res.data === true) {
+            showToast('Password reset link sent to your email.');
+          } else {
+            var msg = (res && typeof res.data === 'string') ? res.data : '';
+            showToast(msg || 'Could not send the reset link. Try again.', true);
+          }
+        }).catch(function () {
+          showToast('Something went wrong. Try again.', true);
+        }).then(restore);
       });
     }
 
-    // Email save (stub — requires backend)
-    var saveEmailBtn = el('saveEmail');
-    if (saveEmailBtn) {
-      saveEmailBtn.addEventListener('click', function () {
-        var email = (el('asNewEmail').value || '').trim();
-        if (!email || !email.includes('@')) { el('asNewEmail').focus(); return; }
-        if (email.length > 254) {
-          showToast('Email address is too long (max 254 characters).', 'error');
-          el('asNewEmail').focus(); return;
-        }
-        closeAllModals();
-        showToast('Verification email sent to ' + email + '.');
-        // TODO: POST /api/user/change-email { newEmail, currentPassword }
-      });
-    }
-
-    // Password save (stub — requires backend)
-    var savePwBtn = el('savePassword');
-    if (savePwBtn) {
-      savePwBtn.addEventListener('click', function () {
-        var newPw  = el('asNewPassword').value || '';
-        var confPw = el('asConfirmPassword').value || '';
-        if (newPw.length < 8) { showToast('Password must be at least 8 characters.', true); return; }
-        if (newPw !== confPw) { showToast('Passwords do not match.', true); return; }
-        closeAllModals();
-        showToast('Password updated.');
-        // TODO: POST /api/user/change-password { currentPassword, newPassword }
-      });
-    }
-
-    // Payment (stub)
-    var goPayBtn = el('goToPayment');
-    if (goPayBtn) {
-      goPayBtn.addEventListener('click', function () {
-        closeAllModals();
-        showToast('Redirecting to billing portal…');
-        // TODO: redirect to Stripe customer portal URL
-      });
-    }
-
-    // Cancel subscription — redirects to Stripe Customer Portal (monthly/annual only)
-    // Weekly access expires naturally after 7 days; the cancel button is hidden for weekly users.
-    var cancelSubBtn = el('confirmCancelSub');
-    if (cancelSubBtn) {
-      cancelSubBtn.addEventListener('click', function () {
-        closeAllModals();
-        showToast('Opening billing portal');
-        // TODO: fetch('/api/billing/portal', { credentials: 'same-origin' })
-        //         .then(r => r.json()).then(d => { window.location.href = d.url; });
-        // Cancellation is handled inside the Stripe Customer Portal — no custom cancel endpoint needed.
-      });
-    }
+    // Payment method ("Manage payment →") and Cancel subscription are wired by
+    // the React page (SettingsPage.jsx) against the live backend: "Manage
+    // payment" opens the Stripe Customer Portal and Cancel calls the cancel
+    // endpoint. Not handled here to avoid double-binding the same buttons.
 
     // Delete account — confirm field
     var deleteInput = el('asDeleteConfirm');
@@ -1055,33 +1034,152 @@
     if (emailEl) emailEl.textContent = window.CODIVIUM_DEMO_EMAIL || '—';
   }
 
+  /* ── Appearance persistence (DB-backed via window.CV_PROFILE_API) ──────────
+   * These preferences are saved to the backend so a user's setup follows them to
+   * any device/login. All keys are lowercase, matching the backend's lowercase
+   * KeyName storage. `cvEffects` and `cv.dashboard.ui` are derived mirrors of
+   * `reduce_motion` / `as_dash_layout`, so we persist only the primary keys and
+   * re-derive the mirrors on load. */
+  var APPEARANCE_KEYS = [
+    'cv_site_theme',
+    'as_dash_layout',
+    'reduce_motion',
+    'cv_drawer_speed',
+    'cv_syntax_theme',
+    'cv_editor_font_size',
+    'cv_editor_font_family',
+    'cv_repl_syntax_theme',
+    'cv_repl_font_size',
+    'cv_repl_font_family',
+    'cv_instructions_font_size',
+    'cv_instructions_font_family',
+    'as_appear_subtab',
+  ];
+  // Notification preferences are persisted the same DB-backed way as appearance,
+  // so a user's choices follow them across devices AND the server can honour them
+  // (e.g. only email users who opted into marketing / weekly digests). Same
+  // lowercase KeyName storage; values are '1'|'0'.
+  var NOTIFICATION_KEYS = [
+    'notif_weekly_summary',
+    'notif_milestones',
+    'notif_in_app',
+    'notif_marketing',
+  ];
+  // Every key we hydrate-from / sync-to the backend (appearance + notifications).
+  var SYNC_KEYS = APPEARANCE_KEYS.concat(NOTIFICATION_KEYS);
+  var _apSnapshot = {};
+  var _apSaveTimer = null;
+
+  // Pull saved values from the backend into localStorage BEFORE the init
+  // functions read them, so every control shows the user's saved choice.
+  function hydrateAppearanceFromDb() {
+    var api = profileApi();
+    if (!api || typeof api.getAppearanceSettings !== 'function') {
+      return Promise.resolve();
+    }
+    return api.getAppearanceSettings().then(function (res) {
+      if (!res || res.status !== 200 || !Array.isArray(res.data)) return;
+      res.data.forEach(function (row) {
+        var key = (row && row.keyName ? String(row.keyName) : '').toLowerCase();
+        if (key && SYNC_KEYS.indexOf(key) !== -1 && row.displayValue != null) {
+          set(key, String(row.displayValue));
+        }
+      });
+      // Re-derive the reduce-motion mirror and apply the site theme now.
+      var rm = get('reduce_motion', null);
+      if (rm != null) set('cvEffects', rm === '1' ? 'low' : 'full');
+      var theme = get('cv_site_theme', null);
+      if (theme && window.CVTheme && typeof window.CVTheme.set === 'function') {
+        window.CVTheme.set(theme);
+      }
+    }).catch(function () { /* offline / unauthenticated — keep local values */ });
+  }
+
+  // Remember the current values so we only push what actually changed.
+  function snapshotAppearance() {
+    SYNC_KEYS.forEach(function (k) { _apSnapshot[k] = get(k, null); });
+  }
+
+  // Diff localStorage against the snapshot and upsert only the changed keys.
+  function syncChangedAppearance() {
+    var api = profileApi();
+    if (!api || typeof api.saveAppearanceSetting !== 'function') return;
+    SYNC_KEYS.forEach(function (k) {
+      var cur = get(k, null);
+      if (cur === _apSnapshot[k]) return;
+      _apSnapshot[k] = cur;
+      if (cur == null) return;
+      api.saveAppearanceSetting({
+        KeyName: k, DisplayText: k, DisplayValue: String(cur),
+      }).catch(function () { /* best-effort; value stays in localStorage */ });
+    });
+  }
+
+  function scheduleAppearanceSync() {
+    if (_apSaveTimer) clearTimeout(_apSaveTimer);
+    _apSaveTimer = setTimeout(syncChangedAppearance, 600);
+  }
+
+  // Any change/click/input on the page may have updated an appearance key
+  // (theme chips write on click; selects/checkbox/range fire change/input).
+  // Debounced + diff-based, so unrelated events cost only a timer reset.
+  // SettingsPage re-injects this script on every visit, so remove a previous
+  // instance's document listeners first — only the latest one should sync.
+  var _AP_EVENTS = ['change', 'input', 'click'];
+  function initAppearanceSync() {
+    snapshotAppearance();
+    if (window.__cvApSyncHandler) {
+      _AP_EVENTS.forEach(function (evt) {
+        document.removeEventListener(evt, window.__cvApSyncHandler, true);
+      });
+    }
+    window.__cvApSyncHandler = scheduleAppearanceSync;
+    _AP_EVENTS.forEach(function (evt) {
+      document.addEventListener(evt, scheduleAppearanceSync, true);
+    });
+  }
+
   /* ── Boot ─────────────────────────────────────────────────── */
   function init() {
     loadProfile();
     loadEmail();
-    loadPlan();
-    loadBilling();
+    // Billing (current plan, payment summary, and history) is rendered by the
+    // React page (SettingsPage.jsx) from live backend data — loadPlan/loadBilling
+    // here were demo stubs and are intentionally not called (they'd fight React).
     initAvatar();
-    initToggles();
-    initDashLayout();
+
+    // Core UI that doesn't depend on saved appearance values — wire it
+    // synchronously so tabs and modals (e.g. change password) work immediately,
+    // independent of the settings network call.
     initTabs();
-    initSiteThemes();
-    initEditorThemes();
-    initEditorFontSize();
-    initReplFontSize();
-    initInstructionsFontSize();
-    initEditorFontFamily();
-    initReplFontFamily();
-    initInstructionsFontFamily();
-    initReplSyntaxTheme();
-    initSubTabs();
     initModals();
     initModalActions();
 
-    // Reduce motion: apply on load
-    if (get('reduce_motion') === '1') {
-      document.documentElement.setAttribute('data-cv-effects', 'low');
-    }
+    // Hydrate saved appearance from the backend first, THEN run the init
+    // functions that read those values, THEN start syncing changes back.
+    hydrateAppearanceFromDb().then(function () {
+      initToggles();
+      initDashLayout();
+      initSiteThemes();
+      initEditorThemes();
+      initEditorFontSize();
+      initReplFontSize();
+      initInstructionsFontSize();
+      initEditorFontFamily();
+      initReplFontFamily();
+      initInstructionsFontFamily();
+      initReplSyntaxTheme();
+      initSubTabs();
+
+      // Reduce motion: apply on load
+      if (get('reduce_motion') === '1') {
+        document.documentElement.setAttribute('data-cv-effects', 'low');
+      }
+
+      // Start persisting changes only after everything is applied, so hydration
+      // and init defaults don't get echoed straight back to the server.
+      initAppearanceSync();
+    });
   }
 
   if (document.readyState === 'loading') {

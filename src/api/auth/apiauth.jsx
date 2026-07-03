@@ -352,7 +352,8 @@ export const Visitsite = async (body) => {
 };
 
 export const ForgetPasswordApi = async (email) => {
-  var url = baseURL + "api/v1/account/forgotpassword?email=" + email;
+  var url =
+    baseURL + "api/v1/account/forgotpassword?email=" + encodeURIComponent(email);
   console.log("url", url);
   const config = {
     headers: {
