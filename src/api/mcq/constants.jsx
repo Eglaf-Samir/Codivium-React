@@ -15,3 +15,4 @@ export const mcqfileupload = 'api/v1/mcq/mcqfileupload';
 //Mcqtest
 export const getallmcqbyfilter = 'api/v1/mcq/GetAllbyfilterAsync';
 export const createmcqTimelogs = 'api/v1/mcqtimelog/CreateMCQLog';
+export const getMcqCategoryIdsWithQuestions = 'api/v1/mcq/CategoryIdsWithQuestions?difficultyLevelId=';

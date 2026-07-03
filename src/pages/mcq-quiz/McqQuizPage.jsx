@@ -25,7 +25,7 @@ export default function McqQuizPage() {
   useGlowFollow();
 
   const tourState = useMcqTour({ onParent: false });
-  const { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart, saveAndExit } = useQuiz();
+  const { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart, saveAndExit, saveStatus, retrySave } = useQuiz();
   const { phase, questions, index, settings } = state;
   const q = questions[index];
 
@@ -121,7 +121,7 @@ export default function McqQuizPage() {
     return (
       <main className="main" id="main-content" role="main">
         <div className="page-shell">
-          <SummaryView state={state} onRestart={restart} onAdjust={handleAdjust} />
+          <SummaryView state={state} onRestart={restart} onAdjust={handleAdjust} saveStatus={saveStatus} onRetrySave={retrySave} />
         </div>
       </main>
     );
@@ -153,17 +153,18 @@ export default function McqQuizPage() {
           {/* Fixed-position timer overlay — position:fixed in CSS */}
           <CvTimer />
 
-          {/* Demo mode notice */}
-          {/* {settings?._isDemo && (
+          {/* Demo mode notice — visible so a sample-question session is never
+              mistaken for a real, saved one. */}
+          {settings?._isDemo && (
             <div style={{
               padding: '8px 14px', marginBottom: 10, fontSize: 12,
               background: 'rgba(246,213,138,0.08)', border: '1px solid rgba(246,213,138,0.22)',
               borderRadius: 4, color: 'rgba(246,213,138,0.82)',
             }} role="note">
-              Demo mode — showing sample questions.{' '}
+              Demo mode — showing sample questions (results are not saved).{' '}
               <Link to="/mcq" style={{ color: 'inherit' }}>Go to MCQ Setup</Link> to choose your own filters.
             </div>
-          )} */}
+          )}
 
           {/* Main window — matches parent page chrome */}
           <div className="window window-large glow-follow">
