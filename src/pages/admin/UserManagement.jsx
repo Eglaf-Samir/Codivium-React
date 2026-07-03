@@ -13,6 +13,11 @@ import { logout } from '../../utils/auth';
 import AdminPager from '../../components/AdminPager.jsx';
 import AdminModal from '../../components/AdminModal.jsx';
 
+// Admin user-details editing is disabled by default (read-only "View").
+// The full edit flow (form, save handler, id coercion) is wired and working —
+// flip this to `true` to re-enable the Edit action + Save button.
+const USER_EDIT_ENABLED = false;
+
 const initialForm = {
   id: '',
   email: '',
@@ -327,7 +332,7 @@ export default function UserManagement() {
                             Password
                           </button>
                           <button type="button" className="cv-admin-btn" onClick={() => openEdit(user)}>
-                            Edit
+                            {USER_EDIT_ENABLED ? 'Edit' : 'View'}
                           </button>
                           <button
                             type="button"
@@ -447,9 +452,11 @@ export default function UserManagement() {
               <button type="button" className="cv-admin-btn" onClick={closeEdit} disabled={savingEdit}>
                 Close
               </button>
-              <button type="submit" className="cv-admin-btn is-primary" disabled={savingEdit}>
-                {savingEdit ? 'Saving…' : 'Save changes'}
-              </button>
+              {USER_EDIT_ENABLED && (
+                <button type="submit" className="cv-admin-btn is-primary" disabled={savingEdit}>
+                  {savingEdit ? 'Saving…' : 'Save changes'}
+                </button>
+              )}
             </div>
           </form>
         </div>
