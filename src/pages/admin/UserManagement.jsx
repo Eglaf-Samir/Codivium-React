@@ -108,8 +108,10 @@ export default function UserManagement() {
     const q = search.trim().toLowerCase();
     if (!q) return users;
     return users.filter(u => {
+      // country is a numeric code on the backend, not a string - coerce every
+      // field so a non-zero number doesn't reach .toLowerCase() and crash.
       const fields = [u.firstName, u.middleName, u.lastName, u.email, u.country];
-      return fields.some(f => (f || '').toLowerCase().includes(q));
+      return fields.some(f => String(f ?? '').toLowerCase().includes(q));
     });
   }, [users, search]);
 
