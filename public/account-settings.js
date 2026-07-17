@@ -3,23 +3,18 @@
  * Account & Settings page controller.
  *
  * What this file does:
- *  - Loads profile name/avatar from localStorage (cv_profile_name, cv_profile_image)
  *  - Reads/writes all notification and appearance preferences to localStorage
  *  - Renders editor colour theme chips and wires the selection
  *  - Handles modal open/close for all change flows
- *  - Validates and saves display name changes locally
- *  - All API-dependent flows (email, password, billing) show a stub confirmation
- *    toast — wire to your backend endpoints when available
+ *  - All API-dependent flows (name/email/avatar, password, billing, account
+ *    deletion) go through window.CV_PROFILE_API, bridged in from the React
+ *    page (SettingsPage.jsx) — this script never persists name/email/photo
+ *    to localStorage itself.
  *
  * localStorage keys used:
- *  cv_profile_name          string   display name
- *  cv_profile_image         string   data URL for avatar
  *  cv_syntax_theme          string   editor syntax theme key
  *  cv_ws_theme              string   editor UI theme key
  *  cv_sidebar_collapsed     string   dashboard sidebar state
- *  notif_weekly_summary     '1'|'0'  weekly email
- *  notif_milestones         '1'|'0'  milestone alerts
- *  notif_in_app             '1'|'0'  in-app notifications
  *  notif_marketing          '1'|'0'  marketing emails
  *  reduce_motion            '1'|'0'  reduce motion preference
  *  as_dash_layout           string   'full' | 'info_only'
@@ -50,51 +45,141 @@
     { key: 'mist-meridian',        name: 'Mist Meridian',       dot: '#EFF3F8' },
   ];
 
-  /* ── Load profile ─────────────────────────────────────────── */
-  function loadProfile() {
-    var name  = get('cv_profile_name', '');
-    var image = get('cv_profile_image', '');
-    var email = get('cv_profile_email', '');
-    if (el('asDisplayNameVal')) el('asDisplayNameVal').textContent = name || '—';
-    if (el('asEmailVal'))       el('asEmailVal').textContent       = email || '—';
-    if (name && el('profileName')) el('profileName').textContent = name;
-    if (image && el('asAvatarImg')) el('asAvatarImg').src = image;
-    if (image && el('profileImg'))  el('profileImg').src  = image;
+  /* ── Avatar ───────────────────────────────────────────────────
+   * Upload/remove call through window.CV_PROFILE_API (bridged from
+   * SettingsPage.jsx), which persists to the backend (AppUser.ProfileImage)
+   * and shows its own success/error dialog. Nothing is cached locally —
+   * that was the root cause of every account on a shared browser showing
+   * the same photo.
+   *
+   * Uploads are compressed client-side first (downscaled + re-encoded as
+   * JPEG via canvas) so a multi-MB phone photo doesn't get stored verbatim
+   * — keeps the DB row small and avoids the 2MB cap rejecting normal photos. */
+  var AVATAR_MAX_DIMENSION = 512;
+  var AVATAR_JPEG_QUALITY = 0.8;
+
+  function compressImageFile(file, maxDim, quality) {
+    return new Promise(function (resolve, reject) {
+      var objectUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(objectUrl);
+        try {
+          var w = img.naturalWidth || img.width;
+          var h = img.naturalHeight || img.height;
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          var targetW = Math.max(1, Math.round(w * scale));
+          var targetH = Math.max(1, Math.round(h * scale));
+          var canvas = document.createElement('canvas');
+          canvas.width = targetW;
+          canvas.height = targetH;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, targetW, targetH);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Could not read image.'));
+      };
+      img.src = objectUrl;
+    });
   }
 
-  /* ── Avatar ───────────────────────────────────────────────── */
+  // Fallback for the rare case an image fails to decode via <img>/canvas —
+  // upload the original file uncompressed rather than blocking entirely.
+  function readFileAsDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function (e) { resolve(e.target.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function estimateDataUrlBytes(dataUrl) {
+    var commaIdx = dataUrl.indexOf(',');
+    var payload = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+    return Math.round((payload.length * 3) / 4);
+  }
+
   function initAvatar() {
-    var uploadBtn  = el('asAvatarUploadBtn');
-    var removeBtn  = el('asAvatarRemoveBtn');
-    var fileInput  = el('asAvatarFile');
-    var avatarImg  = el('asAvatarImg');
-    var sidebarImg = el('profileImg');
+    var uploadBtn   = el('asAvatarUploadBtn');
+    var removeBtn   = el('asAvatarRemoveBtn');
+    var fileInput   = el('asAvatarFile');
+    var avatarImg   = el('asAvatarImg');
+    var avatarWrap  = el('asAvatarPhotoWrap');
+    var sidebarImg  = el('profileImg');
+
+    // Toggles the spinner overlay on the photo itself, in addition to
+    // whichever button (Upload/Remove) also shows its own inline spinner.
+    var setAvatarBusy = function (busy) {
+      if (avatarWrap) avatarWrap.classList.toggle('is-loading', !!busy);
+    };
+    var setBtnBusy = function (btn, busy, busyLabel) {
+      if (!btn) return;
+      if (busy) {
+        btn.dataset.origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="as-btn-spinner" aria-hidden="true"></span>' + busyLabel;
+      } else {
+        btn.disabled = false;
+        if (btn.dataset.origHtml) btn.innerHTML = btn.dataset.origHtml;
+      }
+    };
 
     if (uploadBtn && fileInput) {
       uploadBtn.addEventListener('click', function () { fileInput.click(); });
       fileInput.addEventListener('change', function () {
         var file = fileInput.files[0];
-        if (!file) return;
-        if (file.size > 2 * 1024 * 1024) { showToast('Image must be under 2 MB.', true); return; }
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          var dataUrl = e.target.result;
-          if (avatarImg)  avatarImg.src  = dataUrl;
-          if (sidebarImg) sidebarImg.src = dataUrl;
-          set('cv_profile_image', dataUrl);
-          showToast('Profile photo updated.');
-        };
-        reader.readAsDataURL(file);
         fileInput.value = '';
+        if (!file) return;
+        var api = profileApi();
+        if (!api || typeof api.uploadAvatar !== 'function') return;
+
+        setBtnBusy(uploadBtn, true, 'Uploading…');
+        setAvatarBusy(true);
+
+        compressImageFile(file, AVATAR_MAX_DIMENSION, AVATAR_JPEG_QUALITY)
+          .catch(function () { return readFileAsDataUrl(file); })
+          .then(function (dataUrl) {
+            if (estimateDataUrlBytes(dataUrl) > 2 * 1024 * 1024) {
+              showToast('Image is still too large after compression. Try a smaller photo.', true);
+              return;
+            }
+            return api.uploadAvatar(dataUrl).then(function (result) {
+              if (result && result.ok) {
+                if (avatarImg)  avatarImg.src  = dataUrl;
+                if (sidebarImg) sidebarImg.src = dataUrl;
+              }
+            });
+          })
+          .catch(function () {
+            showToast('Could not read that image. Try a different file.', true);
+          })
+          .then(function () {
+            setBtnBusy(uploadBtn, false);
+            setAvatarBusy(false);
+          });
       });
     }
     if (removeBtn) {
       removeBtn.addEventListener('click', function () {
-        var placeholder = '/assets/img/profile-placeholder.svg';
-        if (avatarImg)  avatarImg.src  = placeholder;
-        if (sidebarImg) sidebarImg.src = placeholder;
-        try { localStorage.removeItem('cv_profile_image'); } catch (_) {}
-        showToast('Profile photo removed.');
+        var api = profileApi();
+        if (!api || typeof api.removeAvatar !== 'function') return;
+        setBtnBusy(removeBtn, true, 'Removing…');
+        setAvatarBusy(true);
+        api.removeAvatar().then(function (result) {
+          setBtnBusy(removeBtn, false);
+          setAvatarBusy(false);
+          if (result && result.ok) {
+            var placeholder = '/assets/img/profile-placeholder.svg';
+            if (avatarImg)  avatarImg.src  = placeholder;
+            if (sidebarImg) sidebarImg.src = placeholder;
+          }
+        });
       });
     }
   }
@@ -931,81 +1016,64 @@
     });
   }
 
+  /* ── Profile API bridge ───────────────────────────────────────
+   * The React page hands us the one action the profile section needs on
+   * window.CV_PROFILE_API.sendPasswordReset() (see SettingsPage.jsx). It resolves
+   * the signed-in user's real email from the backend, emails a secure reset link
+   * (/resetPassword?uniquecode=…) and returns an axios-style response
+   * ({ status, data }) — data === true on success. */
+  function profileApi() { return window.CV_PROFILE_API || null; }
+
   /* ── Modal actions ────────────────────────────────────────── */
   function initModalActions() {
 
-    // Display name save
-    var saveNameBtn = el('saveDisplayName');
-    if (saveNameBtn) {
-      saveNameBtn.addEventListener('click', function () {
-        var val = (el('asNewDisplayName').value || '').trim();
-        if (!val) { el('asNewDisplayName').focus(); return; }
-        if (val.length > 60) {
-          showToast('Display name must be 60 characters or fewer.', 'error');
-          el('asNewDisplayName').focus(); return;
+    // Change password — email a reset link to the signed-in user. They set the
+    // new password from that link (new + confirm) on the reset page.
+    var changePwBtn = el('asChangePasswordBtn');
+    if (changePwBtn) {
+      changePwBtn.addEventListener('click', function () {
+        if (changePwBtn.disabled) return;               // ignore double-clicks
+        var api = profileApi();
+        if (!api || typeof api.sendPasswordReset !== 'function') {
+          showToast('You must be signed in to change your password.', true);
+          return;
         }
-        set('cv_profile_name', val);
-        if (el('asDisplayNameVal')) el('asDisplayNameVal').textContent = val;
-        if (el('profileName')) el('profileName').textContent = val;
-        closeAllModals();
-        showToast('Display name updated.');
+
+        // Show an inline loader on the button while the email is being sent.
+        var originalHtml = changePwBtn.innerHTML;
+        changePwBtn.disabled = true;
+        changePwBtn.setAttribute('aria-busy', 'true');
+        changePwBtn.innerHTML = '<span class="as-btn-spinner" aria-hidden="true"></span>Sending…';
+
+        var restore = function () {
+          changePwBtn.innerHTML = originalHtml;
+          changePwBtn.removeAttribute('aria-busy');
+          changePwBtn.disabled = false;
+        };
+
+        api.sendPasswordReset().then(function (res) {
+          if (res && res.status === 200 && res.data === true) {
+            showToast('Password reset link sent to your email.');
+          } else {
+            var msg = (res && typeof res.data === 'string') ? res.data : '';
+            showToast(msg || 'Could not send the reset link. Try again.', true);
+          }
+        }).catch(function () {
+          showToast('Something went wrong. Try again.', true);
+        }).then(restore);
       });
     }
 
-    // Email save (stub — requires backend)
-    var saveEmailBtn = el('saveEmail');
-    if (saveEmailBtn) {
-      saveEmailBtn.addEventListener('click', function () {
-        var email = (el('asNewEmail').value || '').trim();
-        if (!email || !email.includes('@')) { el('asNewEmail').focus(); return; }
-        if (email.length > 254) {
-          showToast('Email address is too long (max 254 characters).', 'error');
-          el('asNewEmail').focus(); return;
-        }
-        closeAllModals();
-        showToast('Verification email sent to ' + email + '.');
-        // TODO: POST /api/user/change-email { newEmail, currentPassword }
-      });
-    }
+    // Payment method ("Manage payment →") and Cancel subscription are wired by
+    // the React page (SettingsPage.jsx) against the live backend: "Manage
+    // payment" opens the Stripe Customer Portal and Cancel calls the cancel
+    // endpoint. Not handled here to avoid double-binding the same buttons.
 
-    // Password save (stub — requires backend)
-    var savePwBtn = el('savePassword');
-    if (savePwBtn) {
-      savePwBtn.addEventListener('click', function () {
-        var newPw  = el('asNewPassword').value || '';
-        var confPw = el('asConfirmPassword').value || '';
-        if (newPw.length < 8) { showToast('Password must be at least 8 characters.', true); return; }
-        if (newPw !== confPw) { showToast('Passwords do not match.', true); return; }
-        closeAllModals();
-        showToast('Password updated.');
-        // TODO: POST /api/user/change-password { currentPassword, newPassword }
-      });
-    }
-
-    // Payment (stub)
-    var goPayBtn = el('goToPayment');
-    if (goPayBtn) {
-      goPayBtn.addEventListener('click', function () {
-        closeAllModals();
-        showToast('Redirecting to billing portal…');
-        // TODO: redirect to Stripe customer portal URL
-      });
-    }
-
-    // Cancel subscription — redirects to Stripe Customer Portal (monthly/annual only)
-    // Weekly access expires naturally after 7 days; the cancel button is hidden for weekly users.
-    var cancelSubBtn = el('confirmCancelSub');
-    if (cancelSubBtn) {
-      cancelSubBtn.addEventListener('click', function () {
-        closeAllModals();
-        showToast('Opening billing portal');
-        // TODO: fetch('/api/billing/portal', { credentials: 'same-origin' })
-        //         .then(r => r.json()).then(d => { window.location.href = d.url; });
-        // Cancellation is handled inside the Stripe Customer Portal — no custom cancel endpoint needed.
-      });
-    }
-
-    // Delete account — confirm field
+    // Delete account — this NEVER deletes anything itself. It only sends a
+    // request email to Codivium staff, who perform the actual deletion
+    // manually (see AccountApiController.RequestAccountDeletion). The
+    // password field is a confirmation-friction step only, not verified
+    // server-side (deletion review happens on the human side).
     var deleteInput = el('asDeleteConfirm');
     var deleteBtn   = el('confirmDeleteAccount');
     if (deleteInput && deleteBtn) {
@@ -1015,9 +1083,9 @@
       deleteBtn.addEventListener('click', function () {
         var pwd = deleteInput.value.trim();
         if (pwd.length < 6) return;
+        var api = profileApi();
         closeAllModals();
-        showToast('Account deletion request submitted. You will receive a confirmation email.');
-        // TODO: DELETE /api/user/account (send password in request body)
+        if (api && typeof api.requestAccountDeletion === 'function') api.requestAccountDeletion();
       });
     }
   }
@@ -1047,41 +1115,148 @@
     _toastTimer = setTimeout(function () { _toastEl.style.opacity = '0'; }, 2800);
   }
 
-  /* ── Email display ────────────────────────────────────────── */
-  function loadEmail() {
-    // Stub: replace with API call or JWT claim
-    // In demo mode, reads from window.CODIVIUM_DEMO_EMAIL (set by account-settings-demo.js)
-    var emailEl = el('asEmailVal');
-    if (emailEl) emailEl.textContent = window.CODIVIUM_DEMO_EMAIL || '—';
+  /* ── Appearance persistence (DB-backed via window.CV_PROFILE_API) ──────────
+   * These preferences are saved to the backend so a user's setup follows them to
+   * any device/login. All keys are lowercase, matching the backend's lowercase
+   * KeyName storage. `cvEffects` and `cv.dashboard.ui` are derived mirrors of
+   * `reduce_motion` / `as_dash_layout`, so we persist only the primary keys and
+   * re-derive the mirrors on load. */
+  var APPEARANCE_KEYS = [
+    'cv_site_theme',
+    'as_dash_layout',
+    'reduce_motion',
+    'cv_drawer_speed',
+    'cv_syntax_theme',
+    'cv_editor_font_size',
+    'cv_editor_font_family',
+    'cv_repl_syntax_theme',
+    'cv_repl_font_size',
+    'cv_repl_font_family',
+    'cv_instructions_font_size',
+    'cv_instructions_font_family',
+    'as_appear_subtab',
+  ];
+  // Notification preferences are persisted the same DB-backed way as appearance,
+  // so a user's choices follow them across devices AND the server can honour them
+  // (e.g. only email users who opted into marketing / weekly digests). Same
+  // lowercase KeyName storage; values are '1'|'0'.
+  var NOTIFICATION_KEYS = [
+    'notif_in_app',
+    'notif_marketing',
+  ];
+  // Every key we hydrate-from / sync-to the backend (appearance + notifications).
+  var SYNC_KEYS = APPEARANCE_KEYS.concat(NOTIFICATION_KEYS);
+  var _apSnapshot = {};
+  var _apSaveTimer = null;
+
+  // Pull saved values from the backend into localStorage BEFORE the init
+  // functions read them, so every control shows the user's saved choice.
+  function hydrateAppearanceFromDb() {
+    var api = profileApi();
+    if (!api || typeof api.getAppearanceSettings !== 'function') {
+      return Promise.resolve();
+    }
+    return api.getAppearanceSettings().then(function (res) {
+      if (!res || res.status !== 200 || !Array.isArray(res.data)) return;
+      res.data.forEach(function (row) {
+        var key = (row && row.keyName ? String(row.keyName) : '').toLowerCase();
+        if (key && SYNC_KEYS.indexOf(key) !== -1 && row.displayValue != null) {
+          set(key, String(row.displayValue));
+        }
+      });
+      // Re-derive the reduce-motion mirror and apply the site theme now.
+      var rm = get('reduce_motion', null);
+      if (rm != null) set('cvEffects', rm === '1' ? 'low' : 'full');
+      var theme = get('cv_site_theme', null);
+      if (theme && window.CVTheme && typeof window.CVTheme.set === 'function') {
+        window.CVTheme.set(theme);
+      }
+    }).catch(function () { /* offline / unauthenticated — keep local values */ });
+  }
+
+  // Remember the current values so we only push what actually changed.
+  function snapshotAppearance() {
+    SYNC_KEYS.forEach(function (k) { _apSnapshot[k] = get(k, null); });
+  }
+
+  // Diff localStorage against the snapshot and upsert only the changed keys.
+  function syncChangedAppearance() {
+    var api = profileApi();
+    if (!api || typeof api.saveAppearanceSetting !== 'function') return;
+    SYNC_KEYS.forEach(function (k) {
+      var cur = get(k, null);
+      if (cur === _apSnapshot[k]) return;
+      _apSnapshot[k] = cur;
+      if (cur == null) return;
+      api.saveAppearanceSetting({
+        KeyName: k, DisplayText: k, DisplayValue: String(cur),
+      }).catch(function () { /* best-effort; value stays in localStorage */ });
+    });
+  }
+
+  function scheduleAppearanceSync() {
+    if (_apSaveTimer) clearTimeout(_apSaveTimer);
+    _apSaveTimer = setTimeout(syncChangedAppearance, 600);
+  }
+
+  // Any change/click/input on the page may have updated an appearance key
+  // (theme chips write on click; selects/checkbox/range fire change/input).
+  // Debounced + diff-based, so unrelated events cost only a timer reset.
+  // SettingsPage re-injects this script on every visit, so remove a previous
+  // instance's document listeners first — only the latest one should sync.
+  var _AP_EVENTS = ['change', 'input', 'click'];
+  function initAppearanceSync() {
+    snapshotAppearance();
+    if (window.__cvApSyncHandler) {
+      _AP_EVENTS.forEach(function (evt) {
+        document.removeEventListener(evt, window.__cvApSyncHandler, true);
+      });
+    }
+    window.__cvApSyncHandler = scheduleAppearanceSync;
+    _AP_EVENTS.forEach(function (evt) {
+      document.addEventListener(evt, scheduleAppearanceSync, true);
+    });
   }
 
   /* ── Boot ─────────────────────────────────────────────────── */
   function init() {
-    loadProfile();
-    loadEmail();
-    loadPlan();
-    loadBilling();
+    // Display name, email, and avatar are rendered directly by the React page
+    // (SettingsPage.jsx) from a live getUserById call — same as billing below —
+    // so there's nothing to load here from localStorage.
     initAvatar();
-    initToggles();
-    initDashLayout();
+
+    // Core UI that doesn't depend on saved appearance values — wire it
+    // synchronously so tabs and modals (e.g. change password) work immediately,
+    // independent of the settings network call.
     initTabs();
-    initSiteThemes();
-    initEditorThemes();
-    initEditorFontSize();
-    initReplFontSize();
-    initInstructionsFontSize();
-    initEditorFontFamily();
-    initReplFontFamily();
-    initInstructionsFontFamily();
-    initReplSyntaxTheme();
-    initSubTabs();
     initModals();
     initModalActions();
 
-    // Reduce motion: apply on load
-    if (get('reduce_motion') === '1') {
-      document.documentElement.setAttribute('data-cv-effects', 'low');
-    }
+    // Hydrate saved appearance from the backend first, THEN run the init
+    // functions that read those values, THEN start syncing changes back.
+    hydrateAppearanceFromDb().then(function () {
+      initToggles();
+      initDashLayout();
+      initSiteThemes();
+      initEditorThemes();
+      initEditorFontSize();
+      initReplFontSize();
+      initInstructionsFontSize();
+      initEditorFontFamily();
+      initReplFontFamily();
+      initInstructionsFontFamily();
+      initReplSyntaxTheme();
+      initSubTabs();
+
+      // Reduce motion: apply on load
+      if (get('reduce_motion') === '1') {
+        document.documentElement.setAttribute('data-cv-effects', 'low');
+      }
+
+      // Start persisting changes only after everything is applied, so hydration
+      // and init defaults don't get echoed straight back to the server.
+      initAppearanceSync();
+    });
   }
 
   if (document.readyState === 'loading') {

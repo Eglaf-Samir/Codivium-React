@@ -25,19 +25,23 @@ export default function McqQuizPage() {
   useGlowFollow();
 
   const tourState = useMcqTour({ onParent: false });
-  const { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart, saveAndExit } = useQuiz();
+  const { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart, saveAndExit, saveStatus, retrySave } = useQuiz();
   const { phase, questions, index, settings } = state;
   const q = questions[index];
 
-  // Auto-advance after normal (non-peek) submit
+  // Auto-advance after normal (non-peek) submit — but not if the user has
+  // opened the tutorial for this question. Reading a tutorial needs more
+  // than the fixed 2.4s auto-advance window, so once viewed we pause here
+  // and let QuestionCard's manual "Next" button take over instead.
   useEffect(() => {
     if (phase !== 'active' || !state.locked) return;
     const lastAns = state.answers[state.answers.length - 1];
     if (!lastAns || lastAns.isPeek) return;
+    if (state.tutorialViewedThisQ) return;
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const tid = setTimeout(() => advance(), reduced ? 600 : 2400);
     return () => clearTimeout(tid);
-  }, [state.locked, state.answers.length, phase]); // eslint-disable-line
+  }, [state.locked, state.answers.length, phase, state.tutorialViewedThisQ]); // eslint-disable-line
 
   // Mid-quiz leave guard: while the quiz is in progress, expose a global
   // saveAndExit() the sidebar/topbar leave guard can invoke before
@@ -121,7 +125,7 @@ export default function McqQuizPage() {
     return (
       <main className="main" id="main-content" role="main">
         <div className="page-shell">
-          <SummaryView state={state} onRestart={restart} onAdjust={handleAdjust} />
+          <SummaryView state={state} onRestart={restart} onAdjust={handleAdjust} saveStatus={saveStatus} onRetrySave={retrySave} />
         </div>
       </main>
     );
@@ -143,7 +147,12 @@ export default function McqQuizPage() {
     (Array.isArray(settings?.categoryIds) && settings.categoryIds.length) ||
     (Array.isArray(settings?.categories) && settings.categories.length) || 0;
   const diffLabel = humanDiff(settings?.difficultyName || settings?.difficulty);
-  const metaText = `${catCount} categor${catCount === 1 ? 'y' : 'ies'} · ${diffLabel} · ${questions.length} question${questions.length === 1 ? '' : 's'}${settings?.skipCorrect ? ' · skipping correct' : ''}`;
+  // Backend/demo bank may return fewer than requested when the chosen
+  // categories + difficulty don't have enough matching questions — make
+  // that explicit rather than letting the count silently look "wrong".
+  const requestedCount = Number(settings?.questionCount) || 0;
+  const shortfall = requestedCount > questions.length;
+  const metaText = `${catCount} categor${catCount === 1 ? 'y' : 'ies'} · ${diffLabel} · ${questions.length} question${questions.length === 1 ? '' : 's'}${shortfall ? ` (of ${requestedCount} requested)` : ''}${settings?.skipCorrect ? ' · skipping correct' : ''}`;
 
   return (
     <>
@@ -153,17 +162,18 @@ export default function McqQuizPage() {
           {/* Fixed-position timer overlay — position:fixed in CSS */}
           <CvTimer />
 
-          {/* Demo mode notice */}
-          {/* {settings?._isDemo && (
+          {/* Demo mode notice — visible so a sample-question session is never
+              mistaken for a real, saved one. */}
+          {settings?._isDemo && (
             <div style={{
               padding: '8px 14px', marginBottom: 10, fontSize: 12,
               background: 'rgba(246,213,138,0.08)', border: '1px solid rgba(246,213,138,0.22)',
               borderRadius: 4, color: 'rgba(246,213,138,0.82)',
             }} role="note">
-              Demo mode — showing sample questions.{' '}
+              Demo mode — showing sample questions (results are not saved).{' '}
               <Link to="/mcq" style={{ color: 'inherit' }}>Go to MCQ Setup</Link> to choose your own filters.
             </div>
-          )} */}
+          )}
 
           {/* Main window — matches parent page chrome */}
           <div className="window window-large glow-follow">

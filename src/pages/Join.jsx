@@ -284,13 +284,8 @@ function Join() {
         localStorage.setItem("Userid", data.id);
         localStorage.setItem("LoginToken", data.loginToken);
         localStorage.setItem("UserRoleName", data.roleName);
-        // Persist the real name/email so the sidebar profile can show it.
-        {
-          const fullName = [data.firstName, data.middleName, data.lastName].filter(Boolean).join(" ").trim()
-            || [form.firstName, form.lastName].filter(Boolean).join(" ").trim();
-          localStorage.setItem("UserDisplayName", fullName);
-          localStorage.setItem("UserEmail", data.email || form.email || "");
-        }
+        // Name/email are intentionally NOT persisted locally (privacy) —
+        // Sidebar.jsx/SettingsPage.jsx fetch them fresh via getUserById.
         if (data.activePackage) {
           localStorage.setItem(
             "userpackagedetails",

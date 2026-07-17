@@ -16,7 +16,7 @@
 //   PowerPalette — id→name mapping stays on the page level for submit.
 
 import { useEffect, useState } from 'react';
-import { GetallDifficultyLevel, GetallCategory } from '../../../api/mcq/apimcq';
+import { GetallDifficultyLevel, GetallCategory, GetMcqCategoryIdsWithQuestions } from '../../../api/mcq/apimcq';
 import { ParamMasterKey } from '../../../config';
 
 // Cosmetic display order so the radio bar always reads Basic → Intermediate →
@@ -75,11 +75,25 @@ export function useCategoriesForDifficulty(difficultyId) {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    GetallCategory(difficultyId, 'MCQ')
-      .then(res => {
+    // Load the categories for this difficulty AND the set of category IDs that
+    // actually have questions, then show only the non-empty ones — same UX as
+    // the Interview module, so a user can never pick a category with 0
+    // questions (which previously fell back to demo and broke skip-correct).
+    Promise.all([
+      GetallCategory(difficultyId, 'MCQ'),
+      GetMcqCategoryIdsWithQuestions(difficultyId),
+    ])
+      .then(([catRes, cntRes]) => {
         if (cancelled) return;
-        if (res?.status === 200 && Array.isArray(res?.data)) {
-          setCategories(res.data.map(c => ({ id: c.id, name: c.name })));
+        if (catRes?.status === 200 && Array.isArray(catRes?.data)) {
+          let cats = catRes.data.map(c => ({ id: c.id, name: c.name }));
+          // Only filter when the counts call succeeded; on any hiccup show all
+          // categories rather than leaving the page empty.
+          if (cntRes?.status === 200 && Array.isArray(cntRes?.data)) {
+            const withQuestions = new Set(cntRes.data.map(Number));
+            cats = cats.filter(c => withQuestions.has(Number(c.id)));
+          }
+          setCategories(cats);
         } else {
           setCategories([]);
           setError('Could not load categories.');

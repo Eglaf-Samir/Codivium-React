@@ -1,7 +1,8 @@
 import Axios from "axios";
 import {
     getallmcq, deletemcq, createmcq, getmcq, updatemcq, getallDifficultyLevel, getallCategory,
-    mcqfileupload, getallmcqbyfilter, createmcqTimelogs, getallmcqbyadmin, getallCategorybyParentIds,getCategoriesByMode
+    mcqfileupload, getallmcqbyfilter, createmcqTimelogs, getallmcqbyadmin, getallCategorybyParentIds,getCategoriesByMode,
+    getMcqCategoryIdsWithQuestions, getFreeQuestionCount
 } from './constants'
 import { baseURL } from "../../config";
 //'ngrok-skip-browser-warning': 'true'
@@ -204,6 +205,40 @@ export const Getallmcqbyfilter = async (body) => {
     } catch (e) {
         console.error('Create paython output error:', e);
         throw e.response
+    }
+}
+
+export const GetFreeQuestionCount = async (body) => {
+    let token = localStorage.getItem('LoginToken');
+    var url = baseURL + getFreeQuestionCount;
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }
+    try {
+        const res = await Axios.post(url, body, config);
+        return res;
+    } catch (e) {
+        return e.response;
+    }
+}
+
+export const GetMcqCategoryIdsWithQuestions = async (difficultyLevelId) => {
+    let token = localStorage.getItem('LoginToken');
+    var url = baseURL + getMcqCategoryIdsWithQuestions + difficultyLevelId;
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }
+    try {
+        const res = await Axios.get(url, config);
+        return res;
+    } catch (e) {
+        return e.response;
     }
 }
 

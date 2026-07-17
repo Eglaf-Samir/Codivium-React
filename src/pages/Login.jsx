@@ -3,6 +3,7 @@ import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { Link, useNavigate } from "react-router-dom";
 import { Loginuser } from "../api/auth/apiauth";
+import { hydrateAppearanceSettings } from "../api/usersettings/apiusersettings";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
 import { validateLoginForm } from "../utils/validation";
@@ -30,7 +31,6 @@ function Login() {
   };
 
   const handleSubmit = async (e) => {
-    debugger;
     e.preventDefault();
     let gotologintoPrice = localStorage.getItem("gotologintoPrice");
     const validationErrors = validateLoginForm(logindata);
@@ -52,19 +52,23 @@ function Login() {
           localStorage.setItem("Userid", response.data.id);
           localStorage.setItem("LoginToken", response.data.loginToken);
           localStorage.setItem("UserRoleName", response.data.roleName);
-          // Persist the real name/email so the sidebar profile can show it.
-          {
-            const d = response.data;
-            const fullName = [d.firstName, d.middleName, d.lastName].filter(Boolean).join(" ").trim();
-            localStorage.setItem("UserDisplayName", fullName);
-            localStorage.setItem("UserEmail", d.email || "");
-          }
+          // Name/email are intentionally NOT persisted locally (privacy) —
+          // Sidebar.jsx/SettingsPage.jsx fetch them fresh via getUserById.
 
           if (response.data.activePackage) {
             localStorage.setItem(
               "userpackagedetails",
               JSON.stringify(response.data.activePackage),
             );
+          }
+
+          // Pull the user's saved appearance settings into localStorage so their
+          // theme/editor/dashboard setup follows them to this device. Best-effort:
+          // never block or fail login if the settings call errors.
+          try {
+            await hydrateAppearanceSettings();
+          } catch (_) {
+            /* ignore */
           }
 
           if (gotologintoPrice === "true") {

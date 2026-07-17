@@ -295,7 +295,6 @@ export const DeleteDeliberatePracticUnitTest = async (deliberatePracticeid, prac
     let token = localStorage.getItem('LoginToken');
     let userid = localStorage.getItem("Userid");
     var url = baseURL + deliberatepracticUnitTestDelete + deliberatePracticeid + "&practiceId=" + practiceId + "&UnittestId=" + UnittestId;
-    debugger;
     const config = {
         headers: {
             'Content-Type': 'application/json',

@@ -30,6 +30,7 @@ export default function OptionsPanel({
   onDifficulty,           // (id) => void
   count, onCount,
   skipCorrect, onSkip,
+  skipCorrectDisabled = false,
   onInfo,
 }) {
   const list = sortByName(difficulties);
@@ -102,20 +103,31 @@ export default function OptionsPanel({
           </div>
         </div>
 
-        {/* Skip correct */}
+        {/* Skip correct — package-only feature */}
         <div className="panel-group glow-follow" aria-label="Exclude previously-correct">
-          <div className="checkline">
+          <div
+            className="checkline"
+            title={skipCorrectDisabled ? 'Disabled: requires an active package to use this feature.' : undefined}
+          >
             <input
               id="skipCorrect"
               type="checkbox"
-              checked={skipCorrect}
+              checked={skipCorrectDisabled ? false : skipCorrect}
+              disabled={skipCorrectDisabled}
               onChange={e => onSkip(e.target.checked)}
             />
-            <label htmlFor="skipCorrect">Exclude questions previously answered correctly</label>
+            <label htmlFor="skipCorrect" style={skipCorrectDisabled ? { opacity: 0.55 } : undefined}>
+              Exclude questions previously answered correctly
+            </label>
             <button className="info-dot info-dot-mini info-inline" id="excludeInfo" type="button"
               aria-label="About exclude"
               onClick={() => onInfo('exclude')}>i</button>
           </div>
+          {skipCorrectDisabled && (
+            <div className="help" style={{ marginTop: 4, fontSize: 11, opacity: 0.7 }}>
+              Requires an active package.
+            </div>
+          )}
         </div>
 
       </div>

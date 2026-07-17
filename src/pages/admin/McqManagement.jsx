@@ -31,6 +31,7 @@ const initialForm = {
   createdBy: '',
   modifiedBy: '',
   ismultipleAnswer: false,
+  isFree: false,
 };
 
 const initialOption = { optionId: null, optionName: '', isAnswers: false, isCoding: false };
@@ -108,7 +109,10 @@ export default function McqManagement() {
 
   // ── Filter handlers ─────────────────────────────────────────
   function handleFilter(field, value) {
-    const next = { ...filterData, [field]: value || null };
+    // Coerce select values (always strings) to numbers so the backend's
+    // int? filter DTO binds — a string like "5" is rejected by the strict
+    // JSON deserializer (400), which would blank the whole list.
+    const next = { ...filterData, [field]: value ? Number(value) : null };
     if (field === 'difficultyLevelId') { next.categoryId = null; next.subcategoryId = null; setSubCategories([]); loadCats(value, 'filter'); }
     if (field === 'categoryId') { next.subcategoryId = null; loadSubs(value, 'filter'); }
     setFilterData(next);
@@ -160,6 +164,7 @@ export default function McqManagement() {
         createdBy: d.createdBy || '',
         modifiedBy: d.modifiedBy || '',
         ismultipleAnswer: !!(d.isMultipleAnswer ?? d.ismultipleAnswer),
+        isFree: !!(d.isFree ?? d.IsFree),
         questionOptions: d.questionOptions || [],
       });
       setOptions(Array.isArray(d.questionOptions) && d.questionOptions.length > 0
@@ -249,6 +254,10 @@ export default function McqManagement() {
     const userId = localStorage.getItem('Userid');
     const body = {
       ...form,
+      // Selects yield strings; the backend DTO expects int for these ids.
+      difficultyLevelId: Number(form.difficultyLevelId) || 0,
+      categoriesId: Number(form.categoriesId) || 0,
+      subCategoriesId: Number(form.subCategoriesId) || 0,
       createdBy: form.createdBy || userId,
       modifiedBy: userId,
       questionOptions: options,
@@ -454,6 +463,12 @@ export default function McqManagement() {
                     Allow multiple correct answers
                   </label>
                 </div>
+                <div className="cv-admin-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" id="mcq-free" name="isFree" checked={!!form.isFree} onChange={handleField} />
+                  <label htmlFor="mcq-free" style={{ margin: 0, textTransform: 'none', letterSpacing: 0, fontSize: 13 }}>
+                    Free question
+                  </label>
+                </div>
 
                 <div className="cv-admin-field is-full">
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -464,7 +479,7 @@ export default function McqManagement() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {options.map((opt, idx) => (
                       <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: 10, border: '1px solid var(--color-border-default)', borderRadius: 10, background: 'rgba(0,0,0,0.20)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', minWidth: 60 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 60 }}>
                           <label title="Correct answer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--color-text-muted)' }}>
                             <input type="checkbox" checked={opt.isAnswers} onChange={e => setOption(idx, 'isAnswers', e.target.checked)} />
                             ✓
@@ -489,7 +504,7 @@ export default function McqManagement() {
                               required />
                           )}
                         </div>
-                        <button type="button" className="cv-admin-btn is-warn" onClick={() => removeOption(idx)} disabled={options.length === 1} style={{ padding: '4px 10px', fontSize: 11 }}>×</button>
+                        <button type="button" className="cv-admin-btn is-warn" onClick={() => removeOption(idx)} disabled={options.length === 1} style={{ padding: '4px 10px', fontSize: 11,alignSelf:'center' }}>×</button>
                       </div>
                     ))}
                   </div>

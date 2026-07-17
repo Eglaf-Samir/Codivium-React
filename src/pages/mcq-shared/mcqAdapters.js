@@ -72,6 +72,9 @@ export function adaptBackendQuestion(bq, fallbackIndex = 0) {
     // stays hidden, which is the correct behavior.
     nanoTutorial:  pick(bq, 'nanoTutorial', 'NanoTutorial') || null,
     isMultipleAnswer: !!pick(bq, 'isMultipleAnswer', 'IsMultipleAnswer', 'ismultipleAnswer'),
+    // Superadmin-controlled flag (mirrors Interview/Deliberation's isFree):
+    // true = usable by users without full MCQ package access.
+    isFree: !!pick(bq, 'isFree', 'IsFree'),
     _raw:          bq,         // kept for the reverse adapter
   };
 }

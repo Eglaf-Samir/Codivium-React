@@ -431,6 +431,7 @@ export default function DeliberatePracticeManagement() {
       ...form,
       isInstructionHtml,
       isTutorialHtml,
+      id: Number(form.id) || 0,
       difficultyLevelId: toId(form.difficultyLevelId),
       categoriesId: toId(form.categoriesId),
       subCategoriesId: toId(form.subCategoriesId),

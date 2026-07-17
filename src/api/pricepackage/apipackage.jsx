@@ -1,7 +1,7 @@
 import Axios from "axios";
 import {
     allpackages, allpackagefiltering, getepackagebyid, createpackage, getallepackage, updatepackage, deletepackage, getallCurrency, allpackagesBillingPeriod,
-    packagepurchasecheckout, geteActivePackagebyuserid, ActivepackagecancelByUser
+    packagepurchasecheckout, geteActivePackagebyuserid, ActivepackagecancelByUser, billingportalsession
 } from './constants'
 import { baseURL } from "../../config";
 
@@ -239,7 +239,9 @@ export const activepackagecancelByUser = async (id) => {
         }
     }
     try {
-        const res = await Axios.get(url, config);
+        // POST, not GET — cancelling a subscription mutates state and
+        // shouldn't be a cacheable/idempotent-by-default GET request.
+        const res = await Axios.post(url, {}, config);
         return res;
     } catch (e) {
         return e.response;
@@ -257,6 +259,26 @@ export const getUserTransactionHistory = async (userId) => {
     }
     try {
         const res = await Axios.get(url, config);
+        return res;
+    } catch (e) {
+        return e.response;
+    }
+}
+
+// Opens the Stripe Customer Portal for the given user — returns a hosted portal
+// URL where they can update the payment method, view invoices, and cancel or
+// change the subscription. Portal changes sync back via the Stripe webhook.
+export const createBillingPortalSession = async (userId) => {
+    var url = baseURL + billingportalsession;
+    let token = localStorage.getItem('LoginToken');
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }
+    try {
+        const res = await Axios.post(url, { UserID: userId }, config);
         return res;
     } catch (e) {
         return e.response;

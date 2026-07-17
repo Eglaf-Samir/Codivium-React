@@ -13,6 +13,11 @@ import { logout } from '../../utils/auth';
 import AdminPager from '../../components/AdminPager.jsx';
 import AdminModal from '../../components/AdminModal.jsx';
 
+// Admin user-details editing is disabled by default (read-only "View").
+// The full edit flow (form, save handler, id coercion) is wired and working —
+// flip this to `true` to re-enable the Edit action + Save button.
+const USER_EDIT_ENABLED = false;
+
 const initialForm = {
   id: '',
   email: '',
@@ -108,8 +113,10 @@ export default function UserManagement() {
     const q = search.trim().toLowerCase();
     if (!q) return users;
     return users.filter(u => {
+      // country is a numeric code on the backend, not a string - coerce every
+      // field so a non-zero number doesn't reach .toLowerCase() and crash.
       const fields = [u.firstName, u.middleName, u.lastName, u.email, u.country];
-      return fields.some(f => (f || '').toLowerCase().includes(q));
+      return fields.some(f => String(f ?? '').toLowerCase().includes(q));
     });
   }, [users, search]);
 
@@ -119,7 +126,6 @@ export default function UserManagement() {
 
   // ── Edit ───────────────────────────────────────────────────────
   function openEdit(user) {
-    console.log('user==>', user)
     setAccount({
       id: user.id || '',
       email: user.email || '',
@@ -156,9 +162,20 @@ export default function UserManagement() {
     e.preventDefault();
     if (!account.id) return;
     setSavingEdit(true);
+    // country / occupation / programmingLevel are int? on the backend; the
+    // inputs/selects yield strings, which a strict JSON deserializer rejects
+    // (400). Coerce to number or null so the update binds reliably.
+    const toId = (v) => {
+      if (v === '' || v === undefined || v === null) return null;
+      const n = Number(v);
+      return Number.isNaN(n) ? null : n;
+    };
     const payload = {
       ...account,
       dateOfBirth: account.dateOfBirth ? new Date(account.dateOfBirth).toISOString() : null,
+      country: toId(account.country),
+      occupationId: toId(account.occupationId),
+      programmingLevel: toId(account.programmingLevel),
     };
     const res = await SuperAdminUpdateUserDetails(account.id, JSON.stringify(payload));
     setSavingEdit(false);
@@ -238,7 +255,6 @@ export default function UserManagement() {
       Swal.fire({ title: 'Error', text: 'Action failed.', icon: 'error' });
     }
   }
-  console.log('account', account)
   return (
     <main className="main" id="main-content">
       <div className="cv-admin-page">
@@ -316,7 +332,7 @@ export default function UserManagement() {
                             Password
                           </button>
                           <button type="button" className="cv-admin-btn" onClick={() => openEdit(user)}>
-                            View
+                            {USER_EDIT_ENABLED ? 'Edit' : 'View'}
                           </button>
                           <button
                             type="button"
@@ -436,9 +452,11 @@ export default function UserManagement() {
               <button type="button" className="cv-admin-btn" onClick={closeEdit} disabled={savingEdit}>
                 Close
               </button>
-              {/* <button type="submit" className="cv-admin-btn is-primary" disabled={savingEdit}>
-                {savingEdit ? 'Saving…' : 'Save changes'}
-              </button> */}
+              {USER_EDIT_ENABLED && (
+                <button type="submit" className="cv-admin-btn is-primary" disabled={savingEdit}>
+                  {savingEdit ? 'Saving…' : 'Save changes'}
+                </button>
+              )}
             </div>
           </form>
         </div>

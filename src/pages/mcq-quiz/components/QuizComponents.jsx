@@ -275,7 +275,7 @@ export function QuestionCard({
                 Submit
               </button>
             )}
-            {locked && isPeek && (
+            {locked && (isPeek || state.tutorialViewedThisQ) && (
               <button className="ghost" id="btnNextPeek" type="button" onClick={onAdvancePeek}>
                 Next →
               </button>
@@ -326,57 +326,93 @@ function ReviewItem({ answer, index }) {
   );
 }
 
-export function SummaryView({ state, onRestart, onAdjust }) {
+function SaveStatusBadge({ status, onRetry }) {
+  // Demo / not-logged-in sessions don't persist — nothing to show.
+  if (!status || status === 'idle') return null;
+
+  const map = {
+    saving: { text: 'Saving your results…', tone: 'rgba(246,213,138,0.85)' },
+    saved:  { text: '✓ Results saved',  tone: 'rgba(34,197,94,0.90)' },
+    error:  { text: "Couldn't save your results.", tone: 'rgba(255,92,90,0.90)' },
+  };
+  const cfg = map[status] || map.error;
+
+  return (
+    <div
+      id="saveStatus"
+      role="status"
+      aria-live="polite"
+      style={{
+        marginTop: 14, padding: '8px 12px',
+        border: `1px solid ${cfg.tone}`, background: 'rgba(0,0,0,0.18)',
+        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        fontSize: 13, color: cfg.tone,
+      }}
+    >
+      <span>{cfg.text}</span>
+      {status === 'error' && onRetry && (
+        <button className="ghost ghost-mini" type="button" id="btnRetrySave" onClick={onRetry}>
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function SummaryView({ state, onRestart, onAdjust, saveStatus, onRetrySave }) {
   const total = state.questions.length;
   // Shared with the backend payload builder via mcqQuality.js so the badge
   // shown here always matches the QualityLabel persisted to the DB.
   const quality = computeMcqQuality(state.answers);
   return (
-    <div className="summary show" id="summary" aria-label="Quiz summary">
-      <div className="summary-grid">
-        <div className="metric"><div className="n">Total</div><div className="v" id="mTotal">{total}</div></div>
-        <div className="metric"><div className="n">Correct</div>
-          <div className="v" id="mCorrect" style={{ color: 'rgba(34,197,94,0.90)' }}>{state.correctCount}</div>
-        </div>
-        <div className="metric"><div className="n">Incorrect</div>
-          <div className="v" id="mWrong" style={{ color: 'rgba(255,92,90,0.90)' }}>
-            {total - state.correctCount - state.peekCount}
+    <section className="window summary show" id="summary" aria-label="Quiz summary">
+      <div className="window-pad">
+        <SaveStatusBadge status={saveStatus} onRetry={onRetrySave} />
+        <div className="summary-grid">
+          <div className="metric"><div className="n">Total</div><div className="v" id="mTotal">{total}</div></div>
+          <div className="metric"><div className="n">Correct</div>
+            <div className="v" id="mCorrect" style={{ color: 'rgba(34,197,94,0.90)' }}>{state.correctCount}</div>
           </div>
+          <div className="metric"><div className="n">Incorrect</div>
+            <div className="v" id="mWrong" style={{ color: 'rgba(255,92,90,0.90)' }}>
+              {total - state.correctCount - state.peekCount}
+            </div>
+          </div>
+          <div className="metric"><div className="n">Peeked</div><div className="v" id="mPeeked">{state.peekCount}</div></div>
         </div>
-        <div className="metric"><div className="n">Peeked</div><div className="v" id="mPeeked">{state.peekCount}</div></div>
-      </div>
-      {quality && (
-        <div
-          id="qualityLabel"
-          role="status"
-          aria-live="polite"
-          style={{
-            marginTop: 14, padding: '10px 14px',
-            border: `1px solid ${quality.tone}`,
-            background: 'rgba(0,0,0,0.18)',
-            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-          }}
-        >
-          <span
+        {quality && (
+          <div
+            id="qualityLabel"
+            role="status"
+            aria-live="polite"
             style={{
-              fontFamily: 'var(--font-brand)', fontWeight: 950,
-              letterSpacing: '0.06em', fontSize: 12, textTransform: 'uppercase',
-              color: quality.tone, padding: '4px 10px',
+              marginTop: 14, padding: '10px 14px',
               border: `1px solid ${quality.tone}`,
+              background: 'rgba(0,0,0,0.18)',
+              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
             }}
           >
-            {quality.label}
-          </span>
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>{quality.hint}</span>
+            <span
+              style={{
+                fontFamily: 'var(--font-brand)', fontWeight: 950,
+                letterSpacing: '0.06em', fontSize: 12, textTransform: 'uppercase',
+                color: quality.tone, padding: '4px 10px',
+                border: `1px solid ${quality.tone}`,
+              }}
+            >
+              {quality.label}
+            </span>
+            <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>{quality.hint}</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+          <button className="ghost" id="btnAdjust" type="button" onClick={onAdjust}>Adjust Filters</button>
+          <button className="btn" id="btnRestart" type="button" onClick={onRestart}>Restart</button>
         </div>
-      )}
-      <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
-        <button className="ghost" id="btnAdjust" type="button" onClick={onAdjust}>Adjust Filters</button>
-        <button className="btn" id="btnRestart" type="button" onClick={onRestart}>Restart</button>
+        <div className="review-list" id="reviewList" style={{ marginTop: 20 }}>
+          {state.answers.map((ans, i) => <ReviewItem key={i} answer={ans} index={i} />)}
+        </div>
       </div>
-      <div className="review-list" id="reviewList" style={{ marginTop: 20 }}>
-        {state.answers.map((ans, i) => <ReviewItem key={i} answer={ans} index={i} />)}
-      </div>
-    </div>
+    </section>
   );
 }

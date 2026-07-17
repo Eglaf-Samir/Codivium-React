@@ -11,9 +11,8 @@
 // shape mirrors what Code-Adept-React's McqTest.jsx submits — that's what
 // UserMCQDashboardUseCases parses for the dashboard.
 
-import { useReducer, useEffect, useCallback, useRef } from 'react';
+import { useReducer, useEffect, useCallback, useRef, useState } from 'react';
 import { pickFromDemo, DEMO_CATEGORIES } from '../utils/demoBank.js';
-import { getToken } from '../../mcq-shared/fetch.js';
 import { Getallmcqbyfilter, Createmcqtimelogs } from '../../../api/mcq/apimcq';
 import {
   adaptBackendQuestions,
@@ -177,14 +176,24 @@ function buildFilterBody(settings, userId) {
   return {
     DifficultyLevelID: settings.difficultyLevelId || 0,
     CategoriesIds:     Array.isArray(settings.categoryIds) ? settings.categoryIds : [],
-    NoOfQuestion:      Math.max(1, Math.min(50, Number(settings.questionCount) || 10)),
+    NoOfQuestion:      Math.max(10, Math.min(50, Number(settings.questionCount) || 10)),
     isSkipPriviosAttempetedQuestions: !!settings.skipCorrect,  // typo matches backend DTO
     userId:            userId || '00000000-0000-0000-0000-000000000000',
+    // Restricts the backend's random sample to isFree questions BEFORE it
+    // takes NoOfQuestion, so a non-entitled user's quiz is built from the
+    // full free pool rather than a mixed sample that gets thinned out by
+    // the client-side isFree filter below (which could otherwise return
+    // far fewer questions than are actually available for free).
+    IsFreeOnly:        !settings.hasAllMcqAccess,
   };
 }
 
 async function fetchQuestionsFromAPI(settings, externalSignal = null) {
-  const token = getToken();
+  // Same key the rest of the app (Login.jsx, apimcq.jsx) uses for the JWT.
+  // This previously read a generic scaffold key ('cv_auth_token') that the
+  // real login flow never wrote to, so `token` was always null and every
+  // logged-in user silently fell through to the demo bank / login error.
+  const token = typeof window !== 'undefined' ? localStorage.getItem('LoginToken') : '';
   const userId = typeof window !== 'undefined' ? localStorage.getItem('Userid') : '';
 
   // Demo / unauthenticated path.
@@ -200,17 +209,39 @@ async function fetchQuestionsFromAPI(settings, externalSignal = null) {
     if (!res) throw new Error('No response');
     if (res.status === 401) return { sessionId: null, questions: [], error: 'unauthorized', status: 401 };
     if (res.status !== 200 || !Array.isArray(res.data)) throw new Error('HTTP ' + (res.status || '?'));
-    if (!res.data.length) return { sessionId: null, questions: [], error: 'No matching questions found.' };
-    return { sessionId: null, questions: adaptBackendQuestions(res.data) };
+    if (!res.data.length) return { sessionId: null, questions: [], error: 'No questions are available for the selected categories. Go back to Setup and pick a different category.' };
+
+    let questions = adaptBackendQuestions(res.data);
+    // Users without full MCQ package access only get isFree questions —
+    // superadmin decides per-question via the admin panel. No mid-quiz
+    // paywall interruption; the quiz is simply built from the free pool.
+    if (!settings.hasAllMcqAccess) {
+      questions = questions.filter(q => q.isFree);
+      if (!questions.length) {
+        return { sessionId: null, questions: [], error: 'No free questions are available for the selected categories. Upgrade your plan to access all MCQs, or go back to Setup and pick a different category.' };
+      }
+    }
+    return { sessionId: null, questions };
   } catch (e) {
-    if (ALLOW_DEMO) return { sessionId: null, questions: pickFromDemo(settings), demo: true };
+    // We only reach here for a logged-in user (token + userId present). Do NOT
+    // silently fall back to the demo bank — that hides real backend failures
+    // and persists meaningless results. Surface the error instead.
     return { sessionId: null, questions: [], error: 'Failed to load questions. ' + (e?.message || '') };
   }
 }
 
+// Posts the completed session to the backend. Returns a status string the
+// caller surfaces on the summary screen:
+//   'skipped' — demo / not logged in (nothing to record, not an error)
+//   'saved'   — backend accepted the result (HTTP 200)
+//   'error'   — auth expired, non-2xx, or network/throw
+// It never throws — the summary must render regardless of the save outcome.
 async function postQuizResults(state) {
   const userId = typeof window !== 'undefined' ? localStorage.getItem('Userid') : '';
-  if (!userId) return; // demo / unauthenticated — nothing to record
+  if (!userId) return 'skipped'; // demo / unauthenticated — nothing to record
+  // Never persist a demo session: demo questions carry no mcqQuestionId, so
+  // the saved row is useless for skip-correct and pollutes the dashboard.
+  if (state.settings?._isDemo) return 'skipped';
 
   // Compute total elapsed seconds from startedAt → now. The CvTimer keeps a
   // separate display value; the only source of truth at submit time is the
@@ -232,19 +263,26 @@ async function postQuizResults(state) {
       // Token expired mid-quiz. Quiet log; the page-level auth guard will
       // intercept on the next route nav. We don't surface a popup mid-summary.
       console.warn('[mcq] CreateMCQLog returned 401');
-      return;
+      return 'error';
     }
     if (res?.status !== 200) {
       console.warn('[mcq] CreateMCQLog failed', res?.status);
+      return 'error';
     }
+    return 'saved';
   } catch (e) {
     console.warn('[mcq] CreateMCQLog threw', e);
+    return 'error';
   }
 }
 
 export function useQuiz() {
   const [state, dispatch] = useReducer(reducer, INIT);
   const resultPostedRef = useRef(false);
+
+  // Visible save state for the summary screen so the user (and we) can tell
+  // whether the result actually persisted: 'idle' | 'saving' | 'saved' | 'error'.
+  const [saveStatus, setSaveStatus] = useState('idle');
 
   // Keep a live ref of state so the saveAndExit callback (registered on
   // `window` for the sidebar leave guard to invoke) always sees the latest
@@ -282,11 +320,14 @@ export function useQuiz() {
       if (cancelled || abortCtrl.signal.aborted) return;
       const { sessionId, questions, error, demo } = result;
       const finalSettings = demo ? { ...settings, _isDemo: true } : settings;
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('Userid') : '';
 
       if (questions && questions.length) {
         dispatch({ type: 'LOAD_DONE', questions, sessionId, settings: finalSettings });
-      } else if (ALLOW_DEMO) {
-        // Last-ditch demo fallback in non-production environments.
+      } else if (!userId && ALLOW_DEMO) {
+        // Demo bank is ONLY for unauthenticated dev inspection. A logged-in
+        // user must see the real outcome (e.g. "no questions for this
+        // category") — never silent sample questions that can't be saved.
         const demoQs = pickFromDemo({ ...settings, categories: DEMO_CATEGORIES });
         if (demoQs.length) {
           dispatch({ type: 'LOAD_DONE', questions: demoQs, sessionId: null, settings: { ...settings, _isDemo: true } });
@@ -300,12 +341,15 @@ export function useQuiz() {
     return () => { cancelled = true; abortCtrl.abort(); };
   }, []);
 
-  // When the quiz enters `summary`, post results exactly once.
+  // When the quiz enters `summary`, post results exactly once. The summary
+  // renders immediately; saveStatus drives a small badge so the outcome is
+  // visible without blocking anything.
   useEffect(() => {
     if (state.phase !== 'summary') return;
     if (resultPostedRef.current) return;
     resultPostedRef.current = true;
-    postQuizResults(state);
+    setSaveStatus('saving');
+    postQuizResults(state).then(s => setSaveStatus(s === 'skipped' ? 'idle' : s));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
@@ -331,6 +375,7 @@ export function useQuiz() {
     restartAbortRef.current = ctrl;
     // Allow a fresh result-post on the next summary.
     resultPostedRef.current = false;
+    setSaveStatus('idle');
     fetchQuestionsFromAPI(settings, ctrl.signal).then(({ sessionId, questions }) => {
       if (ctrl.signal.aborted) return;
       if (questions && questions.length) {
@@ -347,12 +392,25 @@ export function useQuiz() {
   const saveAndExit = useCallback(async () => {
     if (resultPostedRef.current) return;
     resultPostedRef.current = true;
-    try { await postQuizResults(stateRef.current); }
-    catch (_) { /* fire-and-forget; navigation should still proceed */ }
+    setSaveStatus('saving');
+    try {
+      const s = await postQuizResults(stateRef.current);
+      setSaveStatus(s === 'skipped' ? 'idle' : s);
+    }
+    catch (_) { setSaveStatus('error'); /* navigation should still proceed */ }
+  }, []);
+
+  // Manual retry for the summary screen when a save failed (e.g. a transient
+  // network blip). Safe: a failed POST never wrote a row, so re-posting won't
+  // duplicate the session.
+  const retrySave = useCallback(() => {
+    setSaveStatus('saving');
+    postQuizResults(stateRef.current).then(s => setSaveStatus(s === 'skipped' ? 'idle' : s));
   }, []);
 
   return {
     state, submit, advance, showPeekWarning, hidePeekWarning,
     toggleTutorial, restart, saveAndExit,
+    saveStatus, retrySave,
   };
 }
