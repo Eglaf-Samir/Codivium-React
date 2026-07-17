@@ -13,7 +13,6 @@
 
 import { useReducer, useEffect, useCallback, useRef, useState } from 'react';
 import { pickFromDemo, DEMO_CATEGORIES } from '../utils/demoBank.js';
-import { getToken } from '../../mcq-shared/fetch.js';
 import { Getallmcqbyfilter, Createmcqtimelogs } from '../../../api/mcq/apimcq';
 import {
   adaptBackendQuestions,
@@ -177,14 +176,24 @@ function buildFilterBody(settings, userId) {
   return {
     DifficultyLevelID: settings.difficultyLevelId || 0,
     CategoriesIds:     Array.isArray(settings.categoryIds) ? settings.categoryIds : [],
-    NoOfQuestion:      Math.max(1, Math.min(50, Number(settings.questionCount) || 10)),
+    NoOfQuestion:      Math.max(10, Math.min(50, Number(settings.questionCount) || 10)),
     isSkipPriviosAttempetedQuestions: !!settings.skipCorrect,  // typo matches backend DTO
     userId:            userId || '00000000-0000-0000-0000-000000000000',
+    // Restricts the backend's random sample to isFree questions BEFORE it
+    // takes NoOfQuestion, so a non-entitled user's quiz is built from the
+    // full free pool rather than a mixed sample that gets thinned out by
+    // the client-side isFree filter below (which could otherwise return
+    // far fewer questions than are actually available for free).
+    IsFreeOnly:        !settings.hasAllMcqAccess,
   };
 }
 
 async function fetchQuestionsFromAPI(settings, externalSignal = null) {
-  const token = getToken();
+  // Same key the rest of the app (Login.jsx, apimcq.jsx) uses for the JWT.
+  // This previously read a generic scaffold key ('cv_auth_token') that the
+  // real login flow never wrote to, so `token` was always null and every
+  // logged-in user silently fell through to the demo bank / login error.
+  const token = typeof window !== 'undefined' ? localStorage.getItem('LoginToken') : '';
   const userId = typeof window !== 'undefined' ? localStorage.getItem('Userid') : '';
 
   // Demo / unauthenticated path.
@@ -201,7 +210,18 @@ async function fetchQuestionsFromAPI(settings, externalSignal = null) {
     if (res.status === 401) return { sessionId: null, questions: [], error: 'unauthorized', status: 401 };
     if (res.status !== 200 || !Array.isArray(res.data)) throw new Error('HTTP ' + (res.status || '?'));
     if (!res.data.length) return { sessionId: null, questions: [], error: 'No questions are available for the selected categories. Go back to Setup and pick a different category.' };
-    return { sessionId: null, questions: adaptBackendQuestions(res.data) };
+
+    let questions = adaptBackendQuestions(res.data);
+    // Users without full MCQ package access only get isFree questions —
+    // superadmin decides per-question via the admin panel. No mid-quiz
+    // paywall interruption; the quiz is simply built from the free pool.
+    if (!settings.hasAllMcqAccess) {
+      questions = questions.filter(q => q.isFree);
+      if (!questions.length) {
+        return { sessionId: null, questions: [], error: 'No free questions are available for the selected categories. Upgrade your plan to access all MCQs, or go back to Setup and pick a different category.' };
+      }
+    }
+    return { sessionId: null, questions };
   } catch (e) {
     // We only reach here for a logged-in user (token + userId present). Do NOT
     // silently fall back to the demo bank — that hides real backend failures

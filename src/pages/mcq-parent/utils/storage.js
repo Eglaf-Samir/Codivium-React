@@ -56,7 +56,7 @@ export function readUrlParams() {
     if (diff) result.difficultyName = diff;
 
     const cnt = p.get('count');
-    if (cnt) result.questionCount = Math.max(1, Math.min(50, parseInt(cnt, 10) || 10));
+    if (cnt) result.questionCount = Math.max(10, Math.min(50, parseInt(cnt, 10) || 10));
     const skip = p.get('skipCorrect');
     if (skip) result.skipCorrect = skip === 'true';
     const src = p.get('source');

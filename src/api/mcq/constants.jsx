@@ -16,3 +16,4 @@ export const mcqfileupload = 'api/v1/mcq/mcqfileupload';
 export const getallmcqbyfilter = 'api/v1/mcq/GetAllbyfilterAsync';
 export const createmcqTimelogs = 'api/v1/mcqtimelog/CreateMCQLog';
 export const getMcqCategoryIdsWithQuestions = 'api/v1/mcq/CategoryIdsWithQuestions?difficultyLevelId=';
+export const getFreeQuestionCount = 'api/v1/mcq/GetFreeQuestionCount';

@@ -1666,6 +1666,17 @@ body.cv-app.mcq-quiz .window-large .window-pad{
   min-height: 0;
 }
 
+/* Results/summary card was still capping its own height and scrolling
+   internally (overflow-y:auto + max-height from the base .summary.show
+   rule above), which stacked a second scrollbar on top of .main's.
+   Release it the same way as .window-large so .main is the only
+   scroll container on this page. */
+body.cv-app.mcq-quiz .summary.show,
+body.cv-app.mcq-quiz .window.summary.show{
+  max-height: none !important;
+  overflow-y: visible !important;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    Make quiz content fill the available width after the sidebar so the
    question card and option cells aren't squashed into the left half.

@@ -161,6 +161,6 @@ export function pickFromDemo(settings) {
   let filtered = bank.filter(q => catSet.has(q.category) && q.difficulty === diff);
   if (!filtered.length) filtered = bank.filter(q => catSet.has(q.category));
   if (!filtered.length) filtered = bank.slice();
-  const desired = Math.max(1, Math.min(50, Number(settings.questionCount) || 10));
+  const desired = Math.max(10, Math.min(50, Number(settings.questionCount) || 10));
   return shuffle(filtered).slice(0, Math.min(desired, filtered.length));
 }

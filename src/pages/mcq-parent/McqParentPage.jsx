@@ -14,7 +14,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
 import {
   useDifficultyLevels,
   useCategoriesForDifficulty,
@@ -29,7 +28,10 @@ import { useGlowFollow } from '../mcq-shared/useGlowFollow.js';
 import { useCssLoader } from '../../hooks/useCssLoader.js';
 import { ActivePackagebyuserid } from '../../api/pricepackage/apipackage';
 import { getUserById, UpdateUserById } from '../../api/auth/apiauth';
+import { GetFreeQuestionCount } from '../../api/mcq/apimcq';
 import { logout } from '../../utils/auth';
+import FreeQuizGateModal from './components/FreeQuizGateModal.jsx';
+import PackagePickerModal from '../MenuPage/PackagePickerModal.jsx';
 
 const MCQ_CSS = [
   '/assets/css/components/mcq/mcq-forms.css',
@@ -82,7 +84,11 @@ export default function McqParentPage() {
 
   // ── Selection state (carries IDs; names are for display only) ─
   const [selectedIds, setSelectedIds] = useState(Array.isArray(initial.categoryIds) ? initial.categoryIds : []);
-  const [count,       setCount]       = useState(Number.isFinite(initial.questionCount) ? initial.questionCount : 10);
+  // Clamp to [10, 50] even for a saved/URL value — guards against stale
+  // localStorage from before the 10-question minimum was enforced.
+  const [count,       setCount]       = useState(
+    Number.isFinite(initial.questionCount) ? Math.max(10, Math.min(50, initial.questionCount)) : 10
+  );
   const [skipCorrect, setSkipCorrect] = useState(!!initial.skipCorrect);
   const [infoKey,     setInfoKey]     = useState('purpose');
   const [msg,         setMsg]         = useState('');
@@ -90,7 +96,27 @@ export default function McqParentPage() {
   const [activePackage, setActivePackage] = useState(null);
   const [packageReady,  setPackageReady]  = useState(false);
   const [savedUser,     setSavedUser]     = useState(null);
+  const [gateInfo,      setGateInfo]      = useState(null); // { freeCount } | null
+  const [pkgModalOpen,  setPkgModalOpen]  = useState(false);
   const startBtnRef = useRef(null);
+
+  // True once we know the user's package includes full MCQ access. False
+  // both while the package hasn't loaded yet and for users on a package (or
+  // no package) without that entitlement — either way, Start Quiz routes
+  // through the free-question gate below instead of starting directly.
+  const hasAllMcqAccess = React.useMemo(
+    () => !!(activePackage?.isAccessToAllMCQ ?? activePackage?.IsAccessToAllMCQ),
+    [activePackage]
+  );
+
+  // "Exclude questions previously answered correctly" is a package-only
+  // feature. Force it off the moment we know the user isn't entitled, so a
+  // value carried over from localStorage/a previous package can't sneak a
+  // premium option into a free-only quiz.
+  useEffect(() => {
+    if (packageReady && !hasAllMcqAccess && skipCorrect) setSkipCorrect(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packageReady, hasAllMcqAccess]);
 
   const showAdaptiveBanner = !!(urlParams?.source === 'adaptive');
   const error = diffError || catError;
@@ -212,28 +238,10 @@ export default function McqParentPage() {
   }, [selectedIds, categories]);
 
   // ── Start quiz ───────────────────────────────────────────────
-  const handleStart = useCallback(() => {
-    if (loadingDiff || loadingCats || launching) return;
-    if (!difficultyLevelId) { setMsg('Please choose a difficulty level.'); return; }
-    if (!selectedIds.length) { setMsg('Please choose at least one category.'); return; }
-
-    // Subscription gate. If the user is logged in but has no active package,
-    // route them to /pricing instead of starting the quiz. Demo mode (no
-    // userId) is allowed through so the page is still usable unauthenticated.
-    if (userId && packageReady && !activePackage) {
-      Swal.fire({
-        title: 'Subscription required',
-        text: 'You need an active package to take the quiz.',
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonText: 'See plans',
-        cancelButtonText: 'Maybe later',
-      }).then(r => { if (r.isConfirmed) navigate('/pricing'); });
-      return;
-    }
-
-    // Persist settings (with both IDs and friendly names) to localStorage so
-    // the quiz page can read them on the next document load.
+  // Persist settings (with both IDs and friendly names) to localStorage and
+  // navigate to the quiz page. Shared by the direct-entitled path and the
+  // "continue with free questions" choice from the gate modal.
+  const launchQuiz = useCallback(() => {
     const difficultyName = difficulties.find(d => d.id === difficultyLevelId)?.name || '';
     const settings = {
       difficultyLevelId,
@@ -241,17 +249,53 @@ export default function McqParentPage() {
       categoryIds: selectedIds,
       categoryNames: selectedNames,
       questionCount: count,
-      skipCorrect,
+      // Package-only feature — never persist it as on for a free-only quiz,
+      // even if the checkbox somehow carried a stale true through.
+      skipCorrect: hasAllMcqAccess ? skipCorrect : false,
       source: urlParams?.source || null,
+      // Drives free-only question filtering in useQuiz.js for users whose
+      // package doesn't include full MCQ access.
+      hasAllMcqAccess,
     };
     writeSettings(settings);
     setLaunching(true);
     setMsg('');
     safeRedirect(QUIZ_URL);
+  }, [difficulties, difficultyLevelId, selectedIds, selectedNames, count, skipCorrect, hasAllMcqAccess, urlParams]);
+
+  const handleStart = useCallback(async () => {
+    if (loadingDiff || loadingCats || launching) return;
+    if (!difficultyLevelId) { setMsg('Please choose a difficulty level.'); return; }
+    if (!selectedIds.length) { setMsg('Please choose at least one category.'); return; }
+
+    // Free-question gate. Users without full MCQ access don't get bounced
+    // straight to /pricing anymore — they see how many free questions their
+    // current selection has and can either take that free quiz or open the
+    // package picker. Demo mode (no userId) is allowed through untouched.
+    if (userId && packageReady && !hasAllMcqAccess) {
+      setLaunching(true);
+      let freeCount = 0;
+      try {
+        const res = await GetFreeQuestionCount(JSON.stringify({
+          DifficultyLevelID: difficultyLevelId,
+          CategoriesIds: selectedIds,
+        }));
+        if (res?.status === 200 && Number.isFinite(Number(res.data))) freeCount = Number(res.data);
+      } catch (_) { /* fall through with freeCount 0 — treat as "unknown = none" */ }
+      setLaunching(false);
+      setGateInfo({ freeCount });
+      return;
+    }
+
+    launchQuiz();
   }, [
-    loadingDiff, loadingCats, launching, difficultyLevelId, selectedIds, selectedNames,
-    count, skipCorrect, userId, packageReady, activePackage, difficulties, urlParams, navigate,
+    loadingDiff, loadingCats, launching, difficultyLevelId, selectedIds,
+    userId, packageReady, hasAllMcqAccess, launchQuiz,
   ]);
+
+  const closeGate       = useCallback(() => setGateInfo(null), []);
+  const continueFreeQuiz = useCallback(() => { setGateInfo(null); launchQuiz(); }, [launchQuiz]);
+  const openPackagePicker = useCallback(() => { setGateInfo(null); setPkgModalOpen(true); }, []);
 
   // FOUC guard
   if (!cssReady) {
@@ -308,6 +352,7 @@ export default function McqParentPage() {
                     onCount={setCount}
                     skipCorrect={skipCorrect}
                     onSkip={setSkipCorrect}
+                    skipCorrectDisabled={packageReady && !hasAllMcqAccess}
                     onInfo={setInfoKey}
                   />
 
@@ -404,6 +449,15 @@ export default function McqParentPage() {
     </div>
     </main>
     <McqTour tourState={tourState} />
+    <FreeQuizGateModal
+      open={!!gateInfo}
+      freeCount={gateInfo?.freeCount || 0}
+      requestedCount={count}
+      onContinueFree={continueFreeQuiz}
+      onGetPackage={openPackagePicker}
+      onClose={closeGate}
+    />
+    <PackagePickerModal open={pkgModalOpen} onClose={() => setPkgModalOpen(false)} />
     </>
   );
 }
