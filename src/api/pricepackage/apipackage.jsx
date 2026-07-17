@@ -239,7 +239,9 @@ export const activepackagecancelByUser = async (id) => {
         }
     }
     try {
-        const res = await Axios.get(url, config);
+        // POST, not GET — cancelling a subscription mutates state and
+        // shouldn't be a cacheable/idempotent-by-default GET request.
+        const res = await Axios.post(url, {}, config);
         return res;
     } catch (e) {
         return e.response;

@@ -40,3 +40,9 @@ export const createusernew = "api/v1/account/register-simple";
 export const sendverifyemail = "api/v1/account/send-verify-email";
 export const verifyemailtoken = "api/v1/account/verify-email?token=";
 export const checkverifystatus = "api/v1/account/check-verify-status?email=";
+
+export const updateprofilephoto = "api/v1/account/profile-photo?userid=";
+// No userid param — the backend identifies the requester from their own
+// auth token (never a client-supplied id), so one user can't request
+// deletion of another.
+export const requestaccountdeletion = "api/v1/account/request-deletion";

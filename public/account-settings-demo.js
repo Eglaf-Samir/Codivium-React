@@ -14,13 +14,7 @@
 
   /* ── Demo data ──────────────────────────────────────────────── */
   var DEMO = {
-    /* Profile */
-    cv_profile_name:  'Alex Thornton',
-    cv_profile_email: 'alex.thornton@example.com',   /* displayed in JS */
-
-    /* Notifications — mix of on/off to show both states */
-    notif_weekly_summary: '0',
-    notif_milestones:     '1',
+    /* Notifications */
     notif_in_app:         '1',
     notif_marketing:      '0',
 
@@ -66,7 +60,6 @@
                          'cv_repl_font_size','cv_instructions_font_size',
                          'cv_editor_font_family','cv_repl_font_family',
                          'cv_instructions_font_family','as_active_tab',
-                         'notif_weekly_summary','notif_milestones',
                          'notif_in_app','notif_marketing'];
     for (var key in DEMO) {
       if (key.charAt(0) !== '_') {
@@ -83,7 +76,6 @@
      can read them in its stub loadPlan() / loadBilling() functions */
   window.CODIVIUM_DEMO_PLAN     = JSON.parse(DEMO._demo_plan);
   window.CODIVIUM_DEMO_INVOICES = JSON.parse(DEMO._demo_invoices);
-  window.CODIVIUM_DEMO_EMAIL    = DEMO.cv_profile_email;
 
   /* ── Public reset helper ─────────────────────────────────────── */
   window.CodiviumSettingsDemo = {
@@ -92,7 +84,7 @@
       keys.forEach(function (k) {
         try { localStorage.removeItem(k); } catch (e) {}
       });
-      ['CODIVIUM_DEMO_PLAN','CODIVIUM_DEMO_INVOICES','CODIVIUM_DEMO_EMAIL'].forEach(function(k){
+      ['CODIVIUM_DEMO_PLAN','CODIVIUM_DEMO_INVOICES'].forEach(function(k){
         delete window[k];
       });
       console.log('[Codivium] Settings demo data cleared. Reload to see empty state.');

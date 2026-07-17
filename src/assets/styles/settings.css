@@ -307,6 +307,34 @@ html[data-theme="parchment"] .as-tab:hover {
   flex-shrink: 0;
   background: rgba(255,255,255,0.06);
 }
+/* Wraps the avatar image so an upload/remove in flight can show a spinner
+   directly over the photo, in addition to the Upload/Remove button's own
+   inline spinner (as-btn-spinner). */
+.as-avatar-photo {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.as-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+}
+.as-avatar-photo.is-loading .as-avatar-overlay { display: flex; }
+.as-avatar-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.9);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: as-btn-spin 0.6s linear infinite;
+}
 .as-avatar-text { flex: 1; }
 
 /* ── Select control ── */
@@ -862,7 +890,7 @@ html[data-theme="parchment"] .as-subtab.active {
   text-transform: uppercase;
   color: var(--color-text-secondary, rgba(245,245,252,0.45));
   margin: 20px 0 8px;
-  margin-left: 2px;
+  margin-left: 17px;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--color-border, rgba(255,255,255,0.07));
 }

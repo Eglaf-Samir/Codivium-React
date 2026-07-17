@@ -3,23 +3,18 @@
  * Account & Settings page controller.
  *
  * What this file does:
- *  - Loads profile name/avatar from localStorage (cv_profile_name, cv_profile_image)
  *  - Reads/writes all notification and appearance preferences to localStorage
  *  - Renders editor colour theme chips and wires the selection
  *  - Handles modal open/close for all change flows
- *  - Validates and saves display name changes locally
- *  - All API-dependent flows (email, password, billing) show a stub confirmation
- *    toast — wire to your backend endpoints when available
+ *  - All API-dependent flows (name/email/avatar, password, billing, account
+ *    deletion) go through window.CV_PROFILE_API, bridged in from the React
+ *    page (SettingsPage.jsx) — this script never persists name/email/photo
+ *    to localStorage itself.
  *
  * localStorage keys used:
- *  cv_profile_name          string   display name
- *  cv_profile_image         string   data URL for avatar
  *  cv_syntax_theme          string   editor syntax theme key
  *  cv_ws_theme              string   editor UI theme key
  *  cv_sidebar_collapsed     string   dashboard sidebar state
- *  notif_weekly_summary     '1'|'0'  weekly email
- *  notif_milestones         '1'|'0'  milestone alerts
- *  notif_in_app             '1'|'0'  in-app notifications
  *  notif_marketing          '1'|'0'  marketing emails
  *  reduce_motion            '1'|'0'  reduce motion preference
  *  as_dash_layout           string   'full' | 'info_only'
@@ -50,51 +45,141 @@
     { key: 'mist-meridian',        name: 'Mist Meridian',       dot: '#EFF3F8' },
   ];
 
-  /* ── Load profile ─────────────────────────────────────────── */
-  function loadProfile() {
-    var name  = get('cv_profile_name', '');
-    var image = get('cv_profile_image', '');
-    var email = get('cv_profile_email', '');
-    if (el('asDisplayNameVal')) el('asDisplayNameVal').textContent = name || '—';
-    if (el('asEmailVal'))       el('asEmailVal').textContent       = email || '—';
-    if (name && el('profileName')) el('profileName').textContent = name;
-    if (image && el('asAvatarImg')) el('asAvatarImg').src = image;
-    if (image && el('profileImg'))  el('profileImg').src  = image;
+  /* ── Avatar ───────────────────────────────────────────────────
+   * Upload/remove call through window.CV_PROFILE_API (bridged from
+   * SettingsPage.jsx), which persists to the backend (AppUser.ProfileImage)
+   * and shows its own success/error dialog. Nothing is cached locally —
+   * that was the root cause of every account on a shared browser showing
+   * the same photo.
+   *
+   * Uploads are compressed client-side first (downscaled + re-encoded as
+   * JPEG via canvas) so a multi-MB phone photo doesn't get stored verbatim
+   * — keeps the DB row small and avoids the 2MB cap rejecting normal photos. */
+  var AVATAR_MAX_DIMENSION = 512;
+  var AVATAR_JPEG_QUALITY = 0.8;
+
+  function compressImageFile(file, maxDim, quality) {
+    return new Promise(function (resolve, reject) {
+      var objectUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(objectUrl);
+        try {
+          var w = img.naturalWidth || img.width;
+          var h = img.naturalHeight || img.height;
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          var targetW = Math.max(1, Math.round(w * scale));
+          var targetH = Math.max(1, Math.round(h * scale));
+          var canvas = document.createElement('canvas');
+          canvas.width = targetW;
+          canvas.height = targetH;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, targetW, targetH);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Could not read image.'));
+      };
+      img.src = objectUrl;
+    });
   }
 
-  /* ── Avatar ───────────────────────────────────────────────── */
+  // Fallback for the rare case an image fails to decode via <img>/canvas —
+  // upload the original file uncompressed rather than blocking entirely.
+  function readFileAsDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function (e) { resolve(e.target.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function estimateDataUrlBytes(dataUrl) {
+    var commaIdx = dataUrl.indexOf(',');
+    var payload = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+    return Math.round((payload.length * 3) / 4);
+  }
+
   function initAvatar() {
-    var uploadBtn  = el('asAvatarUploadBtn');
-    var removeBtn  = el('asAvatarRemoveBtn');
-    var fileInput  = el('asAvatarFile');
-    var avatarImg  = el('asAvatarImg');
-    var sidebarImg = el('profileImg');
+    var uploadBtn   = el('asAvatarUploadBtn');
+    var removeBtn   = el('asAvatarRemoveBtn');
+    var fileInput   = el('asAvatarFile');
+    var avatarImg   = el('asAvatarImg');
+    var avatarWrap  = el('asAvatarPhotoWrap');
+    var sidebarImg  = el('profileImg');
+
+    // Toggles the spinner overlay on the photo itself, in addition to
+    // whichever button (Upload/Remove) also shows its own inline spinner.
+    var setAvatarBusy = function (busy) {
+      if (avatarWrap) avatarWrap.classList.toggle('is-loading', !!busy);
+    };
+    var setBtnBusy = function (btn, busy, busyLabel) {
+      if (!btn) return;
+      if (busy) {
+        btn.dataset.origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="as-btn-spinner" aria-hidden="true"></span>' + busyLabel;
+      } else {
+        btn.disabled = false;
+        if (btn.dataset.origHtml) btn.innerHTML = btn.dataset.origHtml;
+      }
+    };
 
     if (uploadBtn && fileInput) {
       uploadBtn.addEventListener('click', function () { fileInput.click(); });
       fileInput.addEventListener('change', function () {
         var file = fileInput.files[0];
-        if (!file) return;
-        if (file.size > 2 * 1024 * 1024) { showToast('Image must be under 2 MB.', true); return; }
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          var dataUrl = e.target.result;
-          if (avatarImg)  avatarImg.src  = dataUrl;
-          if (sidebarImg) sidebarImg.src = dataUrl;
-          set('cv_profile_image', dataUrl);
-          showToast('Profile photo updated.');
-        };
-        reader.readAsDataURL(file);
         fileInput.value = '';
+        if (!file) return;
+        var api = profileApi();
+        if (!api || typeof api.uploadAvatar !== 'function') return;
+
+        setBtnBusy(uploadBtn, true, 'Uploading…');
+        setAvatarBusy(true);
+
+        compressImageFile(file, AVATAR_MAX_DIMENSION, AVATAR_JPEG_QUALITY)
+          .catch(function () { return readFileAsDataUrl(file); })
+          .then(function (dataUrl) {
+            if (estimateDataUrlBytes(dataUrl) > 2 * 1024 * 1024) {
+              showToast('Image is still too large after compression. Try a smaller photo.', true);
+              return;
+            }
+            return api.uploadAvatar(dataUrl).then(function (result) {
+              if (result && result.ok) {
+                if (avatarImg)  avatarImg.src  = dataUrl;
+                if (sidebarImg) sidebarImg.src = dataUrl;
+              }
+            });
+          })
+          .catch(function () {
+            showToast('Could not read that image. Try a different file.', true);
+          })
+          .then(function () {
+            setBtnBusy(uploadBtn, false);
+            setAvatarBusy(false);
+          });
       });
     }
     if (removeBtn) {
       removeBtn.addEventListener('click', function () {
-        var placeholder = '/assets/img/profile-placeholder.svg';
-        if (avatarImg)  avatarImg.src  = placeholder;
-        if (sidebarImg) sidebarImg.src = placeholder;
-        try { localStorage.removeItem('cv_profile_image'); } catch (_) {}
-        showToast('Profile photo removed.');
+        var api = profileApi();
+        if (!api || typeof api.removeAvatar !== 'function') return;
+        setBtnBusy(removeBtn, true, 'Removing…');
+        setAvatarBusy(true);
+        api.removeAvatar().then(function (result) {
+          setBtnBusy(removeBtn, false);
+          setAvatarBusy(false);
+          if (result && result.ok) {
+            var placeholder = '/assets/img/profile-placeholder.svg';
+            if (avatarImg)  avatarImg.src  = placeholder;
+            if (sidebarImg) sidebarImg.src = placeholder;
+          }
+        });
       });
     }
   }
@@ -984,7 +1069,11 @@
     // payment" opens the Stripe Customer Portal and Cancel calls the cancel
     // endpoint. Not handled here to avoid double-binding the same buttons.
 
-    // Delete account — confirm field
+    // Delete account — this NEVER deletes anything itself. It only sends a
+    // request email to Codivium staff, who perform the actual deletion
+    // manually (see AccountApiController.RequestAccountDeletion). The
+    // password field is a confirmation-friction step only, not verified
+    // server-side (deletion review happens on the human side).
     var deleteInput = el('asDeleteConfirm');
     var deleteBtn   = el('confirmDeleteAccount');
     if (deleteInput && deleteBtn) {
@@ -994,9 +1083,9 @@
       deleteBtn.addEventListener('click', function () {
         var pwd = deleteInput.value.trim();
         if (pwd.length < 6) return;
+        var api = profileApi();
         closeAllModals();
-        showToast('Account deletion request submitted. You will receive a confirmation email.');
-        // TODO: DELETE /api/user/account (send password in request body)
+        if (api && typeof api.requestAccountDeletion === 'function') api.requestAccountDeletion();
       });
     }
   }
@@ -1026,14 +1115,6 @@
     _toastTimer = setTimeout(function () { _toastEl.style.opacity = '0'; }, 2800);
   }
 
-  /* ── Email display ────────────────────────────────────────── */
-  function loadEmail() {
-    // Stub: replace with API call or JWT claim
-    // In demo mode, reads from window.CODIVIUM_DEMO_EMAIL (set by account-settings-demo.js)
-    var emailEl = el('asEmailVal');
-    if (emailEl) emailEl.textContent = window.CODIVIUM_DEMO_EMAIL || '—';
-  }
-
   /* ── Appearance persistence (DB-backed via window.CV_PROFILE_API) ──────────
    * These preferences are saved to the backend so a user's setup follows them to
    * any device/login. All keys are lowercase, matching the backend's lowercase
@@ -1060,8 +1141,6 @@
   // (e.g. only email users who opted into marketing / weekly digests). Same
   // lowercase KeyName storage; values are '1'|'0'.
   var NOTIFICATION_KEYS = [
-    'notif_weekly_summary',
-    'notif_milestones',
     'notif_in_app',
     'notif_marketing',
   ];
@@ -1141,11 +1220,9 @@
 
   /* ── Boot ─────────────────────────────────────────────────── */
   function init() {
-    loadProfile();
-    loadEmail();
-    // Billing (current plan, payment summary, and history) is rendered by the
-    // React page (SettingsPage.jsx) from live backend data — loadPlan/loadBilling
-    // here were demo stubs and are intentionally not called (they'd fight React).
+    // Display name, email, and avatar are rendered directly by the React page
+    // (SettingsPage.jsx) from a live getUserById call — same as billing below —
+    // so there's nothing to load here from localStorage.
     initAvatar();
 
     // Core UI that doesn't depend on saved appearance values — wire it

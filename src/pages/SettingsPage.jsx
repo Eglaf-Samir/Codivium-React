@@ -1,6 +1,7 @@
 // SettingsPage.jsx — Account & Settings with working theme picker
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import {
   ActivePackagebyuserid,
   getUserTransactionHistory,
@@ -8,7 +9,13 @@ import {
   getInvoiceUrl,
   createBillingPortalSession,
 } from '../api/pricepackage/apipackage';
-import { getUserById, ForgetPasswordApi } from '../api/auth/apiauth';
+import {
+  getUserById,
+  ForgetPasswordApi,
+  UpdateProfilePhoto,
+  RemoveProfilePhoto,
+  RequestAccountDeletion,
+} from '../api/auth/apiauth';
 import { GetAllUserSettings, SaveUserSetting } from '../api/usersettings/apiusersettings';
 
 // Billing is now live: the Billing tab shows the real active plan, payment
@@ -24,38 +31,29 @@ function loadScript(src, onload) {
   return s;
 }
 
-// ── Real-profile guard ─────────────────────────────────────────────
-// The demo script (account-settings-demo.js) seeds cv_profile_name with a
-// dummy ("Alex Thornton") and account-settings.js writes it into the shared
-// sidebar #profileName element — clobbering the real logged-in name. These
-// helpers force the REAL name/email (persisted at login as UserDisplayName/
-// UserEmail) back into both localStorage and the DOM.
-function getRealProfile() {
-  let name = '', email = '';
+// Display name/email/avatar for THIS page's own elements only (asDisplayNameVal,
+// asEmailVal, asAvatarImg) — NOT #profileName/#profileImg, which belong to
+// Sidebar.jsx's own React state and must not be fought over via direct DOM
+// writes from here. Fetched fresh every time; nothing is cached locally.
+async function applyRealProfileToDom() {
+  const uid = localStorage.getItem('Userid');
+  if (!uid) return;
   try {
-    name = (localStorage.getItem('UserDisplayName') || '').trim();
-    email = (localStorage.getItem('UserEmail') || '').trim();
-  } catch (_) { /* ignore */ }
-  return { name, email };
-}
-
-function applyRealProfileToStorage() {
-  const { name, email } = getRealProfile();
-  try {
-    if (name) localStorage.setItem('cv_profile_name', name);
-    if (email) localStorage.setItem('cv_profile_email', email);
-  } catch (_) { /* ignore */ }
-}
-
-function applyRealProfileToDom() {
-  applyRealProfileToStorage();
-  const { name, email } = getRealProfile();
-  const setText = (id, val) => {
-    const el = document.getElementById(id);
-    if (el && val) el.textContent = val;
-  };
-  if (name) { setText('profileName', name); setText('asDisplayNameVal', name); }
-  if (email) setText('asEmailVal', email);
+    const res = await getUserById(uid);
+    if (res?.status !== 200 || !res.data) return;
+    const d = res.data;
+    const full = [d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ').trim();
+    const setText = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    setText('asDisplayNameVal', full || '—');
+    setText('asEmailVal', d.email || '—');
+    if (d.profileImage) {
+      const avatarImg = document.getElementById('asAvatarImg');
+      if (avatarImg) avatarImg.src = d.profileImage;
+    }
+  } catch (_) { /* non-fatal — fields keep their placeholder text */ }
 }
 
 // Set window.CVTheme directly — keys match the [data-theme="..."] rules in our CSS
@@ -64,36 +62,36 @@ function setupCVTheme() {
   window.CVTheme = {
     VALID: ['obsidian', 'vanta-black', 'ebony', 'dark-charcoal', 'slate', 'glacier-slate', 'frost', 'parchment'],
     LABELS: {
-      'obsidian':       'Obsidian',
-      'vanta-black':    'Vanta Black',
-      'ebony':          'Ebony',
-      'dark-charcoal':  'Dark Charcoal',
-      'slate':          'Slate',
-      'glacier-slate':  'Glacier Slate',
-      'frost':          'Frost',
-      'parchment':      'Parchment',
+      'obsidian': 'Obsidian',
+      'vanta-black': 'Vanta Black',
+      'ebony': 'Ebony',
+      'dark-charcoal': 'Dark Charcoal',
+      'slate': 'Slate',
+      'glacier-slate': 'Glacier Slate',
+      'frost': 'Frost',
+      'parchment': 'Parchment',
     },
     SWATCHES: {
-      'obsidian':       { bg: '#0B1020', accent: '#F6D58A' },
-      'vanta-black':    { bg: '#000000', accent: '#F6D58A' },
-      'ebony':          { bg: '#12101A', accent: '#A78BFA' },
-      'dark-charcoal':  { bg: '#1A1A1C', accent: '#D9C07C' },
-      'slate':          { bg: '#1B2431', accent: '#60A5FA' },
-      'glacier-slate':  { bg: '#2A3A4C', accent: '#7FAFD9' },
-      'frost':          { bg: '#E8F0F7', accent: '#2E6FA3' },
-      'parchment':      { bg: '#F5F0E8', accent: '#8B1A1A' },
+      'obsidian': { bg: '#0B1020', accent: '#F6D58A' },
+      'vanta-black': { bg: '#000000', accent: '#F6D58A' },
+      'ebony': { bg: '#12101A', accent: '#A78BFA' },
+      'dark-charcoal': { bg: '#1A1A1C', accent: '#D9C07C' },
+      'slate': { bg: '#1B2431', accent: '#60A5FA' },
+      'glacier-slate': { bg: '#2A3A4C', accent: '#7FAFD9' },
+      'frost': { bg: '#E8F0F7', accent: '#2E6FA3' },
+      'parchment': { bg: '#F5F0E8', accent: '#8B1A1A' },
     },
     get: function () {
       try { return localStorage.getItem('cv_site_theme') || 'obsidian'; } catch (e) { return 'obsidian'; }
     },
     set: function (key) {
-      try { localStorage.setItem('cv_site_theme', key); } catch (e) {}
+      try { localStorage.setItem('cv_site_theme', key); } catch (e) { }
       document.documentElement.setAttribute('data-theme', key);
     },
   };
   try {
     document.documentElement.setAttribute('data-theme', window.CVTheme.get());
-  } catch (e) {}
+  } catch (e) { }
 }
 
 export default function SettingsPage() {
@@ -147,14 +145,14 @@ export default function SettingsPage() {
         if (res?.status === 200 && res.data) pkg = res.data;
       } catch (e) { /* fall back to cached */ }
       if (!pkg) {
-        try { pkg = JSON.parse(localStorage.getItem('userpackagedetails') || 'null'); } catch (e) {}
+        try { pkg = JSON.parse(localStorage.getItem('userpackagedetails') || 'null'); } catch (e) { }
       }
 
       let history = [];
       try {
         const hres = await getUserTransactionHistory(userId);
         if (hres?.status === 200 && Array.isArray(hres.data)) history = hres.data;
-      } catch (e) {}
+      } catch (e) { }
 
       // Force the empty "no package" view: pretend there's no plan and no
       // billing history, so the active-subscription UI never shows.
@@ -173,6 +171,12 @@ export default function SettingsPage() {
         !pkg ||
         (pkg.isDefault ?? pkg.IsDefault) === true ||
         (pkg.isAccessToAllCodingQuestions ?? pkg.IsAccessToAllCodingQuestions) === false;
+      // Deferred cancellation — set by our own cancel button (non-refund case)
+      // AND by the Stripe webhook when the customer schedules cancellation via
+      // the Customer Portal (customer.subscription.updated). Access continues
+      // until `end`. Weekly plans aren't recurring, so there's nothing to cancel.
+      const isCancelAtPeriodEnd = !!(pkg && (pkg.cancelAtPeriodEnd ?? pkg.CancelAtPeriodEnd));
+      const isWeeklyPlan = (billingPeriod || '').toLowerCase() === 'week';
 
       const apply = () => {
         const badge = document.getElementById('asPlanBadge');
@@ -218,11 +222,13 @@ export default function SettingsPage() {
             ? 'No active plan'
             : isFreePlan
               ? 'Free plan'
-              : isCanceled
-                ? (end ? `Cancels — access until ${fmtDate(end)}` : 'Cancelled')
-                : nextDate
-                  ? `Next payment ${fmtDate(nextDate)} — ${money(renewAmt)} / ${renewBp}`
-                  : (end ? `Active until ${fmtDate(end)}` : 'Active');
+              : isCancelAtPeriodEnd
+                ? (end ? `(Cancelled - access will remain until ${fmtDate(end)})` : '(Cancelled)')
+                : isCanceled
+                  ? 'Cancelled'
+                  : nextDate
+                    ? `Next payment ${fmtDate(nextDate)} — ${money(renewAmt)} / ${renewBp}`
+                    : (end ? `Active until ${fmtDate(end)}` : 'Active');
         }
 
         if (payHint) {
@@ -348,14 +354,46 @@ export default function SettingsPage() {
             }
           };
         }
+        // Cancel is only offered for an active, non-free, non-weekly,
+        // not-already-cancelled plan (weekly plans expire on their own; a
+        // deferred/immediate cancel already in effect has nothing left to do).
+        const cancelTrigger = document.getElementById('cancelSubTriggerBtn');
+        const cancelHint = document.getElementById('asCancelHint');
+        const cancelBlocked = !pkg || isFreePlan || isWeeklyPlan || isCanceled || isCancelAtPeriodEnd;
+        if (cancelTrigger) {
+          cancelTrigger.disabled = cancelBlocked;
+          cancelTrigger.title = isWeeklyPlan
+            ? 'Weekly plans end automatically and can’t be cancelled early.'
+            : (isCanceled || isCancelAtPeriodEnd) ? 'Already cancelled.' : '';
+        }
+        if (cancelHint) {
+          cancelHint.textContent = isWeeklyPlan
+            ? 'Weekly plans end automatically and can’t be cancelled early.'
+            : (isCanceled || isCancelAtPeriodEnd)
+              ? 'You’ve already cancelled this plan.'
+              : 'You’ll keep access until the end of the current billing period.';
+        }
         if (confirmCancel) {
           confirmCancel.onclick = async () => {
-            if (!activePkgId || isFreePlan) return;
+            if (cancelBlocked || !activePkgId) return;
             confirmCancel.disabled = true;
-            try { await activepackagecancelByUser(activePkgId); } catch (e) {}
-            // Clear the cached package so the UI doesn't show the now-canceled plan.
-            try { localStorage.removeItem('userpackagedetails'); } catch (e) {}
-            window.location.reload();
+            try {
+              const res = await activepackagecancelByUser(activePkgId);
+              if (res?.status === 200) {
+                try { localStorage.removeItem('userpackagedetails'); } catch (_) { }
+                window.location.reload();
+                return;
+              }
+              Swal.fire({
+                title: 'Could not cancel subscription',
+                text: typeof res?.data === 'string' ? res.data : 'Please try again.',
+                icon: 'error',
+              });
+            } catch (_) {
+              Swal.fire({ title: 'Could not cancel subscription', text: 'Please try again.', icon: 'error' });
+            } finally {
+              confirmCancel.disabled = false;
+            }
           };
         }
       };
@@ -372,76 +410,97 @@ export default function SettingsPage() {
     // Step 1: set window.CVTheme directly (no DOM injection = no React conflict)
     setupCVTheme();
 
-    // If the real name isn't cached yet (e.g. an older session), fetch it once
-    // so the guard below has something to apply instead of the demo dummy.
-    if (!getRealProfile().name) {
-      try {
-        const uid = localStorage.getItem('Userid');
-        if (uid) {
-          getUserById(uid).then((res) => {
-            if (res?.status === 200 && res.data) {
-              const d = res.data;
-              const full = [d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ').trim();
-              if (full) localStorage.setItem('UserDisplayName', full);
-              if (d.email) localStorage.setItem('UserEmail', d.email);
-              applyRealProfileToDom();
-            }
-          });
-        }
-      } catch (_) { /* ignore */ }
-    }
-
-    // Bridge the real API service to the external controller script. The plain
-    // account-settings.js can't import our axios modules, so we hand it the one
-    // action the profile section needs — emailing a password-reset link — on
-    // window before it loads. Set BEFORE loadScript so the controller finds it.
-    //
-    // Resolve the email from the backend (by Userid) rather than trusting the
-    // cached localStorage value: a stale session (logged in before UserEmail was
-    // persisted) or the demo seeder can leave a blank/dummy email there, which
-    // the backend can't find and reports as "User not found".
+    // Resolve the email from the backend (by Userid) rather than any cache —
+    // email/name are never persisted locally now.
     const sendPasswordResetForCurrentUser = async () => {
       const uid = localStorage.getItem('Userid');
-      let email = (localStorage.getItem('UserEmail') || '').trim();
+      let email = '';
       if (uid) {
         try {
           const res = await getUserById(uid);
-          if (res?.status === 200 && res.data?.email) {
-            email = String(res.data.email).trim();
-            // Refresh the cache so the rest of the page shows the real address.
-            localStorage.setItem('UserEmail', email);
-            localStorage.setItem('cv_profile_email', email);
-          }
-        } catch (_) { /* fall back to cached email */ }
+          if (res?.status === 200 && res.data?.email) email = String(res.data.email).trim();
+        } catch (_) { /* fall through to the "no email" branch below */ }
       }
       if (!email) return { status: 400, data: 'No email address on file for your account.' };
       return ForgetPasswordApi(email);
     };
+
+    // Profile photo — persisted to AppUser.ProfileImage, not localStorage (see
+    // apiauth.jsx). Shows its own success/error dialog so account-settings.js
+    // doesn't need to.
+    const uploadAvatarForCurrentUser = async (dataUrl) => {
+      const uid = localStorage.getItem('Userid');
+      if (!uid) return { ok: false };
+      try {
+        const res = await UpdateProfilePhoto(uid, dataUrl);
+        if (res?.status === 200) {
+          Swal.fire({ title: 'Profile photo updated', icon: 'success', timer: 1400, showConfirmButton: false });
+          return { ok: true };
+        }
+        Swal.fire({ title: 'Could not update photo', text: typeof res?.data === 'string' ? res.data : 'Please try again.', icon: 'error' });
+      } catch (_) {
+        Swal.fire({ title: 'Could not update photo', text: 'Please try again.', icon: 'error' });
+      }
+      return { ok: false };
+    };
+    const removeAvatarForCurrentUser = async () => {
+      const uid = localStorage.getItem('Userid');
+      if (!uid) return { ok: false };
+      try {
+        const res = await RemoveProfilePhoto(uid);
+        if (res?.status === 200) {
+          Swal.fire({ title: 'Profile photo removed', icon: 'success', timer: 1400, showConfirmButton: false });
+          return { ok: true };
+        }
+      } catch (_) { /* fall through to the error dialog below */ }
+      Swal.fire({ title: 'Could not remove photo', text: 'Please try again.', icon: 'error' });
+      return { ok: false };
+    };
+
+    // Delete Account — NEVER deletes anything itself. Only emails Codivium
+    // staff a request; a superadmin performs the actual deletion manually.
+    const requestAccountDeletionForCurrentUser = async () => {
+      const uid = localStorage.getItem('Userid');
+      if (!uid) return { ok: false };
+      try {
+        const res = await RequestAccountDeletion();
+        if (res?.status === 200) {
+          Swal.fire({
+            title: 'Request received',
+            text: 'Your request has been sent to our team, who will follow up to complete the deletion.',
+            icon: 'success',
+          });
+          return { ok: true };
+        }
+      } catch (_) { /* fall through to the error dialog below */ }
+      Swal.fire({ title: 'Something went wrong', text: 'Please try again or contact support.', icon: 'error' });
+      return { ok: false };
+    };
+
+    // Bridge the real API service to the external controller script — it
+    // can't import our axios modules, so we hand it these actions on window
+    // before it loads. Set BEFORE loadScript so the controller finds them.
     window.CV_PROFILE_API = {
       sendPasswordReset: sendPasswordResetForCurrentUser,
+      uploadAvatar: uploadAvatarForCurrentUser,
+      removeAvatar: removeAvatarForCurrentUser,
+      requestAccountDeletion: requestAccountDeletionForCurrentUser,
       // Appearance persistence: the controller hydrates from these on load and
       // upserts changed preferences to the backend on change.
       getAppearanceSettings: GetAllUserSettings,
       saveAppearanceSetting: SaveUserSetting,
     };
 
-    // Step 2: load demo data, then load the settings controller. After each
-    // step, force the REAL profile back so the demo dummy never sticks in the
-    // sidebar (#profileName) or the settings fields.
-    applyRealProfileToStorage();
+    // Step 2: load demo data, then the settings controller, then paint this
+    // page's own name/email/avatar fields from a fresh getUserById call.
     const s1 = loadScript('/account-settings-demo.js', () => {
-      // Demo just overwrote cv_profile_name with the dummy — restore real value
-      // BEFORE the controller reads it.
-      applyRealProfileToStorage();
       loadScript('/account-settings.js', () => {
         applyRealProfileToDom();
-        setTimeout(applyRealProfileToDom, 150);
-        setTimeout(applyRealProfileToDom, 600);
       });
     });
 
     return () => {
-      try { document.body.removeChild(s1); } catch (_) {}
+      try { document.body.removeChild(s1); } catch (_) { }
     };
   }, []);
 
@@ -458,29 +517,29 @@ export default function SettingsPage() {
                 <button className="as-tab active" role="tab" aria-selected="true"
                   aria-controls="tab-account" id="tabn-account" type="button" data-tab="account">
                   <svg width="14" height="14" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" strokeLinecap="round" strokeWidth="2"/>
-                    <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                    <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" strokeWidth="2" />
                   </svg>Account
                 </button>
                 <button className="as-tab" role="tab" aria-selected="false"
                   aria-controls="tab-billing" id="tabn-billing" type="button" data-tab="billing">
                   <svg width="14" height="14" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M2 10h20" stroke="currentColor" strokeWidth="2"/>
+                    <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
+                    <path d="M2 10h20" stroke="currentColor" strokeWidth="2" />
                   </svg>Billing
                 </button>
                 <button className="as-tab" role="tab" aria-selected="false"
                   aria-controls="tab-notif" id="tabn-notif" type="button" data-tab="notif">
                   <svg width="14" height="14" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>Notifications
                 </button>
                 <button className="as-tab" role="tab" aria-selected="false"
                   aria-controls="tab-appear" id="tabn-appear" type="button" data-tab="appear">
                   <svg width="14" height="14" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+                    <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>Appearance
                 </button>
               </div>
@@ -500,13 +559,18 @@ export default function SettingsPage() {
                   <section className="as-section" aria-label="Account and Identity">
                     <div className="as-section-head">
                       <svg className="as-section-icon" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" strokeLinecap="round" strokeWidth="2"/>
-                        <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                        <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" strokeWidth="2" />
                       </svg>
                       <span className="as-section-title">Account &amp; Identity</span>
                     </div>
                     <div className="as-avatar-row">
-                      <img id="asAvatarImg" src="/assets/img/profile-placeholder.svg" alt="Profile photo" className="as-avatar"/>
+                      <div className="as-avatar-photo" id="asAvatarPhotoWrap">
+                        <img id="asAvatarImg" src="/assets/img/profile-placeholder.svg" alt="Profile photo" className="as-avatar" />
+                        <div className="as-avatar-overlay" aria-hidden="true">
+                          <span className="as-avatar-spinner" />
+                        </div>
+                      </div>
                       <div className="as-avatar-text">
                         <div className="as-row-label">Profile photo</div>
                         <div className="as-row-hint">JPG or PNG, up to 2 MB</div>
@@ -515,12 +579,12 @@ export default function SettingsPage() {
                         <button className="as-btn" type="button" id="asAvatarUploadBtn">Upload</button>
                         <button className="as-btn" type="button" id="asAvatarRemoveBtn">Remove</button>
                       </div>
-                      <input type="file" id="asAvatarFile" accept="image/jpeg,image/png" className="as-file-hidden" aria-label="Upload profile photo"/>
+                      <input type="file" id="asAvatarFile" accept="image/jpeg,image/png" className="as-file-hidden" aria-label="Upload profile photo" />
                     </div>
                     <div className="as-row">
                       <div className="as-row-text">
                         <div className="as-row-label">Display name</div>
-                        <div className="as-row-hint">Your profile name</div>
+                        {/* <div className="as-row-hint">Your profile name</div> */}
                       </div>
                       <span className="as-row-value" id="asDisplayNameVal">—</span>
                     </div>
@@ -541,9 +605,9 @@ export default function SettingsPage() {
                   <section className="as-section as-danger-zone" aria-label="Danger zone">
                     <div className="as-section-head">
                       <svg className="as-section-icon" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-                        <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                        <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       </svg>
                       <span className="as-section-title">Danger zone</span>
                     </div>
@@ -562,8 +626,8 @@ export default function SettingsPage() {
                   <section className="as-section" aria-label="Subscription and Billing">
                     <div className="as-section-head">
                       <svg className="as-section-icon" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                        <path d="M2 10h20" stroke="currentColor" strokeWidth="2"/>
+                        <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
+                        <path d="M2 10h20" stroke="currentColor" strokeWidth="2" />
                       </svg>
                       <span className="as-section-title">Subscription &amp; Billing</span>
                     </div>
@@ -600,9 +664,9 @@ export default function SettingsPage() {
                     <div className="as-row" hidden={FORCE_NO_PACKAGE_BILLING}>
                       <div className="as-row-text">
                         <div className="as-row-label">Cancel subscription</div>
-                        <div className="as-row-hint">You'll keep access until the end of the current billing period</div>
+                        <div className="as-row-hint" id="asCancelHint">You'll keep access until the end of the current billing period</div>
                       </div>
-                      <button className="as-btn danger" type="button" data-modal="cancelSub">Cancel plan</button>
+                      <button className="as-btn danger" type="button" id="cancelSubTriggerBtn" data-modal="cancelSub">Cancel plan</button>
                     </div>
                   </section>
                 </div>
@@ -612,16 +676,14 @@ export default function SettingsPage() {
                   <section className="as-section" aria-label="Notifications">
                     <div className="as-section-head">
                       <svg className="as-section-icon" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       </svg>
                       <span className="as-section-title">Notifications</span>
                     </div>
                     {[
-                      { pref:'notif_weekly_summary', label:'Weekly progress summary', hint:'Email each Monday with your week\'s practice highlights' },
-                      { pref:'notif_milestones',     label:'Milestone alerts',        hint:'Notify when you reach a new skill milestone' },
-                      { pref:'notif_in_app',         label:'In-app notifications',   hint:'Show notification banners inside the platform' },
-                      { pref:'notif_marketing',      label:'Product updates & tips',  hint:'Occasional emails about new features and learning tips' },
+                      { pref: 'notif_in_app', label: 'In-app notifications', hint: 'Show notification banners inside the platform' },
+                      { pref: 'notif_marketing', label: 'Product updates & tips', hint: 'Occasional emails about new features and learning tips' },
                     ].map(({ pref, label, hint }) => (
                       <div key={pref} className="as-row">
                         <div className="as-row-text">
@@ -629,11 +691,11 @@ export default function SettingsPage() {
                           <div className="as-row-hint">{hint}</div>
                         </div>
                         <label className="as-switch" aria-label={label}>
-                          <input type="checkbox" data-pref={pref}/><span className="as-slider"/>
+                          <input type="checkbox" data-pref={pref} /><span className="as-slider" />
                         </label>
                       </div>
                     ))}
-                    <p className="as-note">Transactional emails (password reset, email verification) are always sent.</p>
+                    {/* <p className="as-note">Transactional emails (password reset, email verification) are always sent.</p> */}
                   </section>
                 </div>
 
@@ -642,8 +704,8 @@ export default function SettingsPage() {
                   <section className="as-section" aria-label="Appearance">
                     <div className="as-section-head">
                       <svg className="as-section-icon" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+                        <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       </svg>
                       <span className="as-section-title">Appearance</span>
                     </div>
@@ -655,7 +717,7 @@ export default function SettingsPage() {
                         <div className="as-row-hint">Choose a visual theme. Obsidian, Midnight, Carbon and Graphite are dark; Porcelain and Ivory are light.</div>
                       </div>
                       {/* FIX 3: this grid is populated by account-settings.js after CVTheme is injected */}
-                      <div className="as-theme-grid" id="asSiteThemeGrid" role="radiogroup" aria-label="Site theme"/>
+                      <div className="as-theme-grid" id="asSiteThemeGrid" role="radiogroup" aria-label="Site theme" />
 
                       <div className="as-subpanel-label">Dashboard Layout</div>
                       <div className="as-row">
@@ -681,7 +743,7 @@ export default function SettingsPage() {
                           <div className="as-row-hint">Minimise animations and transitions across the platform.</div>
                         </div>
                         <label className="as-switch" aria-label="Reduce motion">
-                          <input type="checkbox" data-pref="reduce_motion"/><span className="as-slider"/>
+                          <input type="checkbox" data-pref="reduce_motion" /><span className="as-slider" />
                         </label>
                       </div>
                       <div className="as-row" id="asDrawerSpeedRow">
@@ -690,7 +752,7 @@ export default function SettingsPage() {
                           <div className="as-row-hint">How fast the filter drawer slides in and out. <span id="asDrawerSpeedLabel">154ms</span></div>
                         </div>
                         <div className="as-row-controls">
-                          <input type="range" className="as-range" id="asDrawerSpeed" min="0" max="500" step="10" defaultValue="154" aria-label="Filter drawer slide speed"/>
+                          <input type="range" className="as-range" id="asDrawerSpeed" min="0" max="500" step="10" defaultValue="154" aria-label="Filter drawer slide speed" />
                         </div>
                       </div>
                     </div>
@@ -701,17 +763,17 @@ export default function SettingsPage() {
                       <div className="as-row as-row-col">
                         <div className="as-row-hint">Applied to the code editor panes.</div>
                       </div>
-                      <div className="as-theme-grid" id="asEditorThemeGrid" role="radiogroup" aria-label="Editor colour theme"/>
+                      <div className="as-theme-grid" id="asEditorThemeGrid" role="radiogroup" aria-label="Editor colour theme" />
                       <div className="as-editor-preview" id="asEditorPreview" aria-label="Editor theme preview" aria-live="polite">
                         <div className="as-ep-bar">
-                          <span className="as-ep-dot as-ep-red"/><span className="as-ep-dot as-ep-amber"/><span className="as-ep-dot as-ep-green"/>
+                          <span className="as-ep-dot as-ep-red" /><span className="as-ep-dot as-ep-amber" /><span className="as-ep-dot as-ep-green" />
                           <span className="as-ep-filename">preview.py</span>
                         </div>
                         <div className="as-ep-code" id="asEditorPreviewCode">
-                          <pre id="asEditorPreviewPre"><code id="asEditorPreviewContent"/></pre>
+                          <pre id="asEditorPreviewPre"><code id="asEditorPreviewContent" /></pre>
                         </div>
                       </div>
-                      <div className="as-subpanel-label">Typography</div>
+                      <div className="as-subpanel-label" style={{ marginLeft: 15 }}>Typography</div>
                       <div className="as-row">
                         <div className="as-row-text"><div className="as-row-label">Font size</div><div className="as-row-hint">Code text size in editor panels.</div></div>
                         <div className="as-row-controls">
@@ -738,17 +800,17 @@ export default function SettingsPage() {
                     <div className="as-subpanel" id="asp-repl" role="tabpanel">
                       <div className="as-subpanel-label">Colour Theme</div>
                       <div className="as-row as-row-col"><div className="as-row-hint">Applied to the REPL input and output panels.</div></div>
-                      <div className="as-theme-grid" id="asReplThemeGrid" role="radiogroup" aria-label="REPL colour theme"/>
+                      <div className="as-theme-grid" id="asReplThemeGrid" role="radiogroup" aria-label="REPL colour theme" />
                       <div className="as-editor-preview" id="asReplPreview" aria-label="REPL theme preview" aria-live="polite">
                         <div className="as-ep-bar">
-                          <span className="as-ep-dot as-ep-red"/><span className="as-ep-dot as-ep-amber"/><span className="as-ep-dot as-ep-green"/>
+                          <span className="as-ep-dot as-ep-red" /><span className="as-ep-dot as-ep-amber" /><span className="as-ep-dot as-ep-green" />
                           <span className="as-ep-filename">repl &gt;&gt;&gt;</span>
                         </div>
                         <div className="as-ep-code" id="asReplPreviewCode">
-                          <pre id="asReplPreviewPre"><code id="asReplPreviewContent"/></pre>
+                          <pre id="asReplPreviewPre"><code id="asReplPreviewContent" /></pre>
                         </div>
                       </div>
-                      <div className="as-subpanel-label">Typography</div>
+                      <div className="as-subpanel-label" style={{ marginLeft: 15 }}>Typography</div>
                       <div className="as-row">
                         <div className="as-row-text"><div className="as-row-label">Font size</div><div className="as-row-hint">Text size in REPL.</div></div>
                         <div className="as-row-controls">
@@ -771,7 +833,7 @@ export default function SettingsPage() {
 
                     {/* Instructions sub-panel */}
                     <div className="as-subpanel" id="asp-instruct" role="tabpanel">
-                      <div className="as-subpanel-label">Typography</div>
+                      <div className="as-subpanel-label" style={{ marginLeft: 15 }}>Typography</div>
                       <div className="as-row">
                         <div className="as-row-text"><div className="as-row-label">Font size</div><div className="as-row-hint">Prose text in instructions and hints.</div></div>
                         <div className="as-row-controls">
@@ -826,8 +888,8 @@ export default function SettingsPage() {
       <div className="as-modal-backdrop" id="modal-deleteAccount" role="dialog" aria-modal="true" aria-labelledby="mddaTitle">
         <div className="as-modal">
           <div className="as-modal-title" id="mddaTitle">Delete account permanently?</div>
-          <div className="as-modal-body">This will delete all your session data, scores, and progress. <strong className="as-danger-warn">This cannot be undone.</strong><br/><br/>Enter your password to confirm.</div>
-          <input className="as-field" type="password" id="asDeleteConfirm" placeholder="Enter your password" autoComplete="current-password" maxLength="128"/>
+          <div className="as-modal-body">This will delete all your session data, scores, and progress. <strong className="as-danger-warn">This cannot be undone.</strong><br /><br />Enter your password to confirm.</div>
+          <input className="as-field" type="password" id="asDeleteConfirm" placeholder="Enter your password" autoComplete="current-password" maxLength="128" />
           <div className="as-modal-actions">
             <button className="as-btn" type="button" data-close-modal="">Cancel</button>
             <button className="as-btn danger" type="button" id="confirmDeleteAccount" disabled>Delete my account</button>
