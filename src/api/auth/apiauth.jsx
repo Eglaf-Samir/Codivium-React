@@ -436,6 +436,7 @@ export const CheckVerifyStatus = async (email) => {
   }
 };
 
+
 // Profile photo — persisted server-side (AppUser.ProfileImage) as a base64
 // data URI, NOT localStorage (that was why every account on one browser
 // showed the same photo). `imageDataUrl` is the full "data:image/...;base64,"
@@ -494,3 +495,4 @@ export const RequestAccountDeletion = async () => {
     return e.response;
   }
 };
+
