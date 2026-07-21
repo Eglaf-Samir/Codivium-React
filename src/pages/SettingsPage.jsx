@@ -23,12 +23,6 @@ import { GetAllUserSettings, SaveUserSetting } from '../api/usersettings/apiuser
 // true to temporarily force the empty "no package" view again if ever needed.
 const FORCE_NO_PACKAGE_BILLING = false;
 
-// Temporarily force the "no package" billing view for everyone — hides the
-// active-subscription details, billing history, and the Cancel option. The
-// billing management feature isn't being exposed to clients yet. Set this back
-// to false to restore the real billing view.
-const FORCE_NO_PACKAGE_BILLING = true;
-
 function loadScript(src, onload) {
   const s = document.createElement('script');
   s.src = src + '?v=' + Date.now();
@@ -159,10 +153,6 @@ export default function SettingsPage() {
         const hres = await getUserTransactionHistory(userId);
         if (hres?.status === 200 && Array.isArray(hres.data)) history = hres.data;
       } catch (e) { }
-
-      // Force the empty "no package" view: pretend there's no plan and no
-      // billing history, so the active-subscription UI never shows.
-      if (FORCE_NO_PACKAGE_BILLING) { pkg = null; history = []; }
 
       // Force the empty "no package" view: pretend there's no plan and no
       // billing history, so the active-subscription UI never shows.
