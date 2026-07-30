@@ -1017,7 +1017,17 @@ body.cv-app .stage{
 /* 1) Gap wordmark: always behind sidebar when expanded (opacity/z-index
    set by .gap-wordmark rule above; no override needed here) */
 /* Ensure sidebar is above the wordmark so it hides naturally when expanded */
-.topbar{ z-index: 1000 ; position: fixed ; }
+.topbar{ position: fixed ; }
+/* App pages: keep the topbar above the sidebar (#sidebar is z-index 900 below).
+   Scoped to body.cv-app so this two-class selector (0,2,0) always outranks the
+   public `.topbar{ z-index: 50 }` in
+   /assets/css/components/topbar-normalization.css, which useCssLoader appends
+   to <head> at RUNTIME — i.e. after the bundled stylesheet. At equal specificity
+   the later rule wins, so in production the topbar dropped to 50 and rendered
+   under the sidebar; in dev it stayed 1000 because Vite injects the bundled CSS
+   as <style> tags after those links. Keeping this scoped leaves public pages at
+   z-index 50, so their overlays (e.g. .bm-preview, 999) still cover the topbar. */
+body.cv-app .topbar{ z-index: 1000 ; }
 /* Sidebar sits below topbar so logo stays visible */
 #sidebar{ z-index: 900; }
 
