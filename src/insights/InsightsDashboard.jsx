@@ -225,6 +225,10 @@ export default function InsightsDashboard() {
   const mountRef = useRef(null);
   const resizers = useResizers(mountRef);
   const tour     = useDashboardTour();
+  // Heatmap "Focus"/"All" is a sub-view of the combined track, independent of
+  // the Micro/Interview track selection — kept as its own state so picking
+  // "All" doesn't collapse back into "Focus" on the next render.
+  const [heatmapSubView, setHeatmapSubView] = useState('focus');
   // Auto-refresh info pane when track changes (depth/heatmap/exercise data changes)
   const TRACK_SENSITIVE_KEYS = new Set([
     'panel_depth','panel_heatmap','panel_exercise','panel_scores'
@@ -518,11 +522,11 @@ export default function InsightsDashboard() {
               hidden={!panels.heatmap}
               themeKey={themeKey}
               heatmapView={db.selectedTrack === 'micro' ? 'micro' :
-                           db.selectedTrack === 'interview' ? 'interview' : 'focus'}
+                           db.selectedTrack === 'interview' ? 'interview' : heatmapSubView}
               onViewChange={(view) => {
                 if (view === 'micro')     db.setSelectedTrack('micro');
                 else if (view === 'interview') db.setSelectedTrack('interview');
-                else                     db.setSelectedTrack('combined');
+                else { db.setSelectedTrack('combined'); setHeatmapSubView(view); }
               }}
               hasMicro={!!(metrics?.allocByTrack?.micro?.length || metrics?.depthByTrack?.micro?.length)}
               hasInterview={!!(metrics?.allocByTrack?.interview?.length || metrics?.depthByTrack?.interview?.length)}

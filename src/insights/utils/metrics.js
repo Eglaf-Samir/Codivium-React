@@ -157,8 +157,15 @@ export function computeDashboardMetrics(payload, selectedTrack = 'combined') {
     const interMap = byDiff ? (byDiff.intermediate || byDiff.Intermediate || {}) : (mcqObj.intermediate || mcqObj.Intermediate || {});
     const advMap   = byDiff ? (byDiff.advanced || byDiff.Advanced || {}) : (mcqObj.advanced || mcqObj.Advanced || {});
 
-    const cats = (alloc.length ? alloc.map(x => x.category) :
-      [...new Set([...Object.keys(basicMap||{}), ...Object.keys(interMap||{}), ...Object.keys(advMap||{})])]);
+    // Union of coding-practiced categories (alloc) and MCQ-attempted categories —
+    // using alloc alone silently drops any category the user only ever quizzed
+    // (never coded), even though it's still counted in the overall percentage.
+    const cats = [...new Set([
+      ...alloc.map(x => x.category),
+      ...Object.keys(basicMap || {}),
+      ...Object.keys(interMap || {}),
+      ...Object.keys(advMap   || {}),
+    ])];
 
     const mk = (score) => ({ avgScore: Number(score) || 0, attemptCount: 0, questionCount: 0 });
     mcqMatrix = cats.map(category => ({
