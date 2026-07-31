@@ -23,6 +23,9 @@ import {
   createusernew,
   sendverifyemail,
   verifyemailtoken,
+  checkverifystatus,
+  updateprofilephoto,
+  requestaccountdeletion,
 } from "./constants";
 import { baseURL } from "../../config";
 
@@ -301,7 +304,6 @@ export const UpdateActiveInactive = async (id, IsActive) => {
 };
 
 export const SuperAdminUpdatePassword = async (body) => {
-  debugger;
   var url = baseURL + updateuserpassword;
   let token = localStorage.getItem("LoginToken");
   const config = {
@@ -319,7 +321,6 @@ export const SuperAdminUpdatePassword = async (body) => {
 };
 
 export const SuperAdminUpdateUserDetails = async (id, body) => {
-  debugger;
   var url = baseURL + updateuserDetails + id;
   let token = localStorage.getItem("LoginToken");
   const config = {
@@ -353,7 +354,8 @@ export const Visitsite = async (body) => {
 };
 
 export const ForgetPasswordApi = async (email) => {
-  var url = baseURL + "api/v1/account/forgotpassword?email=" + email;
+  var url =
+    baseURL + "api/v1/account/forgotpassword?email=" + encodeURIComponent(email);
   console.log("url", url);
   const config = {
     headers: {
@@ -421,3 +423,76 @@ export const VerifyEmailToken = async (token) => {
     return e.response;
   }
 };
+
+// GET ?email=… → cross-device poll. Returns { isVerified, token, email } once the
+// link has been opened on ANY device, so the original signup window can advance.
+export const CheckVerifyStatus = async (email) => {
+  var url = baseURL + checkverifystatus + encodeURIComponent(email || "");
+  try {
+    const res = await Axios.get(url);
+    return res;
+  } catch (e) {
+    return e.response;
+  }
+};
+
+
+// Profile photo — persisted server-side (AppUser.ProfileImage) as a base64
+// data URI, NOT localStorage (that was why every account on one browser
+// showed the same photo). `imageDataUrl` is the full "data:image/...;base64,"
+// string from FileReader.readAsDataURL.
+export const UpdateProfilePhoto = async (id, imageDataUrl) => {
+  var url = baseURL + updateprofilephoto + id;
+  let token = localStorage.getItem("LoginToken");
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token,
+    },
+  };
+  try {
+    const res = await Axios.post(url, { imageDataUrl }, config);
+    return res;
+  } catch (e) {
+    return e.response;
+  }
+};
+
+export const RemoveProfilePhoto = async (id) => {
+  var url = baseURL + updateprofilephoto + id;
+  let token = localStorage.getItem("LoginToken");
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token,
+    },
+  };
+  try {
+    const res = await Axios.delete(url, config);
+    return res;
+  } catch (e) {
+    return e.response;
+  }
+};
+
+// Self-service "Delete Account" — this NEVER deletes anything. It just emails
+// Codivium staff a deletion request; a superadmin performs the actual
+// deletion manually via the existing admin-only delete endpoint. No userid
+// param — the backend identifies the requester from their own auth token.
+export const RequestAccountDeletion = async () => {
+  var url = baseURL + requestaccountdeletion;
+  let token = localStorage.getItem("LoginToken");
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token,
+    },
+  };
+  try {
+    const res = await Axios.post(url, {}, config);
+    return res;
+  } catch (e) {
+    return e.response;
+  }
+};
+

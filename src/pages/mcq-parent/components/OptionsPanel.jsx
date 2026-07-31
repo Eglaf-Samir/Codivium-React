@@ -1,13 +1,39 @@
 // components/OptionsPanel.jsx
+//
+// Right-rail options block. Difficulty is now driven by the live paramMaster
+// list (Guid IDs + names) passed in from McqParentPage rather than the old
+// hardcoded basic/intermediate/advanced strings. Question count + skip-correct
+// inputs are unchanged.
+
 import React from 'react';
 
-const DIFFICULTIES = [
-  { value: 'basic',        label: 'Basic' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advanced',     label: 'Advanced' },
-];
+// Display order for difficulty pills: Basic → Intermediate → Advanced.
+function sortByName(list) {
+  const order = { basic: 0, intermediate: 1, advanced: 2, advance: 2 };
+  return [...(list || [])].sort((a, b) => {
+    const ka = order[(a.name || '').toLowerCase()] ?? 99;
+    const kb = order[(b.name || '').toLowerCase()] ?? 99;
+    return ka - kb;
+  });
+}
 
-export default function OptionsPanel({ difficulty, onDifficulty, count, onCount, skipCorrect, onSkip, onInfo }) {
+// Title-case the paramMaster value for the radio label.
+function prettyLabel(name) {
+  if (!name) return '';
+  const s = String(name);
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+export default function OptionsPanel({
+  difficulties,           // [{id, name}] from useDifficultyLevels
+  difficultyLevelId,      // Guid currently selected
+  onDifficulty,           // (id) => void
+  count, onCount,
+  skipCorrect, onSkip,
+  skipCorrectDisabled = false,
+  onInfo,
+}) {
+  const list = sortByName(difficulties);
   return (
     <section className="panel panel-right" aria-label="Difficulty and quiz options">
       <div className="right-controls">
@@ -21,17 +47,22 @@ export default function OptionsPanel({ difficulty, onDifficulty, count, onCount,
               onClick={() => onInfo('difficulty')}>i</button>
           </div>
           <div className="togglebar" role="radiogroup" aria-label="Difficulty">
-            {DIFFICULTIES.map(d => (
-              <div key={d.value} className="toggle-item">
+            {list.length === 0 && (
+              <div className="toggle-item" aria-disabled="true" style={{ opacity: 0.6 }}>
+                <span className="help" style={{ padding: '8px 12px' }}>Loading…</span>
+              </div>
+            )}
+            {list.map(d => (
+              <div key={d.id} className="toggle-item">
                 <input
-                  id={`diff_${d.value}`}
+                  id={`diff_${d.id}`}
                   type="radio"
                   name="difficulty"
-                  value={d.value}
-                  checked={difficulty === d.value}
-                  onChange={() => onDifficulty(d.value)}
+                  value={d.id}
+                  checked={difficultyLevelId === d.id}
+                  onChange={() => onDifficulty(d.id)}
                 />
-                <label htmlFor={`diff_${d.value}`}>{d.label}</label>
+                <label htmlFor={`diff_${d.id}`}>{prettyLabel(d.name)}</label>
               </div>
             ))}
           </div>
@@ -72,20 +103,31 @@ export default function OptionsPanel({ difficulty, onDifficulty, count, onCount,
           </div>
         </div>
 
-        {/* Skip correct */}
+        {/* Skip correct — package-only feature */}
         <div className="panel-group glow-follow" aria-label="Exclude previously-correct">
-          <div className="checkline">
+          <div
+            className="checkline"
+            title={skipCorrectDisabled ? 'Disabled: requires an active package to use this feature.' : undefined}
+          >
             <input
               id="skipCorrect"
               type="checkbox"
-              checked={skipCorrect}
+              checked={skipCorrectDisabled ? false : skipCorrect}
+              disabled={skipCorrectDisabled}
               onChange={e => onSkip(e.target.checked)}
             />
-            <label htmlFor="skipCorrect">Exclude questions previously answered correctly</label>
+            <label htmlFor="skipCorrect" style={skipCorrectDisabled ? { opacity: 0.55 } : undefined}>
+              Exclude questions previously answered correctly
+            </label>
             <button className="info-dot info-dot-mini info-inline" id="excludeInfo" type="button"
               aria-label="About exclude"
               onClick={() => onInfo('exclude')}>i</button>
           </div>
+          {skipCorrectDisabled && (
+            <div className="help" style={{ marginTop: 4, fontSize: 11, opacity: 0.7 }}>
+              Requires an active package.
+            </div>
+          )}
         </div>
 
       </div>

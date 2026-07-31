@@ -38,7 +38,12 @@ export function prewarmCss(hrefs) {
   (hrefs || []).forEach((href) => ensureEntry(href));
 }
 
-export function useCssLoader(hrefs) {
+// `evict` (default false): when true, the <link> tags are removed from
+// <head> when the component unmounts. Use this for pages whose CSS uses
+// unscoped selectors that would leak onto other routes (e.g. MCQ pages —
+// `.control`, `.divider`, `.summary` etc. collide with Contact/Articles).
+// Most public pages should leave evict=false so revisits are flash-free.
+export function useCssLoader(hrefs, { evict = false } = {}) {
   const list = hrefs || [];
   const [ready, setReady] = useState(() =>
     list.every((h) => cache.get(h)?.loaded),
@@ -71,11 +76,18 @@ export function useCssLoader(hrefs) {
 
     return () => {
       cancelled = true;
-      // Intentionally do NOT remove <link> tags — keep them cached so
-      // subsequent navigations to the same page are instant and flash-free.
+      if (evict) {
+        list.forEach((href) => {
+          const entry = cache.get(href);
+          if (entry?.el?.parentNode) entry.el.parentNode.removeChild(entry.el);
+          cache.delete(href);
+        });
+      }
+      // Otherwise: keep the <link> tags cached so subsequent visits
+      // to the same page are flash-free.
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list.join(',')]);
+  }, [list.join(','), evict]);
 
   return ready;
 }

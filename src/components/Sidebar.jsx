@@ -49,57 +49,70 @@ export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const active = getActiveSection(location.pathname, location.search);
 
-  // Logged-in user's display name for the profile card. Stored at login/signup
-  // (UserDisplayName); falls back to the email local-part, then "Profile".
-  function computeName() {
-    try {
-      const name = (localStorage.getItem('UserDisplayName') || '').trim();
-      if (name) return name;
-      const email = (localStorage.getItem('UserEmail') || '').trim();
-      if (email) return email.split('@')[0];
-    } catch { /* ignore */ }
-    return 'Profile';
-  }
-  const [profileName, setProfileName] = useState(computeName);
+  // Logged-in user's display name/photo for the profile card. Neither is
+  // persisted to localStorage (privacy) — fetched fresh from the backend on
+  // every mount and held only in component state. Blank (not a placeholder
+  // name) when the account has no name on file.
+  const [profileName, setProfileName] = useState('');
+  const [profileImage, setProfileImage] = useState('');
 
-  // For sessions that logged in before the name was persisted (or just to keep
-  // it fresh), fetch the user once and cache the real name.
   useEffect(() => {
-    let cancelled = false;
+    // One-time cleanup of legacy localStorage keys from before this fix, so
+    // stale name/email/photo data doesn't linger on a shared device.
     try {
-      if ((localStorage.getItem('UserDisplayName') || '').trim()) return;
-      const uid = localStorage.getItem('Userid');
-      if (!uid) return;
-      (async () => {
-        const res = await getUserById(uid);
-        if (cancelled || res?.status !== 200 || !res.data) return;
-        const d = res.data;
-        const full = [d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ').trim();
-        if (full) {
-          localStorage.setItem('UserDisplayName', full);
-          if (d.email) localStorage.setItem('UserEmail', d.email);
-          setProfileName(full);
-        } else if (d.email) {
-          localStorage.setItem('UserEmail', d.email);
-          setProfileName(d.email.split('@')[0]);
-        }
-      })();
+      localStorage.removeItem('UserDisplayName');
+      localStorage.removeItem('UserEmail');
+      localStorage.removeItem('cv_profile_name');
+      localStorage.removeItem('cv_profile_email');
+      localStorage.removeItem('cv_profile_image');
     } catch { /* ignore */ }
+
+    let cancelled = false;
+    const uid = localStorage.getItem('Userid');
+    if (!uid) return;
+    (async () => {
+      const res = await getUserById(uid);
+      if (cancelled || res?.status !== 200 || !res.data) return;
+      const d = res.data;
+      const full = [d.firstName, d.middleName, d.lastName].filter(Boolean).join(' ').trim();
+      setProfileName(full || '');
+      if (d.profileImage) setProfileImage(d.profileImage);
+    })();
     return () => { cancelled = true; };
   }, []);
 
   // Editor leave-confirmation — see useEditorLeaveGuard for behaviour.
-  const { inEditor, onLinkClick: onNavLinkClick, confirm } = useEditorLeaveGuard();
+  // const { inEditor, onLinkClick: onNavLinkClick, confirm } = useEditorLeaveGuard();
+
+  // Editor / MCQ-quiz leave-confirmation — see useEditorLeaveGuard.
+  // We use the live probe functions instead of the snapshot booleans so
+  // a guard registered after Sidebar's first render is still honoured at
+  // click time.
+  const { isGuardActive, isInMcqQuiz, onLinkClick: onNavLinkClick, confirm } = useEditorLeaveGuard();
 
   async function handleLogout() {
-    if (inEditor) {
-      const ok = await confirm({
-        title: 'End the current exercise and log out?',
-        message: 'Your code and progress will be saved so you can continue later.',
-        confirmText: 'Yes, log out',
-        cancelText: 'No, keep coding',
-      });
+    if (isGuardActive()) {
+      const inMcq = isInMcqQuiz();
+      const dialog = inMcq
+        ? {
+            title: 'End the quiz and log out?',
+            message: 'Your answers so far will be submitted before you sign out.',
+            confirmText: 'Yes, log out',
+            cancelText: 'No, keep going',
+          }
+        : {
+            title: 'End the current exercise and log out?',
+            message: 'Your code and progress will be saved so you can continue later.',
+            confirmText: 'Yes, log out',
+            cancelText: 'No, keep coding',
+          };
+      const ok = await confirm(dialog);
       if (!ok) return;
+      // For the MCQ quiz, flush the partial answers to the backend before
+      // we tear down auth — without this the in-progress session is lost.
+      if (inMcq && typeof window !== 'undefined' && typeof window.__cvMcqSaveAndExit === 'function') {
+        try { await window.__cvMcqSaveAndExit(); } catch (_) { /* proceed regardless */ }
+      }
     }
     logout();
     navigate('/login', { replace: true });
@@ -275,7 +288,7 @@ export default function Sidebar({ isOpen, onClose }) {
           {/* Profile card — stays at bottom */}
           <div className="profile-card" aria-label="Profile summary">
             <div className="profile-avatar" aria-hidden="true">
-              <img alt="" id="profileImg" src="/assets/img/profile-placeholder.svg" />
+              <img alt="" id="profileImg" src={profileImage || '/assets/img/profile-placeholder.svg'} />
             </div>
             <div className="profile-meta">
               <div className="profile-kicker">Profile</div>

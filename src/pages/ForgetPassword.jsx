@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { ForgetPasswordApi } from "../api/auth/apiauth";
-import { ToastContainer, toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
 
 function ForgetPassword() {
@@ -36,24 +36,27 @@ function ForgetPassword() {
     try {
       setLoading(true);
       const response = await ForgetPasswordApi(email);
-      console.log("response:forgetpasswor==>", response);
       if (response?.data === true) {
-        toast.success("Password reset link sent to your email", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
+        Swal.fire({
+          title: "Reset link sent",
+          text: "Password reset link sent to your email.",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => navigate("/"));
       } else {
-        toast.error(response?.data ? response?.data : "Email address not found", {
-          position: "top-right",
-          autoClose: 3000,
+        Swal.fire({
+          title: "Could not send reset link",
+          text: response?.data ? response.data : "Email address not found",
+          icon: "error",
         });
       }
     } catch (err) {
-      toast.error("Something went wrong. Please try again.");
+      Swal.fire({
+        title: "Something went wrong",
+        text: "Please try again.",
+        icon: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -62,7 +65,6 @@ function ForgetPassword() {
   return (
     <>
       <Topbar />
-      <ToastContainer />
       <div className="stage-shell">
         <div aria-hidden="true" className="watermark">
           <div className="wm-word" data-text="CODIVIUM">

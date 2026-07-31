@@ -4,9 +4,14 @@
 //
 // Configuration (set by host site before bundles load):
 //   window.__CVD_CONFIG.apiBase  — API origin + prefix, e.g. 'https://api.example.com'
-//                                   or '/api/v2'. Defaults to '' (same origin, /api/...).
+//                                   or '/api/v2'. When unset, falls back to the
+//                                   app-wide `baseURL` from src/config.js so the
+//                                   adaptive module hits the same backend as the
+//                                   rest of the app (not the dev-server origin).
 //   window.__CVD_CONFIG.tokenKey — localStorage/sessionStorage key for auth token.
-//                                   Defaults to 'cv_auth_token'.
+//                                   Defaults to 'LoginToken' (the key Login.jsx writes).
+
+import { baseURL } from '../config';
 
 /** Resolve the configured API base (no trailing slash). */
 export function getApiBase() {
@@ -14,6 +19,8 @@ export function getApiBase() {
     const base = window.__CVD_CONFIG?.apiBase;
     if (base && typeof base === 'string') return base.replace(/\/$/, '');
   } catch (_) {}
+  // Fall back to the app-wide backend base URL (shared with the axios layer).
+  if (baseURL && typeof baseURL === 'string') return baseURL.replace(/\/$/, '');
   return '';
 }
 
@@ -23,7 +30,8 @@ function getTokenKey() {
     const key = window.__CVD_CONFIG?.tokenKey;
     if (key && typeof key === 'string') return key;
   } catch (_) {}
-  return 'cv_auth_token';
+  // Matches localStorage.setItem("LoginToken", ...) in Login.jsx / Join.jsx.
+  return 'LoginToken';
 }
 
 /** Read the JWT auth token from sessionStorage then localStorage. */

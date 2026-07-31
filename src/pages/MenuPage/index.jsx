@@ -152,6 +152,16 @@ function toBackendIds(selected, options) {
   return selected.filter((v) => v !== 'all');
 }
 
+// For optional refinement filters (SubCategory, Area): "All"/none → empty array
+// (no filter) instead of every id. Sending all ids would wrongly exclude
+// exercises that have no subcategory/area assigned.
+function toOptionalIds(selected) {
+  if (!selected || selected.includes('all') || selected.length === 0) {
+    return [];
+  }
+  return selected.filter((v) => v !== 'all');
+}
+
 export default function MenuPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -173,6 +183,8 @@ export default function MenuPage() {
   const [selectedCompletionIds, setSelectedCompletionIds] = useState(() => saved.completionIds || ['all']);
   const [selectedExerciseTypeIds, setSelectedExerciseTypeIds] = useState(() => saved.exerciseTypeIds || ['all']);
   const [selectedMentalModelIds, setSelectedMentalModelIds] = useState(() => saved.mentalModelIds || ['all']);
+  const [selectedAreaIds, setSelectedAreaIds] = useState(() => saved.areaIds || ['all']);
+  const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState(() => saved.subCategoryIds || ['all']);
   const [sortOrder, setSortOrder] = useState(() => saved.sortOrder || 'ASC');
   const [sortField, setSortField] = useState(() => saved.sortField || 'title');
   const [isFreeFirst, setIsFreeFirst] = useState(() => !!saved.freeFirst);
@@ -189,23 +201,36 @@ export default function MenuPage() {
     difficultyOptions,
     exerciseTypeOptions,
     mentalModelOptions,
+    areaOptions,
+    subCategoryOptions,
+    loadSubCategories,
     completionOptions,
     runFilter,
     optionsReady,
   } = useMenuData();
 
+  // Resolved category ids the subcategory filter should reflect: the selected
+  // categories, or all categories when none are picked ("All"). SubCategory is
+  // category-dependent — it only shows subcategories of these categories.
+  const resolvedCategoryIds = useMemo(
+    () => toBackendIds(selectedCategoryIds, categoryOptions),
+    [selectedCategoryIds, categoryOptions],
+  );
+
+  useEffect(() => {
+    if (!optionsReady || !isMicro) return;
+    loadSubCategories(resolvedCategoryIds);
+  }, [resolvedCategoryIds, optionsReady, isMicro, loadSubCategories]);
+
   const filterBody = useMemo(
     () => ({
       DifficultyLabels: toBackendIds(selectedDifficultyIds, difficultyOptions),
       CategoryIds: toBackendIds(selectedCategoryIds, categoryOptions),
-      SubCategoryIds: [],
+      SubCategoryIds: isMicro ? toOptionalIds(selectedSubCategoryIds) : [],
       CompletionIds: toBackendIds(selectedCompletionIds, completionOptions),
-      ExerciseTypeIds: isMicro
-        ? toBackendIds(selectedExerciseTypeIds, exerciseTypeOptions)
-        : [],
-      MentalModelIds: isMicro
-        ? toBackendIds(selectedMentalModelIds, mentalModelOptions)
-        : [],
+      ExerciseTypeIds: isMicro ? toOptionalIds(selectedExerciseTypeIds) : [],
+      MentalModelIds: isMicro ? toOptionalIds(selectedMentalModelIds) : [],
+      AreaIds: isMicro ? toOptionalIds(selectedAreaIds) : [],
       SortOrder: sortOrder,
     }),
     [
@@ -214,6 +239,8 @@ export default function MenuPage() {
       selectedCompletionIds,
       selectedExerciseTypeIds,
       selectedMentalModelIds,
+      selectedAreaIds,
+      selectedSubCategoryIds,
       sortOrder,
       categoryOptions,
       difficultyOptions,
@@ -252,6 +279,8 @@ export default function MenuPage() {
         completionIds: selectedCompletionIds,
         exerciseTypeIds: selectedExerciseTypeIds,
         mentalModelIds: selectedMentalModelIds,
+        areaIds: selectedAreaIds,
+        subCategoryIds: selectedSubCategoryIds,
         sortOrder,
         sortField,
         freeFirst: isFreeFirst,
@@ -264,6 +293,8 @@ export default function MenuPage() {
       selectedCompletionIds,
       selectedExerciseTypeIds,
       selectedMentalModelIds,
+      selectedAreaIds,
+      selectedSubCategoryIds,
       sortOrder,
       sortField,
       isFreeFirst,
@@ -282,9 +313,12 @@ export default function MenuPage() {
     (value, allOptions) => {
       setSelectedCategoryIds((prev) => {
         const next = toggleFilter(prev, value, allOptions);
-        persist({ categoryIds: next });
+        // Category changed → its subcategories change too, so reset the
+        // subcategory selection to "All" (stale picks no longer apply).
+        persist({ categoryIds: next, subCategoryIds: ['all'] });
         return next;
       });
+      setSelectedSubCategoryIds(['all']);
     },
     [persist],
   );
@@ -333,6 +367,28 @@ export default function MenuPage() {
     [persist],
   );
 
+  const toggleAreas = useCallback(
+    (value, allOptions) => {
+      setSelectedAreaIds((prev) => {
+        const next = toggleFilter(prev, value, allOptions);
+        persist({ areaIds: next });
+        return next;
+      });
+    },
+    [persist],
+  );
+
+  const toggleSubCategories = useCallback(
+    (value, allOptions) => {
+      setSelectedSubCategoryIds((prev) => {
+        const next = toggleFilter(prev, value, allOptions);
+        persist({ subCategoryIds: next });
+        return next;
+      });
+    },
+    [persist],
+  );
+
   const updateSortField = useCallback(
     (v) => {
       setSortField(v);
@@ -356,6 +412,8 @@ export default function MenuPage() {
     setSelectedCompletionIds(['all']);
     setSelectedExerciseTypeIds(['all']);
     setSelectedMentalModelIds(['all']);
+    setSelectedAreaIds(['all']);
+    setSelectedSubCategoryIds(['all']);
     setSortOrder('ASC');
     setSortField('title');
     savePrefs({});
@@ -576,6 +634,8 @@ export default function MenuPage() {
         difficultyLevels={difficultyOptions}
         exerciseTypes={exerciseTypeOptions}
         mentalModels={mentalModelOptions}
+        areas={areaOptions}
+        subCategories={subCategoryOptions}
         completionOptions={completionOptions}
         isMicro={isMicro}
         selectedCategories={selectedCategoryIds}
@@ -583,6 +643,8 @@ export default function MenuPage() {
         selectedCompleteness={selectedCompletionIds}
         selectedExerciseTypes={selectedExerciseTypeIds}
         selectedMentalModels={selectedMentalModelIds}
+        selectedAreas={selectedAreaIds}
+        selectedSubCategories={selectedSubCategoryIds}
         sortField={sortField}
         sortDir={sortOrder === 'DESC' ? 'desc' : 'asc'}
         isFreeFirst={isFreeFirst}
@@ -592,6 +654,8 @@ export default function MenuPage() {
         toggleCompleteness={toggleCompleteness}
         toggleExerciseTypes={toggleExerciseTypes}
         toggleMentalModels={toggleMentalModels}
+        toggleAreas={toggleAreas}
+        toggleSubCategories={toggleSubCategories}
         updateSortField={updateSortField}
         updateSortDir={updateSortDir}
         onReset={resetFilters}

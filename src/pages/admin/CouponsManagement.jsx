@@ -393,9 +393,10 @@ export default function CouponsManagement() {
                 {!form.id && (<>
                   <div className="cv-admin-field">
                     <label>Discount type</label>
-                    <select name="discountType" value={form.discountType} onChange={handleField}>
+                    {/* Fixed-amount coupons aren't implemented on the backend yet
+                        (no amount/currency field) - only percentage is offered. */}
+                    <select name="discountType" value={form.discountType} onChange={handleField} disabled>
                       <option value="percentagediscount">Percentage</option>
-                      <option value="amountdiscount">Fixed amount</option>
                     </select>
                   </div>
                   <div className="cv-admin-field">

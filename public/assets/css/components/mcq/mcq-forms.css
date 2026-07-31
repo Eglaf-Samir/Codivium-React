@@ -116,6 +116,8 @@
   font-size: 11px;
   color: var(--color-text-accent-mid);
   user-select: none;
+  display: flex;
+  flex-direction: row;
 }
 
 .help{

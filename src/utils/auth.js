@@ -20,7 +20,12 @@ export function logout() {
     localStorage.removeItem("LoginToken");
     localStorage.removeItem("UserRoleName");
     localStorage.removeItem("userpackagedetails");
+    // These aren't written anymore, but clear them defensively in case a
+    // session predates this fix and still has them cached.
     localStorage.removeItem("UserDisplayName");
     localStorage.removeItem("UserEmail");
+    localStorage.removeItem("cv_profile_name");
+    localStorage.removeItem("cv_profile_email");
+    localStorage.removeItem("cv_profile_image");
   } catch {}
 }

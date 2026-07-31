@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { ResetPasswordApi } from "../api/auth/apiauth";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
 
 function ResetPassword() {
   usePageMeta("password_reset");
@@ -30,18 +30,33 @@ function ResetPassword() {
     if (code) {
       setUniqueCode(code);
     } else {
-      toast.error("Invalid or expired reset link");
+      Swal.fire({
+        title: "Invalid or expired reset link",
+        text: "This link is missing its reset code. Please request a new one.",
+        icon: "error",
+      });
     }
   }, [location.search]);
 
+  // Mirrors ASP.NET Identity's actual default password rules (Program.cs has
+  // no custom overrides): min length, at least one lowercase/uppercase/digit/
+  // symbol. Shown inline on this dialog as the user types, so a missing
+  // character type is caught here instead of surfacing as a confusing error
+  // only after submit.
   const validate = () => {
     let newErrors = {
       newPassword: "",
       confirmPassword: "",
     };
 
-    if (newPassword.length < 10) {
-      newErrors.newPassword = "Minimum 10 characters required";
+    const missing = [];
+    if (newPassword.length < 10) missing.push("at least 10 characters");
+    if (!/[a-z]/.test(newPassword)) missing.push("a lowercase letter");
+    if (!/[A-Z]/.test(newPassword)) missing.push("an uppercase letter");
+    if (!/[0-9]/.test(newPassword)) missing.push("a number");
+    if (!/[^a-zA-Z0-9]/.test(newPassword)) missing.push("a symbol");
+    if (missing.length) {
+      newErrors.newPassword = "Password needs " + missing.join(", ") + ".";
     }
 
     if (confirmPassword !== newPassword) {
@@ -63,24 +78,32 @@ function ResetPassword() {
         newPassword: newPassword,
       });
 
-      console.log("response:resetpassword==>", response);
-
-      // ✅ If API returns boolean in response.data
+      // If API returns boolean true in response.data, the reset succeeded.
       if (response?.data === true) {
-        toast.success("Password updated successfully", {
-          autoClose: 3000,
-        });
-
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
+        Swal.fire({
+          title: "Password updated",
+          text: "Your password has been updated successfully.",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => navigate("/"));
       } else {
-        toast.error("Invalid or expired reset link", {
-          autoClose: 3000,
-        });
+        // Show the REAL backend reason (e.g. "this link has already been
+        // used", or an Identity validation error) instead of a hardcoded
+        // guess — a plain validation failure should never be mislabeled as
+        // an expired link.
+        const msg =
+          typeof response?.data === "string" && response.data
+            ? response.data
+            : "Could not update your password. Please try again or request a new reset link.";
+        Swal.fire({ title: "Could not reset password", text: msg, icon: "error" });
       }
     } catch (err) {
-      toast.error("Something went wrong. Please try again.");
+      Swal.fire({
+        title: "Something went wrong",
+        text: "Please try again.",
+        icon: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -88,7 +111,6 @@ function ResetPassword() {
   return (
     <>
       <Topbar />
-      <ToastContainer />
       <div className="stage-shell">
         <div aria-hidden="true" className="watermark">
           <div className="wm-word" data-text="CODIVIUM">
@@ -262,8 +284,8 @@ function ResetPassword() {
                   CAPS LOCK
                 </div>
                 <div className="form-hint">
-                  Minimum 10 characters recommended. Use a mix of letters,
-                  numbers, and symbols.
+                  Minimum 10 characters, including a lowercase letter, an
+                  uppercase letter, a number, and a symbol.
                 </div>
                 <div aria-live="polite" className="form-msg" id="formMsg"></div>
                 <button

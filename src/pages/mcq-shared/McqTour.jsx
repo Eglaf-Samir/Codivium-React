@@ -21,15 +21,34 @@ export const PARENT_STEPS = [
   { selector: '#startQuiz',                            title: 'Start Quiz',                      body: 'When you are happy with your settings, press Start Quiz.\n\nYour settings are saved automatically, so the next time you visit this page they will still be selected.\n\nThe next step of this tour continues on the quiz page itself.' },
 ];
 
+// Selectors target the actual rendered IDs in McqQuizPage / QuestionCard /
+// CvTimer. Each entry lists multiple fallback selectors (comma-separated)
+// so the tour stays robust if one of them changes.
 export const QUESTION_STEPS = [
-  { selector: null,                                               title: 'Quiz Page — Overview',  body: 'This is where each question is presented during your quiz.\n\nYou will see the question text, up to six answer options, your progress through the quiz, and a timer.\n\nThis tour walks through every element on the page.' },
-  { selector: '#mcqQuestionText, .question-text',                 title: 'Question',              body: 'The question is displayed here. Read it carefully before selecting an answer.\n\nQuestions are drawn from the categories and difficulty level you chose on the setup page.' },
-  { selector: '#mcqOptions, .options-list',                       title: 'Answer Options',        body: 'Up to six options are presented for each question. Most questions have one correct answer — select it and move on.\n\nSome questions have multiple correct answers. When that is the case, the question will say so. Select all the options that apply before submitting.\n\nOnce you submit, immediate feedback is shown — correct answers are highlighted green, incorrect answers red, and the correct answer is revealed if you were wrong.' },
-  { selector: '#mcqProgress, .progress-bar',                      title: 'Progress',              body: 'Shows how far through the quiz you are — for example, Question 3 of 10.\n\nA progress bar gives a visual indication of completion. Your score so far is also shown.' },
-  { selector: '#mcqTimer, .quiz-timer',                           title: 'Timer',                 body: 'Tracks how long you have been working on the current question and the quiz overall.\n\nThere is no time limit — the timer is informational only, helping you track your pace.' },
-  { selector: '#mcqNextBtn, .next-question-btn',                  title: 'Next Question',         body: 'After selecting an answer, press Next to move to the following question.\n\nOn the final question, this button becomes Finish Quiz and takes you to your results summary.' },
-  { selector: '#mcqExitBtn, .exit-quiz-btn',                      title: 'Exit Quiz',             body: 'Returns you to the setup page at any time.\n\nYour progress on the current quiz session will be lost if you exit early, but your historical scores and settings are always preserved.' },
-  { selector: null,                                               title: 'Tour Complete',         body: 'That covers everything on the MCQ pages.\n\nGo back to the setup page whenever you are ready to start a quiz — your previous settings will still be waiting for you.\n\nGood luck!' },
+  { selector: null,
+    title: 'Quiz Page — Overview',
+    body: 'This is where each question is presented during your quiz.\n\nYou will see the question text, up to six answer options, your progress through the quiz, and a timer.\n\nThis tour walks through every element on the page.' },
+  { selector: '#qText, .qtext, [data-role="question"]',
+    title: 'Question',
+    body: 'The question is displayed here. Read it carefully before selecting an answer.\n\nQuestions are drawn from the categories and difficulty level you chose on the setup page.' },
+  { selector: '#options, .options, [data-role="options"]',
+    title: 'Answer Options',
+    body: 'Up to six options are presented for each question. Most questions have a single correct answer — pick it and submit.\n\nWhen a question has more than one correct answer, the "Select all that apply" tag appears and you can select every matching option.\n\nAfter you submit, immediate feedback is shown — correct options highlight green, incorrect picks red, and the correct answer is revealed if you got it wrong.' },
+  { selector: '[data-role="progress"], .progress-seg-track',
+    title: 'Progress',
+    body: 'A segmented bar shows how far through the quiz you are. Each segment colors live as you answer: green = correct, red = wrong, amber = revealed (peek).\n\nThe meta line above also tells you the current question number out of the total.' },
+  { selector: '#cvTimerContainer, #cvTimer, .cv-timer',
+    title: 'Timer',
+    body: 'Tracks how long you have been working on the quiz. The clock keeps ticking across questions — there is no per-question time limit.\n\nUse the eye icon next to the clock to hide it if you find the visible timer distracting; it keeps counting in the background.' },
+  { selector: '#btnSubmit, [data-role="next"] .submit-btn, .quiz-actions .btn',
+    title: 'Submit & Auto-advance',
+    body: 'After picking an answer, press Submit to lock it in. The quiz auto-advances to the next question shortly after a correct or wrong submission.\n\nYou can also press View Answer to reveal the correct option without scoring it — this is recorded as a peek and does not count as correct. Tutorial opens a side panel with a short explanation if the question has one.' },
+  { selector: '#btnBack, [data-role="exit"]',
+    title: 'Exit to Setup',
+    body: 'Returns you to the Setup page at any time.\n\nYour in-progress answers on the current session are not saved if you exit early, but your filter selections and historical scores are always preserved server-side.' },
+  { selector: null,
+    title: 'Tour Complete',
+    body: 'That covers everything on the MCQ pages.\n\nClose this card to keep practicing, or head back to Setup whenever you want to start fresh with different filters.\n\nGood luck!' },
 ];
 
 const PARENT_COUNT = PARENT_STEPS.length;
@@ -46,11 +65,15 @@ function getTarget(sel) {
   return null;
 }
 
+// IMPORTANT: don't inline `zIndex` here — tour.css already stacks these
+// (backdrop 9998, spotlight 9999, card 10000). The previous values (9001
+// / 9002) were lower than the backdrop, so the backdrop ended up *over*
+// the card, catching every click and blocking Next/Previous.
 function spotlightStyle(el) {
   if (!el) return null;
   const r = el.getBoundingClientRect(), pad = 8;
   return { position:'fixed', left:r.left-pad, top:r.top-pad, width:r.width+pad*2, height:r.height+pad*2,
-    zIndex:9001, outline:'3px solid rgba(246,213,138,0.75)', borderRadius:4,
+    outline:'3px solid rgba(246,213,138,0.75)', borderRadius:4,
     boxShadow:'0 0 0 9999px rgba(0,0,0,0.55)', pointerEvents:'none' };
 }
 
@@ -63,7 +86,7 @@ function cardPosition(targetEl) {
     if (r.bottom+16+ch < vh)      { top=r.bottom+16; left=clampL(r.left); }
     else if (r.top-ch-16 > 0)    { top=r.top-ch-16; left=clampL(r.left); }
   }
-  return { position:'fixed', left, top, width:cw, zIndex:9002 };
+  return { position:'fixed', left, top, width:cw };
 }
 
 export function useMcqTour({ onParent = true } = {}) {
@@ -93,14 +116,20 @@ export function useMcqTour({ onParent = true } = {}) {
 
   const end = useCallback(() => {
     setActive(false); clearState();
-    if (!onParent) window.location.href = '/mcq-parent';
+    // After ending the quiz-page tour, the user usually wants to start a
+    // fresh quiz. Send them back to /mcq (setup) — the previous URL of
+    // `/mcq-parent` doesn't exist in this app.
+    if (!onParent) window.location.href = '/mcq';
   }, [onParent]);
 
   const next = useCallback(() => {
-    // Last step on parent → navigate to quiz page
+    // Last step on parent → navigate to the actual quiz route. Save the
+    // step index so the resume effect on the quiz page can pick the tour
+    // back up at QUESTION_STEPS[0]. The previous fallback URL was wrong
+    // (`/mcq-quiz` doesn't exist).
     if (onParent && localIdx === PARENT_COUNT - 1) {
       saveState(PARENT_COUNT);
-      window.location.href = window.__CODIVIUM_MCQ_QUIZ_URL__ || '/mcq-quiz';
+      window.location.href = window.__CODIVIUM_MCQ_QUIZ_URL__ || '/mcq/quiz';
       return;
     }
     const maxIdx = onParent ? PARENT_COUNT - 1 : PARENT_COUNT + QUESTION_STEPS.length - 1;

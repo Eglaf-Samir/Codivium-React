@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Getallinterviewpreprationfiltering } from "../api/interviewprepration/apiinterviewprepration";
 import { GetalldeliberatePracticefiltering } from "../api/deliberatePractice/apideliberatepractice";
-import { GetCategoriesByMode, GetallDifficultyLevel } from "../api/mcq/apimcq";
+import { GetCategoriesByMode, GetallDifficultyLevel, GetallCategory } from "../api/mcq/apimcq";
 import { ParamMasterKey } from "../config";
 
 const DEMO_DATA = {
@@ -57,6 +57,8 @@ export function useMenuData() {
   const [difficultyOptions, setDifficultyOptions] = useState([]);
   const [exerciseTypeOptions, setExerciseTypeOptions] = useState([]);
   const [mentalModelOptions, setMentalModelOptions] = useState([]);
+  const [areaOptions, setAreaOptions] = useState([]);
+  const [subCategoryOptions, setSubCategoryOptions] = useState([]);
   const [optionsReady, setOptionsReady] = useState(false);
 
   const track = (
@@ -77,10 +79,11 @@ export function useMenuData() {
         if (isMicro) {
           requests.push(GetallDifficultyLevel(ParamMasterKey.ExerciseType));
           requests.push(GetallDifficultyLevel(ParamMasterKey.MentalModel));
+          requests.push(GetallDifficultyLevel(ParamMasterKey.Area));
         }
         const results = await Promise.all(requests);
         if (cancelled) return;
-        const [catRes, diffRes, exTypeRes, mentalRes] = results;
+        const [catRes, diffRes, exTypeRes, mentalRes, areaRes] = results;
         if (catRes?.status === 200 && Array.isArray(catRes.data)) {
           setCategoryOptions(catRes.data);
         }
@@ -100,9 +103,19 @@ export function useMenuData() {
           } else {
             setMentalModelOptions([]);
           }
+          if (areaRes?.status === 200 && Array.isArray(areaRes.data)) {
+            setAreaOptions(areaRes.data);
+          } else {
+            setAreaOptions([]);
+          }
+          // SubCategory options are NOT loaded here — they depend on the
+          // selected category(ies) and are fetched on demand via
+          // loadSubCategories() (see below), mirroring the admin behaviour.
         } else {
           setExerciseTypeOptions([]);
           setMentalModelOptions([]);
+          setAreaOptions([]);
+          setSubCategoryOptions([]);
         }
       } catch (err) {
         console.error("Failed to load filter options", err);
@@ -114,6 +127,37 @@ export function useMenuData() {
       cancelled = true;
     };
   }, [track]);
+
+  // Load subcategories for the given parent category id(s). SubCategory options
+  // are category-dependent: only the subcategories belonging to the selected
+  // categories (or all categories when none picked) are shown — same rule the
+  // category filter follows. Results are merged + de-duped across categories.
+  const loadSubCategories = useCallback(async (categoryIds) => {
+    const ids = (categoryIds || []).filter((v) => v != null && v !== "");
+    if (ids.length === 0) {
+      setSubCategoryOptions([]);
+      return;
+    }
+    try {
+      const results = await Promise.all(ids.map((id) => GetallCategory(id, "")));
+      const seen = new Set();
+      const merged = [];
+      results.forEach((res) => {
+        if (res?.status === 200 && Array.isArray(res.data)) {
+          res.data.forEach((sc) => {
+            if (sc && !seen.has(sc.id)) {
+              seen.add(sc.id);
+              merged.push(sc);
+            }
+          });
+        }
+      });
+      setSubCategoryOptions(merged);
+    } catch (err) {
+      console.error("Failed to load subcategories", err);
+      setSubCategoryOptions([]);
+    }
+  }, []);
 
   const runFilter = useCallback(
     async (filterBody) => {
@@ -148,7 +192,18 @@ export function useMenuData() {
           CategoryIds: (body.CategoryIds || [])
             .map((v) => Number(v))
             .filter((n) => !Number.isNaN(n)),
-          SubCategoryIds: body.SubCategoryIds || [],
+          SubCategoryIds: (body.SubCategoryIds || [])
+            .map((v) => Number(v))
+            .filter((n) => !Number.isNaN(n)),
+          AreaIds: (body.AreaIds || [])
+            .map((v) => Number(v))
+            .filter((n) => !Number.isNaN(n)),
+          ExerciseTypeIds: (body.ExerciseTypeIds || [])
+            .map((v) => Number(v))
+            .filter((n) => !Number.isNaN(n)),
+          MentalModelIds: (body.MentalModelIds || [])
+            .map((v) => Number(v))
+            .filter((n) => !Number.isNaN(n)),
           CompletionIds: (body.CompletionIds || [])
             .map((v) => Number(v))
             .filter((n) => !Number.isNaN(n)),
@@ -200,6 +255,9 @@ export function useMenuData() {
     difficultyOptions,
     exerciseTypeOptions,
     mentalModelOptions,
+    areaOptions,
+    subCategoryOptions,
+    loadSubCategories,
     completionOptions: COMPLETION_OPTIONS,
     optionsReady,
   };

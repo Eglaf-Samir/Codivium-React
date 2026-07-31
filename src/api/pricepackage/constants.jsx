@@ -2,6 +2,7 @@ export const allpackages = 'api/v1/package/allpackage';
 export const allpackagesBillingPeriod = 'api/v1/package/allpackagefilteringbyBillingPeriod?billingperiod=';
 export const allpackagefiltering = 'api/v1/package/allpackagefiltering?currencyID=';
 export const packagepurchasecheckout ="api/v1/create-checkout-session"
+export const billingportalsession ="api/v1/billing/portal"
 
 export const geteActivePackagebyuserid = 'api/v1/package/userActivepackagedetails?Userid=';
 export const ActivepackagecancelByUser = 'api/v1/package/userActivePackageCancelByUser?Id=';

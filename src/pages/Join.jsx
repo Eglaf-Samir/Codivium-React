@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { role } from "../config";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { CreateUserNew, SendVerifyEmail, VerifyEmailToken } from "../api/auth/apiauth";
+import { CreateUserNew, SendVerifyEmail, VerifyEmailToken, CheckVerifyStatus } from "../api/auth/apiauth";
 import { toast, ToastContainer } from "react-toastify";
 
 const RESEND_COOLDOWN_SECONDS = 15;
@@ -38,6 +39,14 @@ function Join() {
   const [verifyMessage, setVerifyMessage] = useState("");
   const [verifyError, setVerifyError] = useState("");
   const [verifying, setVerifying] = useState(false);
+  // True only on the device that just opened the email link — shows a
+  // "Verified Successfully" screen with a "Go to Registration" button, so the
+  // user can continue here even if the original signup tab was closed.
+  const [showVerifiedLanding, setShowVerifiedLanding] = useState(false);
+  // True when the verification link was already used to create an account
+  // (email already registered). The form stays "verified — locked" but Join is
+  // disabled; the user should log in instead.
+  const [linkUsed, setLinkUsed] = useState(false);
 
   // Step 2 entry: the user opened /join?verify=TOKEN from their inbox.
   useEffect(() => {
@@ -52,22 +61,28 @@ function Join() {
       const ok = res?.status === 200 && (res.data?.ok === true || res.data?.email);
       if (ok) {
         const email = res.data.email || "";
+        const used = res.data.alreadyRegistered === true;
         setForm((prev) => ({ ...prev, email }));
         setVerifyToken(token);
         setEmailVerified(true);
         setVerifyError("");
-        // Tell any other open /join tab (the original signup window) so the
-        // user can return there and continue — no duplicate-tab confusion.
+        if (used) {
+          // Link already used to create the account — keep "verified — locked"
+          // but block Join (show the form, not the success popup).
+          setLinkUsed(true);
+        } else {
+          // Fresh verification — show the "Verified Successfully" landing on THIS
+          // device so the user can continue registration here.
+          setShowVerifiedLanding(true);
+        }
+        // Also tell any other open /join tab (the original signup window) so it
+        // can continue there too — bonus for same-browser, harmless otherwise.
         try {
           localStorage.setItem(
             "cv_verify_signal",
-            JSON.stringify({ email, token, ts: Date.now() }),
+            JSON.stringify({ email, token, used, ts: Date.now() }),
           );
         } catch (_) { /* ignore */ }
-        // If this tab was opened by the email link (no opener / scripted open),
-        // try to close it after a moment so the user lands back on the original.
-        // Browsers block window.close() on user-opened tabs — harmless fallback.
-        setTimeout(() => { try { window.close(); } catch (_) {} }, 600);
       } else {
         setVerifyError(
           (res && res.data && (res.data.message || res.data)) ||
@@ -92,12 +107,50 @@ function Join() {
         setVerifyToken(obj.token);
         setEmailVerified(true);
         setVerifyError("");
+        if (obj.used === true) setLinkUsed(true);
         try { window.focus(); } catch (_) {}
       } catch (_) { /* ignore */ }
     }
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+
+  // Cross-DEVICE polling: if the link is opened on a different device (e.g. the
+  // phone), this window never gets the localStorage signal above. So once a
+  // verification email has been sent, poll the backend until the email is
+  // verified anywhere, then auto-advance to step 2 — no manual refresh needed.
+  useEffect(() => {
+    if (emailVerified) return;        // already verified
+    if (!verifyMessage) return;       // nothing sent yet (or email was edited)
+    const email = (form.email || "").trim();
+    if (!email) return;
+
+    let stopped = false;
+    let elapsed = 0;
+    const POLL_MS = 3000;
+    const MAX_MS = 15 * 60 * 1000;    // stop polling after 15 minutes of waiting
+
+    const id = setInterval(async () => {
+      if (stopped) return;
+      elapsed += POLL_MS;
+      const res = await CheckVerifyStatus(email);
+      if (stopped) return;
+      if (res?.status === 200 && res.data?.isVerified && res.data?.token) {
+        stopped = true;
+        clearInterval(id);
+        setForm((prev) => ({ ...prev, email: res.data.email || email }));
+        setVerifyToken(res.data.token);
+        setEmailVerified(true);
+        setVerifyError("");
+        if (res.data.alreadyRegistered === true) setLinkUsed(true);
+      } else if (elapsed >= MAX_MS) {
+        stopped = true;
+        clearInterval(id);
+      }
+    }, POLL_MS);
+
+    return () => { stopped = true; clearInterval(id); };
+  }, [emailVerified, verifyMessage, form.email]);
 
   // Resend-cooldown timer (ref-based, so React's state churn never stops it).
   const cooldownTimerRef = useRef(null);
@@ -171,11 +224,15 @@ function Join() {
       newErrors.email = "Email is required";
     }
 
-    if (form.firstName && form.firstName.length < 2) {
+    if (!form.firstName || !form.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    } else if (form.firstName.trim().length < 2) {
       newErrors.firstName = "First name must be at least 2 characters";
     }
 
-    if (form.lastName && form.lastName.length < 2) {
+    if (!form.lastName || !form.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    } else if (form.lastName.trim().length < 2) {
       newErrors.lastName = "Last name must be at least 2 characters";
     }
 
@@ -227,13 +284,8 @@ function Join() {
         localStorage.setItem("Userid", data.id);
         localStorage.setItem("LoginToken", data.loginToken);
         localStorage.setItem("UserRoleName", data.roleName);
-        // Persist the real name/email so the sidebar profile can show it.
-        {
-          const fullName = [data.firstName, data.middleName, data.lastName].filter(Boolean).join(" ").trim()
-            || [form.firstName, form.lastName].filter(Boolean).join(" ").trim();
-          localStorage.setItem("UserDisplayName", fullName);
-          localStorage.setItem("UserEmail", data.email || form.email || "");
-        }
+        // Name/email are intentionally NOT persisted locally (privacy) —
+        // Sidebar.jsx/SettingsPage.jsx fetch them fresh via getUserById.
         if (data.activePackage) {
           localStorage.setItem(
             "userpackagedetails",
@@ -254,6 +306,77 @@ function Join() {
       setLoading(false);
     }
   };
+
+  // Join is allowed only when: email is verified AND the link wasn't already
+  // used to register, first + last name are filled, password is set and matches,
+  // and the terms are accepted.
+  const canSubmit =
+    emailVerified &&
+    !!verifyToken &&
+    !linkUsed &&
+    !!(form.firstName || "").trim() &&
+    !!(form.lastName || "").trim() &&
+    !!form.password &&
+    form.password === form.confirmPassword &&
+    !!form.agree;
+
+  // Verified screen as a standalone full-screen popup. Portaled to document.body
+  // so it positions against the VIEWPORT (an ancestor transform/filter on the
+  // page can otherwise trap a position:fixed child and push it off-screen — the
+  // reason it showed blank on phones). Scrollable so a tall card is always
+  // reachable on small screens. No topbar / page header / sidebar.
+  if (showVerifiedLanding) {
+    return createPortal(
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Email verified"
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          zIndex: 2147483000, background: 'rgba(5,7,12,0.97)',
+          overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <div style={{
+          boxSizing: 'border-box', minHeight: '100%', width: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '24px 16px',
+        }}>
+          <div style={{
+            boxSizing: 'border-box', width: '100%', maxWidth: 420,
+            background: '#11151f', border: '1px solid #2a3346', borderTop: '3px solid #f6d58a',
+            borderRadius: 16, padding: '34px 24px', textAlign: 'center',
+            boxShadow: '0 24px 70px rgba(0,0,0,0.55)',
+            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+          }}>
+            <div style={{ width: 72, height: 72, margin: '0 auto 18px', borderRadius: '50%', background: '#c8f4d6', border: '1px solid #6abf86', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" stroke="#0a3d1f" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div style={{ fontSize: 12, letterSpacing: '2px', textTransform: 'uppercase', color: '#2e9d5f', marginBottom: 8, fontWeight: 700 }}>Verified</div>
+            <h2 style={{ margin: '0 0 10px', color: '#eef1f5', fontSize: 22, fontWeight: 700 }}>Email verified successfully</h2>
+            <p style={{ margin: '0 0 24px', color: '#aab2c0', fontSize: 15, lineHeight: 1.6 }}>
+              {form.email ? <>Great — <strong style={{ color: '#eef1f5' }}>{form.email}</strong> is confirmed.</> : 'Great — your email is confirmed.'}{' '}
+              Continue to finish creating your Codivium account.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowVerifiedLanding(false)}
+              style={{
+                width: '100%', maxWidth: 280, padding: '14px 28px',
+                background: '#f6d58a', color: '#05070c', border: 'none', borderRadius: 8,
+                fontWeight: 700, fontSize: 15, letterSpacing: '0.5px', cursor: 'pointer',
+              }}
+            >
+              Continue Registration
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
 
   return (
     <>
@@ -376,6 +499,7 @@ function Join() {
                                 setVerifyToken('');
                                 setVerifyMessage('');
                                 setVerifyError('');
+                                setLinkUsed(false);
                                 setCooldown(0);
                                 if (cooldownTimerRef.current) {
                                   clearInterval(cooldownTimerRef.current);
@@ -437,7 +561,7 @@ function Join() {
                   {emailVerified && (
                   <>
                   <div className="field">
-                    <label for="firstName">First name (optional)</label>
+                    <label for="firstName">First name</label>
                     <input
                       name="firstName"
                       value={form.firstName}
@@ -452,7 +576,7 @@ function Join() {
                     )}
                   </div>
                   <div className="field">
-                    <label for="lastName">Surname (optional)</label>
+                    <label for="lastName">Surname</label>
                     <input
                       name="lastName"
                       value={form.lastName}
@@ -558,11 +682,18 @@ function Join() {
                     </p>
                   </div>
                 </div>
+                {linkUsed && (
+                  <p className="error" style={{ marginBottom: 8 }}>
+                    This email is already registered — this verification link has
+                    already been used. Please <Link to="/login">log in</Link> instead,
+                    or use “Change email” above to sign up with a different email.
+                  </p>
+                )}
                 <div className="form-actions">
                   <button
-                    aria-disabled={loading}
+                    aria-disabled={loading || !canSubmit}
                     aria-busy={loading}
-                    disabled={loading}
+                    disabled={loading || !canSubmit}
                     id="subscribeBtn"
                     type="submit"
                   >

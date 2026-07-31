@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import renderContent from '../utils/renderContent.jsx';
 import { useTimer }   from '../hooks/useTimer.js';
+import { computeMcqQuality } from '../../mcq-shared/mcqQuality.js';
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
 
@@ -123,6 +124,45 @@ export function TutorialPanel({ question, isOpen }) {
 // ── Question card ─────────────────────────────────────────────────────────────
 // Tags, progress bar and meta live in McqQuizPage — this is just the card.
 
+// Strip script/iframe + inline handlers from admin-authored HTML before
+// dangerouslySetInnerHTML. The admin's CKEditor produces HTML for questions;
+// renderContent can't parse HTML tags so we route those branches through a
+// sanitized innerHTML render.
+function sanitizeHtmlSnippet(html) {
+  return String(html || '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '');
+}
+
+function looksLikeHtml(text) {
+  return /<[a-z][\s\S]*>/i.test(String(text || ''));
+}
+
+function renderQuestionContent(text) {
+  if (!text) return null;
+  if (looksLikeHtml(text)) {
+    return <div className="qtext-html" dangerouslySetInnerHTML={{ __html: sanitizeHtmlSnippet(text) }} />;
+  }
+  return renderContent(text);
+}
+
+// Render a single option, honoring backend's per-option `isCoding` flag —
+// option text that lacks fence markers gets wrapped in ```python``` so the
+// existing renderContent can lay it out as a code block.
+function renderOptionContent(text, isCoding) {
+  if (!text) return null;
+  const str = String(text);
+  if (isCoding && !/```/.test(str)) {
+    return renderContent('```python\n' + str + '\n```');
+  }
+  if (looksLikeHtml(str)) {
+    return <span className="opt-html" dangerouslySetInnerHTML={{ __html: sanitizeHtmlSnippet(str) }} />;
+  }
+  return renderContent(str);
+}
+
 export function QuestionCard({
   question, index, total, state,
   onSubmit, onPeek, onPeekConfirm, onPeekCancel,
@@ -162,16 +202,23 @@ export function QuestionCard({
   const correctSet = new Set(question.correctIndices);
   const lastSelSet = lastAns ? new Set(lastAns.selected) : new Set();
   const isPeek     = lastAns?.isPeek;
+  // Multi-select if EITHER signal says so:
+  //   - admin's `isMultipleAnswer` flag (explicit intent), OR
+  //   - the question actually has 2+ correct answers (derived truth).
+  // The second condition catches questions where the admin forgot to tick
+  // the flag — a user must still be able to pick every correct option.
+  const isMulti = !!question.isMultipleAnswer || (question.correctIndices?.length || 0) > 1;
 
   return (
     <section className="window glow-follow" id="quizCard" aria-label="Quiz question">
       <div className="window-pad">
 
-        <div className="qtext" id="qText" data-role="question">{renderContent(question.question)}</div>
+        <div className="qtext" id="qText" data-role="question">{renderQuestionContent(question.question)}</div>
         <div className="divider" />
 
-        <div className="options" id="options" role="group" aria-label="Answer choices" data-role="options">
+        <div className="options" id="options" role={isMulti ? 'group' : 'radiogroup'} aria-label="Answer choices" data-role="options">
           {question.options.map((opt, i) => {
+            const meta = question.optionMeta?.[i];
             const isChecked = locked ? lastSelSet.has(i) : selected.includes(i);
             const isCorrect = locked && correctSet.has(i);
             const isWrong   = locked && !correctSet.has(i) && lastSelSet.has(i);
@@ -182,14 +229,25 @@ export function QuestionCard({
             if (isWrong)   cls.push('wrong');
             return (
               <label key={i} className={cls.join(' ')} htmlFor={`opt_${i}`}>
-                <input type="checkbox" id={`opt_${i}`} name="answer" value={String(i)}
-                  checked={isChecked} disabled={locked}
+                <input
+                  type={isMulti ? 'checkbox' : 'radio'}
+                  id={`opt_${i}`}
+                  name="answer"
+                  value={String(i)}
+                  checked={isChecked}
+                  disabled={locked}
                   onChange={() => {
                     if (locked) return;
-                    setSelected(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
+                    if (isMulti) {
+                      setSelected(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
+                    } else {
+                      // Single-select: replace selection. Clicking the
+                      // already-selected radio is a no-op (browser default).
+                      setSelected([i]);
+                    }
                   }}
                 />
-                <span>{renderContent(opt)}</span>
+                <span>{renderOptionContent(opt, meta?.isCoding)}</span>
               </label>
             );
           })}
@@ -217,7 +275,7 @@ export function QuestionCard({
                 Submit
               </button>
             )}
-            {locked && isPeek && (
+            {locked && (isPeek || state.tutorialViewedThisQ) && (
               <button className="ghost" id="btnNextPeek" type="button" onClick={onAdvancePeek}>
                 Next →
               </button>
@@ -244,14 +302,15 @@ function ReviewItem({ answer, index }) {
         </div>
       </div>
       <div className="review-item-body">
-        <div className="review-q">{renderContent(q.question)}</div>
+        <div className="review-q">{renderQuestionContent(q.question)}</div>
         <div className="review-options">
           {q.options.map((opt, i) => {
+            const meta = q.optionMeta?.[i];
             const isC = correctSet.has(i), isS = selectedSet.has(i);
             return (
               <div key={i} className={`review-opt${isC ? ' correct' : isS ? ' wrong' : ''}`}>
                 <span className="review-opt-icon">{isC ? '\u2713' : isS ? '\u2717' : '\u00b7'}</span>
-                <span>{renderContent(opt)}</span>
+                <span>{renderOptionContent(opt, meta?.isCoding)}</span>
               </div>
             );
           })}
@@ -259,7 +318,7 @@ function ReviewItem({ answer, index }) {
         {q.explanation && (
           <div className="review-explanation">
             <div className="review-explanation-label">Explanation</div>
-            <div>{renderContent(q.explanation)}</div>
+            <div>{renderQuestionContent(q.explanation)}</div>
           </div>
         )}
       </div>
@@ -267,29 +326,93 @@ function ReviewItem({ answer, index }) {
   );
 }
 
-export function SummaryView({ state, onRestart, onAdjust }) {
-  const total = state.questions.length;
+function SaveStatusBadge({ status, onRetry }) {
+  // Demo / not-logged-in sessions don't persist — nothing to show.
+  if (!status || status === 'idle') return null;
+
+  const map = {
+    saving: { text: 'Saving your results…', tone: 'rgba(246,213,138,0.85)' },
+    saved:  { text: '✓ Results saved',  tone: 'rgba(34,197,94,0.90)' },
+    error:  { text: "Couldn't save your results.", tone: 'rgba(255,92,90,0.90)' },
+  };
+  const cfg = map[status] || map.error;
+
   return (
-    <div className="summary show" id="summary" aria-label="Quiz summary">
-      <div className="summary-grid">
-        <div className="metric"><div className="n">Total</div><div className="v" id="mTotal">{total}</div></div>
-        <div className="metric"><div className="n">Correct</div>
-          <div className="v" id="mCorrect" style={{ color: 'rgba(34,197,94,0.90)' }}>{state.correctCount}</div>
-        </div>
-        <div className="metric"><div className="n">Incorrect</div>
-          <div className="v" id="mWrong" style={{ color: 'rgba(255,92,90,0.90)' }}>
-            {total - state.correctCount - state.peekCount}
-          </div>
-        </div>
-        <div className="metric"><div className="n">Peeked</div><div className="v" id="mPeeked">{state.peekCount}</div></div>
-      </div>
-      <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
-        <button className="ghost" id="btnAdjust" type="button" onClick={onAdjust}>Adjust Filters</button>
-        <button className="btn" id="btnRestart" type="button" onClick={onRestart}>Restart</button>
-      </div>
-      <div className="review-list" id="reviewList" style={{ marginTop: 20 }}>
-        {state.answers.map((ans, i) => <ReviewItem key={i} answer={ans} index={i} />)}
-      </div>
+    <div
+      id="saveStatus"
+      role="status"
+      aria-live="polite"
+      style={{
+        marginTop: 14, padding: '8px 12px',
+        border: `1px solid ${cfg.tone}`, background: 'rgba(0,0,0,0.18)',
+        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        fontSize: 13, color: cfg.tone,
+      }}
+    >
+      <span>{cfg.text}</span>
+      {status === 'error' && onRetry && (
+        <button className="ghost ghost-mini" type="button" id="btnRetrySave" onClick={onRetry}>
+          Retry
+        </button>
+      )}
     </div>
+  );
+}
+
+export function SummaryView({ state, onRestart, onAdjust, saveStatus, onRetrySave }) {
+  const total = state.questions.length;
+  // Shared with the backend payload builder via mcqQuality.js so the badge
+  // shown here always matches the QualityLabel persisted to the DB.
+  const quality = computeMcqQuality(state.answers);
+  return (
+    <section className="window summary show" id="summary" aria-label="Quiz summary">
+      <div className="window-pad">
+        <SaveStatusBadge status={saveStatus} onRetry={onRetrySave} />
+        <div className="summary-grid">
+          <div className="metric"><div className="n">Total</div><div className="v" id="mTotal">{total}</div></div>
+          <div className="metric"><div className="n">Correct</div>
+            <div className="v" id="mCorrect" style={{ color: 'rgba(34,197,94,0.90)' }}>{state.correctCount}</div>
+          </div>
+          <div className="metric"><div className="n">Incorrect</div>
+            <div className="v" id="mWrong" style={{ color: 'rgba(255,92,90,0.90)' }}>
+              {total - state.correctCount - state.peekCount}
+            </div>
+          </div>
+          <div className="metric"><div className="n">Peeked</div><div className="v" id="mPeeked">{state.peekCount}</div></div>
+        </div>
+        {quality && (
+          <div
+            id="qualityLabel"
+            role="status"
+            aria-live="polite"
+            style={{
+              marginTop: 14, padding: '10px 14px',
+              border: `1px solid ${quality.tone}`,
+              background: 'rgba(0,0,0,0.18)',
+              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--font-brand)', fontWeight: 950,
+                letterSpacing: '0.06em', fontSize: 12, textTransform: 'uppercase',
+                color: quality.tone, padding: '4px 10px',
+                border: `1px solid ${quality.tone}`,
+              }}
+            >
+              {quality.label}
+            </span>
+            <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>{quality.hint}</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+          <button className="ghost" id="btnAdjust" type="button" onClick={onAdjust}>Adjust Filters</button>
+          <button className="btn" id="btnRestart" type="button" onClick={onRestart}>Restart</button>
+        </div>
+        <div className="review-list" id="reviewList" style={{ marginTop: 20 }}>
+          {state.answers.map((ans, i) => <ReviewItem key={i} answer={ans} index={i} />)}
+        </div>
+      </div>
+    </section>
   );
 }

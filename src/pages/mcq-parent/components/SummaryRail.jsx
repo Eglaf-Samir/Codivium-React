@@ -4,10 +4,20 @@ import React, { useState } from 'react';
 const DIFF_LABELS = { basic: 'Basic', intermediate: 'Intermediate', advanced: 'Advanced' };
 const DIFF_ORDER  = ['basic', 'intermediate', 'advanced'];
 
+// paramMaster stores difficulty names in Title Case ("Basic", "Advance"/
+// "Advanced"); DIFF_ORDER/DIFF_LABELS are lowercase keys, so a raw
+// case-sensitive lookup always missed and the ladder silently stuck on
+// step 0 regardless of the actual selection.
+function normalizeDifficulty(d) {
+  const s = String(d || '').toLowerCase();
+  return s === 'advance' ? 'advanced' : s;
+}
+
 export default function SummaryRail({ categories, allCategories, difficulty, count, skipCorrect }) {
   const [expanded, setExpanded] = useState(false);
 
-  const diffIdx  = Math.max(0, DIFF_ORDER.indexOf(difficulty));
+  const diffKey  = normalizeDifficulty(difficulty);
+  const diffIdx  = Math.max(0, DIFF_ORDER.indexOf(diffKey));
   const noneSelected = categories.length === 0;
   const cats     = categories;  // show exactly what's selected — no fallback
   const isAll    = !noneSelected && cats.length === allCategories.length && allCategories.length > 0;
@@ -36,7 +46,7 @@ export default function SummaryRail({ categories, allCategories, difficulty, cou
         <div className="summary-block">
           <div className="summary-label">Difficulty Level</div>
           <div className="difficulty-ladder" id="diffLadder" role="img"
-            aria-label={`Difficulty: ${DIFF_LABELS[difficulty] || difficulty}`}>
+            aria-label={`Difficulty: ${DIFF_LABELS[diffKey] || difficulty}`}>
             {DIFF_ORDER.map((d, i) => (
               <div key={d} className={`ladder-step${i <= diffIdx ? ' is-active' : ''}`}
                 data-level={d} aria-label={DIFF_LABELS[d]} />

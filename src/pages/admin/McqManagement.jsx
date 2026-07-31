@@ -11,7 +11,7 @@ import {
   Updatemcq,
   CreatemcqUsingFile,
 } from '../../api/mcq/apimcq';
-import { ParamMasterKey } from '../../config';
+import { ParamMasterKey, baseURL } from '../../config';
 import { logout } from '../../utils/auth';
 import AdminPager from '../../components/AdminPager.jsx';
 import AdminRichEditor from '../../components/AdminRichEditor.jsx';
@@ -24,12 +24,14 @@ const initialForm = {
   question: '',
   questionOptions: [],
   description: '',
+  nanoTutorial: '',
   difficultyLevelId: '',
   categoriesId: '',
   subCategoriesId: '',
   createdBy: '',
   modifiedBy: '',
   ismultipleAnswer: false,
+  isFree: false,
 };
 
 const initialOption = { optionId: null, optionName: '', isAnswers: false, isCoding: false };
@@ -56,6 +58,13 @@ export default function McqManagement() {
   const [editSubs, setEditSubs] = useState([]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Inline form errors keyed by field name. Cleared by handleField on edit.
+  const [errors, setErrors] = useState({});
+
+  // Quick "Options & Answers" peek modal — opens from the table row without
+  // entering the full edit modal. Restored from legacy admin parity.
+  const [optionsViewItem, setOptionsViewItem] = useState(null);
 
   useEffect(() => { loadAll(); loadDiffLevels(); /* eslint-disable-next-line */ }, []);
 
@@ -100,7 +109,10 @@ export default function McqManagement() {
 
   // ── Filter handlers ─────────────────────────────────────────
   function handleFilter(field, value) {
-    const next = { ...filterData, [field]: value || null };
+    // Coerce select values (always strings) to numbers so the backend's
+    // int? filter DTO binds — a string like "5" is rejected by the strict
+    // JSON deserializer (400), which would blank the whole list.
+    const next = { ...filterData, [field]: value ? Number(value) : null };
     if (field === 'difficultyLevelId') { next.categoryId = null; next.subcategoryId = null; setSubCategories([]); loadCats(value, 'filter'); }
     if (field === 'categoryId') { next.subcategoryId = null; loadSubs(value, 'filter'); }
     setFilterData(next);
@@ -123,6 +135,7 @@ export default function McqManagement() {
     setForm(initialForm);
     setOptions([{ ...initialOption }]);
     setEditCats([]); setEditSubs([]);
+    setErrors({});
     setOpen(true);
   }
 
@@ -131,57 +144,109 @@ export default function McqManagement() {
     if (res?.status === 401) { authFail(); return; }
     if (res?.status === 200 && res?.data) {
       const d = res.data;
+      // Backend returns nested ParamMaster objects on the entity
+      // (difficultyLevel/categories/subCategories), not flat *Id fields. Also
+      // the boolean is `isMultipleAnswer` (capital M) on the entity. Read
+      // from the nested shape; we still send flat *Id fields on save.
+      const diffId = d.difficultyLevel?.id || '';
+      const catId = d.categories?.id || '';
+      const subId = d.subCategories?.id || '';
+      setErrors({});
       setForm({
         id: d.id || null,
         mcqQuestionId: d.mcqQuestionId || null,
         question: d.question || '',
         description: d.description || '',
-        difficultyLevelId: d.difficultyLevelId || '',
-        categoriesId: d.categoriesId || '',
-        subCategoriesId: d.subCategoriesId || '',
+        nanoTutorial: d.nanoTutorial || d.NanoTutorial || '',
+        difficultyLevelId: diffId,
+        categoriesId: catId,
+        subCategoriesId: subId,
         createdBy: d.createdBy || '',
         modifiedBy: d.modifiedBy || '',
-        ismultipleAnswer: !!d.ismultipleAnswer,
+        ismultipleAnswer: !!(d.isMultipleAnswer ?? d.ismultipleAnswer),
+        isFree: !!(d.isFree ?? d.IsFree),
         questionOptions: d.questionOptions || [],
       });
       setOptions(Array.isArray(d.questionOptions) && d.questionOptions.length > 0
         ? d.questionOptions.map(o => ({ optionId: o.optionId || o.id || null, optionName: o.optionName || '', isAnswers: !!o.isAnswers, isCoding: !!o.isCoding }))
         : [{ ...initialOption }]);
-      if (d.difficultyLevelId) await loadCats(d.difficultyLevelId, 'edit');
-      if (d.categoriesId) await loadSubs(d.categoriesId, 'edit');
+      // Cascade both dropdowns so the existing values render selected. Run
+      // sequentially — Category must resolve before Subcategory loads.
+      if (diffId) await loadCats(diffId, 'edit');
+      if (catId) await loadSubs(catId, 'edit');
       setOpen(true);
     } else {
       Swal.fire({ title: 'Error', text: 'Could not load MCQ.', icon: 'error' });
     }
   }
 
-  function close() { setOpen(false); setForm(initialForm); setOptions([{ ...initialOption }]); }
+  function close() {
+    setOpen(false);
+    setForm(initialForm);
+    setOptions([{ ...initialOption }]);
+    setErrors({});
+  }
 
   function handleField(e) {
     const { name, value, type, checked } = e.target;
     setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
-    if (name === 'difficultyLevelId') { loadCats(value, 'edit'); setForm(f => ({ ...f, categoriesId: '', subCategoriesId: '' })); }
+    if (errors[name]) setErrors(es => ({ ...es, [name]: '' }));
+    if (name === 'difficultyLevelId') { loadCats(value, 'edit'); setEditSubs([]); setForm(f => ({ ...f, categoriesId: '', subCategoriesId: '' })); }
     if (name === 'categoriesId') { loadSubs(value, 'edit'); setForm(f => ({ ...f, subCategoriesId: '' })); }
+  }
+
+  function openOptionsView(item) { setOptionsViewItem(item); }
+  function closeOptionsView() { setOptionsViewItem(null); }
+
+  function downloadTemplate() {
+    const url = baseURL + 'Emoji/SampleFile/SampleMcq.xlsx';
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'SampleMcq.xlsx');
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode.removeChild(link);
   }
 
   function setOption(idx, field, value) {
     setOptions(opts => opts.map((o, i) => i === idx ? { ...o, [field]: value } : o));
+    if (errors.options) setErrors(es => ({ ...es, options: '' }));
   }
 
-  function addOption() { setOptions(opts => [...opts, { ...initialOption }]); }
+  function addOption() {
+    setOptions(opts => [...opts, { ...initialOption }]);
+    if (errors.options) setErrors(es => ({ ...es, options: '' }));
+  }
   function removeOption(idx) {
     setOptions(opts => opts.length === 1 ? opts : opts.filter((_, i) => i !== idx));
+    if (errors.options) setErrors(es => ({ ...es, options: '' }));
+  }
+
+  // Collect every problem before failing so the user sees all required fields
+  // at once rather than one popup at a time. Returns the errors object so
+  // submit() can short-circuit when anything is set.
+  function validateForm() {
+    const errs = {};
+    if (!form.question || !form.question.replace(/<[^>]*>/g, '').trim()) {
+      errs.question = 'Question is required.';
+    }
+    if (!form.difficultyLevelId) errs.difficultyLevelId = 'Select a difficulty.';
+    if (!form.categoriesId) errs.categoriesId = 'Select a category.';
+    if (!form.subCategoriesId) errs.subCategoriesId = 'Select a subcategory.';
+    if (!options.length || !options.some(o => o.isAnswers)) {
+      errs.options = 'At least one correct answer is required.';
+    } else if (options.some(o => !o.optionName.trim())) {
+      errs.options = 'All options need text.';
+    }
+    return errs;
   }
 
   async function submit(e) {
     e.preventDefault();
-    if (!form.question.trim()) { Swal.fire({ title: 'Question required', icon: 'warning' }); return; }
-    if (options.length === 0 || !options.some(o => o.isAnswers)) {
-      Swal.fire({ title: 'At least one correct answer required', icon: 'warning' });
-      return;
-    }
-    if (options.some(o => !o.optionName.trim())) {
-      Swal.fire({ title: 'All options need text', icon: 'warning' });
+    const errs = validateForm();
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      Swal.fire({ title: 'Please fix the highlighted fields', icon: 'warning' });
       return;
     }
 
@@ -189,6 +254,10 @@ export default function McqManagement() {
     const userId = localStorage.getItem('Userid');
     const body = {
       ...form,
+      // Selects yield strings; the backend DTO expects int for these ids.
+      difficultyLevelId: Number(form.difficultyLevelId) || 0,
+      categoriesId: Number(form.categoriesId) || 0,
+      subCategoriesId: Number(form.subCategoriesId) || 0,
       createdBy: form.createdBy || userId,
       modifiedBy: userId,
       questionOptions: options,
@@ -250,6 +319,9 @@ export default function McqManagement() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={uploadFile} />
+            <button type="button" className="cv-admin-btn" onClick={downloadTemplate} title="Download sample MCQ XLSX template">
+              ↓ Template
+            </button>
             <button type="button" className="cv-admin-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
               {uploading ? 'Uploading…' : '↑ Bulk upload'}
             </button>
@@ -307,6 +379,7 @@ export default function McqManagement() {
                       <td className="cell-muted">{it?.subCategoriedetails?.name || '—'}</td>
                       <td>
                         <div className="cv-admin-actions">
+                          <button type="button" className="cv-admin-btn" onClick={() => openOptionsView(it)} title="View options & answers">View</button>
                           <button type="button" className="cv-admin-btn" onClick={() => openEdit(it)}>Edit</button>
                           <button type="button" className="cv-admin-btn is-warn" onClick={() => remove(it)}>Delete</button>
                         </div>
@@ -343,13 +416,22 @@ export default function McqManagement() {
                   <label>Question</label>
                   <AdminRichEditor
                     value={form.question}
-                    onChange={v => setForm(f => ({ ...f, question: v }))}
+                    onChange={v => {
+                      setForm(f => ({ ...f, question: v }));
+                      if (errors.question) setErrors(es => ({ ...es, question: '' }));
+                    }}
                     placeholder="Enter the question"
                   />
+                  {errors.question && <div className="cv-admin-field-error" style={{ color: '#ff7777', fontSize: 11, marginTop: 4 }}>{errors.question}</div>}
                 </div>
                 <div className="cv-admin-field is-full">
                   <label>Description / explanation</label>
                   <textarea rows={3} name="description" value={form.description} onChange={handleField} />
+                </div>
+                <div className="cv-admin-field is-full">
+                  <label>Nano tutorial <span style={{ color: 'var(--color-text-muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — shown in the slide-in Tutorial panel during the quiz)</span></label>
+                  <textarea rows={4} name="nanoTutorial" value={form.nanoTutorial} onChange={handleField}
+                    placeholder="Short focused explanation of the concept this question tests. Supports markdown + code fences. Leave blank to hide the Tutorial button." />
                 </div>
                 <div className="cv-admin-field">
                   <label>Difficulty</label>
@@ -357,6 +439,7 @@ export default function McqManagement() {
                     <option value="">—</option>
                     {diffLevels.map(d => <option key={d.id} value={d.id}>{d.value || d.name}</option>)}
                   </select>
+                  {errors.difficultyLevelId && <div className="cv-admin-field-error" style={{ color: '#ff7777', fontSize: 11, marginTop: 4 }}>{errors.difficultyLevelId}</div>}
                 </div>
                 <div className="cv-admin-field">
                   <label>Category</label>
@@ -364,6 +447,7 @@ export default function McqManagement() {
                     <option value="">—</option>
                     {editCats.map(c => <option key={c.id} value={c.id}>{c.value || c.name}</option>)}
                   </select>
+                  {errors.categoriesId && <div className="cv-admin-field-error" style={{ color: '#ff7777', fontSize: 11, marginTop: 4 }}>{errors.categoriesId}</div>}
                 </div>
                 <div className="cv-admin-field">
                   <label>Subcategory</label>
@@ -371,11 +455,18 @@ export default function McqManagement() {
                     <option value="">—</option>
                     {editSubs.map(s => <option key={s.id} value={s.id}>{s.value || s.name}</option>)}
                   </select>
+                  {errors.subCategoriesId && <div className="cv-admin-field-error" style={{ color: '#ff7777', fontSize: 11, marginTop: 4 }}>{errors.subCategoriesId}</div>}
                 </div>
                 <div className="cv-admin-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <input type="checkbox" id="mcq-multi" name="ismultipleAnswer" checked={form.ismultipleAnswer} onChange={handleField} />
                   <label htmlFor="mcq-multi" style={{ margin: 0, textTransform: 'none', letterSpacing: 0, fontSize: 13 }}>
                     Allow multiple correct answers
+                  </label>
+                </div>
+                <div className="cv-admin-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" id="mcq-free" name="isFree" checked={!!form.isFree} onChange={handleField} />
+                  <label htmlFor="mcq-free" style={{ margin: 0, textTransform: 'none', letterSpacing: 0, fontSize: 13 }}>
+                    Free question
                   </label>
                 </div>
 
@@ -384,10 +475,11 @@ export default function McqManagement() {
                     <span>Answer options</span>
                     <button type="button" className="cv-admin-btn" onClick={addOption} style={{ padding: '4px 10px', fontSize: 11 }}>+ Add option</button>
                   </label>
+                  {errors.options && <div className="cv-admin-field-error" style={{ color: '#ff7777', fontSize: 11, marginBottom: 6 }}>{errors.options}</div>}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {options.map((opt, idx) => (
                       <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: 10, border: '1px solid var(--color-border-default)', borderRadius: 10, background: 'rgba(0,0,0,0.20)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', minWidth: 60 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 60 }}>
                           <label title="Correct answer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--color-text-muted)' }}>
                             <input type="checkbox" checked={opt.isAnswers} onChange={e => setOption(idx, 'isAnswers', e.target.checked)} />
                             ✓
@@ -412,7 +504,7 @@ export default function McqManagement() {
                               required />
                           )}
                         </div>
-                        <button type="button" className="cv-admin-btn is-warn" onClick={() => removeOption(idx)} disabled={options.length === 1} style={{ padding: '4px 10px', fontSize: 11 }}>×</button>
+                        <button type="button" className="cv-admin-btn is-warn" onClick={() => removeOption(idx)} disabled={options.length === 1} style={{ padding: '4px 10px', fontSize: 11,alignSelf:'center' }}>×</button>
                       </div>
                     ))}
                   </div>
@@ -424,6 +516,57 @@ export default function McqManagement() {
               <button type="submit" className="cv-admin-btn is-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
             </div>
           </form>
+        </div>
+      </AdminModal>
+
+      {/* Quick peek modal: shows the question + every option's text, answer
+          flag, and isCoding flag without opening the full edit form. */}
+      <AdminModal open={!!optionsViewItem} onClose={closeOptionsView}>
+        <div className="cv-admin-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 720 }}>
+          <div className="cv-admin-modal-head">
+            <h3>Options &amp; Answers</h3>
+            <button type="button" className="cv-admin-modal-close" onClick={closeOptionsView}>×</button>
+          </div>
+          <div className="cv-admin-modal-body">
+            <div
+              className="cv-mcq-question-preview"
+              style={{ marginBottom: 16, color: 'var(--color-text-primary)' }}
+              dangerouslySetInnerHTML={{ __html: optionsViewItem?.question || '<em>N/A</em>' }}
+            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--color-border-default)', fontWeight: 600, fontSize: 12 }}>
+              <div>Option</div>
+              <div>Answer</div>
+              <div>isCoding</div>
+            </div>
+            {(optionsViewItem?.questionOptions || []).map((opt, i) => (
+              <div key={opt.optionId || i} style={{
+                display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 8,
+                padding: '8px 0', borderBottom: '1px solid var(--color-border-default)',
+                background: opt.isAnswers ? 'rgba(120, 200, 120, 0.08)' : 'transparent',
+                alignItems: 'center', fontSize: 13,
+              }}>
+                <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', fontFamily: opt.isCoding ? 'monospace' : 'inherit' }}>
+                  {opt.optionName || '—'}
+                </div>
+                <div>
+                  <span className="cv-admin-badge" style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, background: opt.isAnswers ? 'rgba(120, 200, 120, 0.25)' : 'rgba(120,120,120,0.18)' }}>
+                    {opt.isAnswers ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                <div>
+                  <span className="cv-admin-badge" style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, background: opt.isCoding ? 'rgba(120, 160, 220, 0.25)' : 'rgba(120,120,120,0.18)' }}>
+                    {opt.isCoding ? 'True' : 'False'}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {(!optionsViewItem?.questionOptions || optionsViewItem.questionOptions.length === 0) && (
+              <div style={{ padding: 12, color: 'var(--color-text-muted)', fontSize: 12, textAlign: 'center' }}>No options recorded.</div>
+            )}
+          </div>
+          <div className="cv-admin-modal-foot">
+            <button type="button" className="cv-admin-btn" onClick={closeOptionsView}>Close</button>
+          </div>
         </div>
       </AdminModal>
     </main>

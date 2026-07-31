@@ -10,37 +10,66 @@ import { useGlowFollow } from '../mcq-shared/useGlowFollow.js';
 import { useCssLoader } from '../../hooks/useCssLoader.js';
 import { Link } from 'react-router-dom';
 
-// MCQ CSS files have unscoped selectors that would collide with other pages.
-// Inject them only while this route is mounted.
+// MCQ CSS files have unscoped selectors (.summary, .input, .divider, etc.)
+// that would collide with other pages if imported globally. Inject them
+// only while this route is mounted via useCssLoader — do NOT prewarm at
+// module load (mcq-quiz.css's `.summary { display: none }` would hide the
+// Contact / MCQ-setup `.summary`-class elements on those pages).
 const MCQ_CSS = [
   '/assets/css/components/mcq/mcq-forms.css',
   '/assets/css/components/mcq/mcq-quiz.css',
 ];
 
 export default function McqQuizPage() {
-  useCssLoader(MCQ_CSS);
+  const cssReady = useCssLoader(MCQ_CSS, { evict: true });
   useGlowFollow();
 
   const tourState = useMcqTour({ onParent: false });
-  const { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart } = useQuiz();
+  const { state, submit, advance, showPeekWarning, hidePeekWarning, toggleTutorial, restart, saveAndExit, saveStatus, retrySave } = useQuiz();
   const { phase, questions, index, settings } = state;
   const q = questions[index];
 
-  // Auto-advance after normal (non-peek) submit
+  // Auto-advance after normal (non-peek) submit — but not if the user has
+  // opened the tutorial for this question. Reading a tutorial needs more
+  // than the fixed 2.4s auto-advance window, so once viewed we pause here
+  // and let QuestionCard's manual "Next" button take over instead.
   useEffect(() => {
     if (phase !== 'active' || !state.locked) return;
     const lastAns = state.answers[state.answers.length - 1];
     if (!lastAns || lastAns.isPeek) return;
+    if (state.tutorialViewedThisQ) return;
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const tid = setTimeout(() => advance(), reduced ? 600 : 2400);
     return () => clearTimeout(tid);
-  }, [state.locked, state.answers.length, phase]); // eslint-disable-line
+  }, [state.locked, state.answers.length, phase, state.tutorialViewedThisQ]); // eslint-disable-line
+
+  // Mid-quiz leave guard: while the quiz is in progress, expose a global
+  // saveAndExit() the sidebar/topbar leave guard can invoke before
+  // navigating away. We tear it down once the quiz reaches summary (so
+  // the regular result-post handles the save) or on unmount.
+  useEffect(() => {
+    if (phase !== 'active') {
+      if (typeof window !== 'undefined') delete window.__cvMcqSaveAndExit;
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      window.__cvMcqSaveAndExit = saveAndExit;
+    }
+    return () => {
+      if (typeof window !== 'undefined') delete window.__cvMcqSaveAndExit;
+    };
+  }, [phase, saveAndExit]);
 
   const handleSubmit = useCallback((sel) => submit(sel, false), [submit]);
   const handlePeekConfirm = useCallback((sel) => submit(sel, true), [submit]);
   const handleAdvancePeek = useCallback(() => advance(), [advance]);
   const handleBack = useCallback(() => { window.location.href = '/mcq'; }, []);
   const handleAdjust = useCallback(() => { window.location.href = '/mcq'; }, []);
+
+  // FOUC guard — hide until MCQ CSS has parsed (route-scoped via evict).
+  if (!cssReady) {
+    return <main className="main" id="main-content" role="main" style={{ visibility: 'hidden' }} />;
+  }
 
   if (phase === 'loading') {
     return (
@@ -49,6 +78,25 @@ export default function McqQuizPage() {
           <div className="window window-large glow-follow">
             <div className="window-pad">
               <div style={{ color: 'rgba(245,245,252,0.6)', fontSize: 14 }}>Loading questions…</div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Production-mode hard error: shown when the backend refuses to give us
+  // questions and demo fallback is disabled (see useQuiz.js ALLOW_DEMO).
+  if (phase === 'error') {
+    return (
+      <main className="main" id="main-content" role="main">
+        <div className="page-shell">
+          <div className="window window-large glow-follow">
+            <div className="window-pad">
+              <div style={{ color: 'rgba(245,80,80,0.85)', fontSize: 14, marginBottom: 10 }}>
+                {state.loadError || 'Could not load questions.'}
+              </div>
+              <Link to="/mcq" style={{ color: 'rgba(246,213,138,0.85)' }}>← Back to Setup</Link>
             </div>
           </div>
         </div>
@@ -77,17 +125,34 @@ export default function McqQuizPage() {
     return (
       <main className="main" id="main-content" role="main">
         <div className="page-shell">
-          <SummaryView state={state} onRestart={restart} onAdjust={handleAdjust} />
+          <SummaryView state={state} onRestart={restart} onAdjust={handleAdjust} saveStatus={saveStatus} onRetrySave={retrySave} />
         </div>
       </main>
     );
   }
 
   // Active quiz
-  const humanDiff = d => d === 'intermediate' ? 'Intermediate' : d === 'advanced' ? 'Advanced' : 'Basic';
-  const isMulti = q?.correctIndices?.length > 1;
-  const catCount = settings?.categories?.length ?? 0;
-  const metaText = `${catCount} categor${catCount === 1 ? 'y' : 'ies'} · ${humanDiff(settings?.difficulty)} · ${questions.length} question${questions.length === 1 ? '' : 's'}${settings?.skipCorrect ? ' · skipping correct' : ''}`;
+  const humanDiff = d => {
+    const s = String(d || '').toLowerCase();
+    if (s === 'intermediate') return 'Intermediate';
+    if (s === 'advanced' || s === 'advance') return 'Advanced';
+    if (s === 'basic') return 'Basic';
+    return d || '—';
+  };
+  // Settings now carries Guid IDs + friendly names. Prefer the friendly name
+  // for display; fall back to `categories` (legacy) for category count.
+  const isMulti = q?.isMultipleAnswer || (q?.correctIndices?.length > 1);
+  const catCount =
+    (Array.isArray(settings?.categoryNames) && settings.categoryNames.length) ||
+    (Array.isArray(settings?.categoryIds) && settings.categoryIds.length) ||
+    (Array.isArray(settings?.categories) && settings.categories.length) || 0;
+  const diffLabel = humanDiff(settings?.difficultyName || settings?.difficulty);
+  // Backend/demo bank may return fewer than requested when the chosen
+  // categories + difficulty don't have enough matching questions — make
+  // that explicit rather than letting the count silently look "wrong".
+  const requestedCount = Number(settings?.questionCount) || 0;
+  const shortfall = requestedCount > questions.length;
+  const metaText = `${catCount} categor${catCount === 1 ? 'y' : 'ies'} · ${diffLabel} · ${questions.length} question${questions.length === 1 ? '' : 's'}${shortfall ? ` (of ${requestedCount} requested)` : ''}${settings?.skipCorrect ? ' · skipping correct' : ''}`;
 
   return (
     <>
@@ -97,14 +162,15 @@ export default function McqQuizPage() {
           {/* Fixed-position timer overlay — position:fixed in CSS */}
           <CvTimer />
 
-          {/* Demo mode notice */}
+          {/* Demo mode notice — visible so a sample-question session is never
+              mistaken for a real, saved one. */}
           {settings?._isDemo && (
             <div style={{
               padding: '8px 14px', marginBottom: 10, fontSize: 12,
               background: 'rgba(246,213,138,0.08)', border: '1px solid rgba(246,213,138,0.22)',
               borderRadius: 4, color: 'rgba(246,213,138,0.82)',
             }} role="note">
-              Demo mode — showing sample questions.{' '}
+              Demo mode — showing sample questions (results are not saved).{' '}
               <Link to="/mcq" style={{ color: 'inherit' }}>Go to MCQ Setup</Link> to choose your own filters.
             </div>
           )}
