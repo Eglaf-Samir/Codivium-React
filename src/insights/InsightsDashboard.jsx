@@ -21,7 +21,7 @@ import GlossaryModal           from './components/GlossaryModal.jsx';
 import { INFO_CONTENT }        from './data/infoContent.js';
 import { interpretMetric }     from './utils/interpretMetric.js';
 import { useGlowFollow } from '../shared/useGlowFollow.js';
-import { getalluserMcqdashborditem } from '../api/dashbord/apiDashbord.jsx';
+import { getalluserMcqdashborditem, getUserInsights } from '../api/dashbord/apiDashbord.jsx';
 
 // Transform UserMCQdashboardResponse (BarChatResponse-list per difficulty)
 // into the shape metrics.js expects:
@@ -193,24 +193,30 @@ export default function InsightsDashboard() {
   const db      = useDashboardData();
   const metrics = useDashboardMetrics(db.dashData, db.selectedTrack);
 
-  // MCQ data bridge: on mount, fetch the user's MCQ performance from the
-  // existing backend endpoint and inject it into the dashboard payload so
-  // McqPanel renders real bars. Without this, the dashboard waits forever
-  // for an external CodiviumInsights.update caller.
-  // Note: we merge into existing dashData (if any) so we don't blow away
-  // other panels' data from a previous bridge call.
+  // Live data bridge: on mount, pull the full Performance Insights payload
+  // (scores, allocation, depth, heatmap, time) from the backend, and the
+  // dedicated MCQ endpoint, then apply them in ONE merged call. Both fetches
+  // run together and are merged here (rather than in two effects) so neither
+  // can overwrite the other via a stale dashData closure. The dedicated MCQ
+  // endpoint is treated as authoritative for the MCQ panel.
   useEffect(() => {
     const userId = typeof window !== 'undefined' ? localStorage.getItem('Userid') : null;
     if (!userId) return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await getalluserMcqdashborditem(userId);
-        if (cancelled || !res || res.status !== 200 || !res.data) return;
-        const mcq = transformMcqDashboardResponse(res.data);
-        if (!mcq) return;
-        const merged = { ...(db.dashData || {}), mcq };
-        db.applyData(merged);
+        const [insRes, mcqRes] = await Promise.all([
+          getUserInsights().catch(() => null),
+          getalluserMcqdashborditem(userId).catch(() => null),
+        ]);
+        if (cancelled) return;
+
+        let payload = (insRes && insRes.status === 200 && insRes.data) ? insRes.data : {};
+        if (mcqRes && mcqRes.status === 200 && mcqRes.data) {
+          const mcq = transformMcqDashboardResponse(mcqRes.data);
+          if (mcq) payload = { ...payload, mcq };
+        }
+        if (payload && Object.keys(payload).length) db.applyData(payload);
       } catch (_) { /* non-fatal */ }
     })();
     return () => { cancelled = true; };

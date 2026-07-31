@@ -3,3 +3,6 @@ export const getsuperadminDashboard = 'api/v1/visitlog/getallTodayVisit';
 
 export const getalluserDashboarditem = 'api/v1/homeDashboard/getuserdashboard?UserId=';
 export const getalluserMcqDashboarditem = 'api/v1/homeDashboard/getuserMCQdashboard?UserId=';
+
+// Performance Insights v2 payload — user resolved from the JWT (no query param).
+export const getUserInsightsPath = 'api/user/insights';

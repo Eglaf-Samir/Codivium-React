@@ -212,3 +212,22 @@
   max-height: calc(100vh - var(--topbar-h, 82px) - 40px) !important;
   overflow: hidden !important;
 }
+
+/* ─── Short desktop viewports: page-scroll instead of clipping ───────────────
+   At ≥1201px the dashboard is height-locked to the viewport (#ciMount height:100%
+   → .insights-layout / .insights-form height:100% → panels fill the screen and
+   scroll internally). On a viewport too SHORT for that layout, content was
+   clipped with no way to reach it (the .main scroll container matched #ciMount's
+   height exactly, so it never scrolled).
+
+   A min-height FLOOR fixes it without disturbing the design: on tall screens
+   height:100% is larger than the floor, so nothing changes; on short screens the
+   floor makes #ciMount taller than .main, so .main (overflow-y:auto) scrolls and
+   the whole dashboard becomes reachable. info_only is excluded — it already has
+   its own inner scroll (#infoPaneScroll). The floor is intentionally generous;
+   adjust it if a particular screen still clips or scrolls too eagerly. */
+@media (min-width: 1201px) {
+  #ciMount:not([data-layout="info_only"]) {
+    min-height: 950px;
+  }
+}

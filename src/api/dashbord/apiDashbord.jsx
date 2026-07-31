@@ -1,5 +1,5 @@
 import Axios from "axios";
-import { getallDashboarditem , getsuperadminDashboard , getalluserDashboarditem , getalluserMcqDashboarditem} from './constants'
+import { getallDashboarditem , getsuperadminDashboard , getalluserDashboarditem , getalluserMcqDashboarditem, getUserInsightsPath} from './constants'
 import { baseURL } from "../../config";
 
 export const  getalldashborditem = async (userID) => {
@@ -56,6 +56,24 @@ export const  getsuperadmindashbord = async () => {
 export const  getalluserMcqdashborditem = async (userID) => {
     let token = localStorage.getItem('LoginToken');
     var url = baseURL + getalluserMcqDashboarditem + userID;
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization':'Bearer '+ token
+        }
+    }
+    try {
+        const res = await Axios.get(url,config);
+        return res;
+    } catch (e) {
+        return e.response;
+    }
+}
+
+// Full Performance Insights v2 payload for the signed-in user (token-scoped).
+export const getUserInsights = async () => {
+    let token = localStorage.getItem('LoginToken');
+    var url = baseURL + getUserInsightsPath;
     const config = {
         headers: {
             'Content-Type': 'application/json',
