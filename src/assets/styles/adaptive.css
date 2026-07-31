@@ -260,11 +260,9 @@ h1.ap-title, .ap-title {
 }
 .ap-sidebar-card-body { padding: 14px 18px; }
 
-/* Quality card grows to fill available space so its bottom border aligns
-   with the bottom border of the alternatives grid */
-.ap-quality-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.ap-quality-card .ap-sidebar-card-body { flex: 1; display: flex; flex-direction: column; }
-.ap-quality-card .ap-quality-levels { flex: 1; }
+/* Quality card sizes to its content (like the reference) — it must NOT stretch
+   to fill the sidebar column, which left a large empty gap between the level
+   ladder and the caption and made the page taller than the reference. */
 
 /* Session quality */
 .ap-quality-levels { display: flex; flex-direction: column; gap: 6px; }

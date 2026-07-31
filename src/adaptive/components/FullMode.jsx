@@ -18,7 +18,10 @@ export default function FullMode({ state }) {
   // The server returns the correct primary and alternatives in priority order —
   // no client-side integration step is needed.
   const integratedPrimary  = state.primary       || null;
-  const allAlternatives    = state.alternatives   || [];
+  // Match the canonical design/contract: show at most 2 alternatives. (The
+  // engine may return up to 3; a 3rd card wraps to a second row and makes the
+  // page noticeably taller than the reference.)
+  const allAlternatives    = (state.alternatives || []).slice(0, 2);
 
   // Compute subtitle
   const catCount = (state.categories || []).filter(c => c.fill > 0).length;
