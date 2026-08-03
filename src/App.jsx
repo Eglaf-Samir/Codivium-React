@@ -24,6 +24,7 @@ import CouponsManagement from './pages/admin/CouponsManagement.jsx';
 import UnitTestManagement from './pages/admin/UnitTestManagement.jsx';
 import DeliberatePracticeManagement from './pages/admin/DeliberatePracticeManagement.jsx';
 import FaqManagement from './pages/admin/FaqManagement.jsx';
+import ArticleManagement from './pages/admin/ArticleManagement.jsx';
 
 // Public pages
 import Landing       from './pages/Landing.jsx';
@@ -57,6 +58,7 @@ const PAGE_TITLES = {
   '/UnitTestManagement':            'Unit Tests',
   '/DeliberatePracticeManagement':  'Deliberate Practice',
   '/FaqManagement':                 'FAQ Management',
+  '/ArticleManagement':             'Article Management',
 };
 
 // ── Block unauthenticated users from app pages ───────────────────
@@ -174,7 +176,7 @@ export default function App() {
       <Route path="/pricing"         element={<PubRoute component={Pricing}        page="pricing"         title="Pricing" />} />
       <Route path="/contact"         element={<PubRoute component={Contact}        page="contact"         title="Contact" />} />
       <Route path="/articles"        element={<PubRoute component={Articles}       page="articles"        title="Articles" />} />
-      <Route path="/article"         element={<PubRoute component={Article}        page="article"         title="Article" />} />
+      <Route path="/articles/:slug"  element={<PubRoute component={Article}        page="article"         title="Article" />} />
       <Route path="/password_reset"  element={<PubRoute component={ResetPassword}  page="password_reset"  title="Reset Password" />} />
       {/* Alias: forget-password emails link to /resetPassword?uniquecode=… */}
       <Route path="/resetPassword"   element={<PubRoute component={ResetPassword}  page="password_reset"  title="Reset Password" />} />
@@ -200,6 +202,7 @@ export default function App() {
       <Route path="/UnitTestManagement"            element={<RequireSuperAdmin><AdminRoute component={UnitTestManagement} /></RequireSuperAdmin>} />
       <Route path="/DeliberatePracticeManagement"  element={<RequireSuperAdmin><AdminRoute component={DeliberatePracticeManagement} /></RequireSuperAdmin>} />
       <Route path="/FaqManagement"                 element={<RequireSuperAdmin><AdminRoute component={FaqManagement} /></RequireSuperAdmin>} />
+      <Route path="/ArticleManagement"             element={<RequireSuperAdmin><AdminRoute component={ArticleManagement} /></RequireSuperAdmin>} />
 
       {/* ── STRIPE CHECKOUT RETURN ── */}
       <Route path="/success" element={<PaymentSuccess />} />

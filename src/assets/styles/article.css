@@ -1890,6 +1890,194 @@ body[data-page="article"] .ap-reading a{ color: inherit; text-decoration: underl
 body[data-page="article"] .ap-reading pre{ background: rgba(127,127,127,0.14); padding: 12px 14px; border-radius: 12px; overflow: auto; }
 body[data-page="article"] .ap-reading hr{ border: none; border-top: 1px solid rgba(127,127,127,0.22); margin: 1.4em 0; }
 
+/* ============================================================
+   Long-form article content (Python Mastery Series)
+   Same markup/classes as authored; colours use the site's own
+   dark/gold tokens instead of the source content's own palette.
+   ============================================================ */
+body[data-page="article"] .ap-reading{ --article-gold: rgba(246,213,138,0.90); }
+
+body[data-page="article"] .ap-reading p{ margin: 0 0 1.1em; }
+body[data-page="article"] .ap-reading p:last-child{ margin-bottom: 0; }
+body[data-page="article"] .ap-reading section{ margin-bottom: 2.6em; }
+
+body[data-page="article"] .ap-reading code{
+  background: rgba(127,127,127,0.16);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 0.88em;
+}
+body[data-page="article"] .ap-reading pre code{ background: none; border: none; padding: 0; }
+
+/* Section heading + numbered label */
+body[data-page="article"] .ap-reading h2.section-title{
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  margin-bottom: 0.9em;
+  scroll-margin-top: 1.5em;
+}
+body[data-page="article"] .ap-reading .section-num{
+  display: block;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--article-gold);
+  margin-bottom: 0.3em;
+}
+body[data-page="article"] .ap-reading h3.subsection-title{ margin: 1.4em 0 0.7em; font-size: 1.05em; }
+
+/* TL;DR / Table of contents */
+body[data-page="article"] .ap-reading .tldr,
+body[data-page="article"] .ap-reading .toc{
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-left: 3px solid var(--article-gold);
+  border-radius: 0 10px 10px 0;
+  padding: 1.1em 1.3em;
+  margin: 1.6em 0;
+}
+body[data-page="article"] .ap-reading .tldr-label,
+body[data-page="article"] .ap-reading .toc-heading,
+body[data-page="article"] .ap-reading .cta-label,
+body[data-page="article"] .ap-reading .author-bio-label,
+body[data-page="article"] .ap-reading .series-nav-label{
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--article-gold);
+  margin-bottom: 0.6em;
+}
+body[data-page="article"] .ap-reading .tldr p{ font-size: 0.94em; }
+
+body[data-page="article"] .ap-reading .toc ol{ list-style: none; counter-reset: toc; padding: 0; margin: 0; }
+body[data-page="article"] .ap-reading .toc ol li{
+  counter-increment: toc;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  padding: 0.2em 0;
+  font-size: 0.94em;
+}
+body[data-page="article"] .ap-reading .toc ol li::before{
+  content: counter(toc, decimal-leading-zero);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--article-gold);
+  min-width: 1.7em;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* Pull quote / predict callout */
+body[data-page="article"] .ap-reading .pull-quote{
+  border-left: 3px solid var(--article-gold);
+  margin: 1.8em 0;
+  padding: 0.6em 1.3em;
+  font-style: italic;
+  opacity: 0.92;
+}
+body[data-page="article"] .ap-reading .predict-block,
+body[data-page="article"] .ap-reading .aside{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 8px;
+  padding: 0.7em 1.1em;
+  margin: 0.5em 0 1.4em;
+  font-size: 0.92em;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* CTA / conclusion callouts */
+body[data-page="article"] .ap-reading .cta-block,
+body[data-page="article"] .ap-reading .conclusion-box{
+  background: rgba(246,213,138,0.06);
+  border: 1px solid rgba(246,213,138,0.18);
+  border-left: 3px solid var(--article-gold);
+  border-radius: 0 10px 10px 0;
+  padding: 1.2em 1.4em;
+  margin: 1.8em 0;
+}
+body[data-page="article"] .ap-reading .cta-block p{ margin-bottom: 0.6em; }
+body[data-page="article"] .ap-reading .cta-link{
+  display: inline-block;
+  margin-top: 0.2em;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 2px solid var(--article-gold);
+  padding-bottom: 1px;
+}
+body[data-page="article"] .ap-reading .cta-link:hover{ opacity: 0.8; }
+
+/* Author bio */
+body[data-page="article"] .ap-reading .author-bio{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  padding: 1.2em 1.4em;
+  margin: 2.2em 0 1.4em;
+}
+body[data-page="article"] .ap-reading .author-bio p{ font-size: 0.92em; opacity: 0.82; margin-bottom: 0; }
+
+/* Series navigation (cross-links between the 4 articles) */
+body[data-page="article"] .ap-reading .series-nav{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  padding: 1em 1.2em;
+  margin: 1.8em 0;
+  font-size: 0.9em;
+}
+body[data-page="article"] .ap-reading .series-nav-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.4em 1em;
+}
+body[data-page="article"] .ap-reading .series-nav-grid a{ padding: 0.15em 0; border-bottom: 1px solid transparent; }
+body[data-page="article"] .ap-reading .series-nav-grid a:hover{ border-bottom-color: var(--article-gold); }
+body[data-page="article"] .ap-reading .series-nav-grid a.current{ color: var(--article-gold); font-weight: 700; }
+body[data-page="article"] .ap-reading .series-prev-next{
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+  margin-top: 0.7em;
+  padding-top: 0.7em;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  font-size: 0.92em;
+}
+
+/* Bulleted lists (feature lists, further reading) */
+body[data-page="article"] .ap-reading .feature-list,
+body[data-page="article"] .ap-reading .reading-list{
+  margin: 0.8em 0 1.2em 1.3em;
+  padding: 0;
+}
+body[data-page="article"] .ap-reading .feature-list li,
+body[data-page="article"] .ap-reading .reading-list li{ margin-bottom: 0.7em; }
+
+/* Gap-map style table */
+body[data-page="article"] .ap-reading table{
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4em 0;
+  font-size: 0.9em;
+}
+body[data-page="article"] .ap-reading thead tr{
+  background: rgba(255,255,255,0.05);
+  border-bottom: 2px solid rgba(255,255,255,0.14);
+}
+body[data-page="article"] .ap-reading th{ padding: 0.55em 0.7em; text-align: left; font-weight: 700; }
+body[data-page="article"] .ap-reading td{ padding: 0.55em 0.7em; border-bottom: 1px solid rgba(255,255,255,0.08); }
+body[data-page="article"] .ap-reading .status-improving{ color: var(--article-gold); }
+body[data-page="article"] .ap-reading .status-open{ opacity: 0.65; }
+body[data-page="article"] .ap-reading .status-resolved{ color: rgba(140,210,150,0.95); }
+
 @media  (max-width: 1060px){
   body[data-page="article"] .ap-shell{ max-width: 100%; }
   body[data-page="article"] .ap-reading{ max-width: 92vw; }

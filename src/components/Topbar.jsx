@@ -87,7 +87,7 @@ export default function Topbar({ onMenuOpen }) {
           to="/articles"
           onClick={(e) => onLinkClick(e, '/articles')}
           className={() =>
-            location.pathname === "/articles" || location.pathname === "/article"
+            location.pathname === "/articles" || location.pathname.startsWith("/articles/")
               ? "active"
               : ""
           }
