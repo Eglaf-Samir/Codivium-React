@@ -2,48 +2,14 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { Link } from "react-router-dom";
+import { getPublicArticles } from "../api/articles/apiArticles";
 
-const ARTICLES = [
-    {
-        id: 1,
-        title: 'Deliberate Practice: The path to mastery of Software development in Python (Part I)',
-        category: 'Python Mastery',
-        date: '2026-02-13',
-        dateLabel: 'Feb 13, 2026',
-        readTime: '~8 min',
-        subtitle: 'This is the first of a two-part series on deliberate practice – what it is, the benefits and how it may be leveraged for improving in…',
-        href: '/article',
-        featured: true,
-        popularity: 90,
-        keywords: ['Deliberate Practice', 'Mastery', 'Python'],
-    },
-    {
-        id: 2,
-        title: 'The deliberate-practice loop for Python mastery',
-        category: 'Deliberate Practice',
-        date: '2026-01-18',
-        dateLabel: 'Jan 18, 2026',
-        readTime: '~6 min',
-        subtitle: 'How feedback, repetition, and scope control create compounding skill — and how to structure your sessions.',
-        href: '/article',
-        featured: false,
-        popularity: 72,
-        keywords: ['Deliberate Practice', 'Practice Loop'],
-    },
-    {
-        id: 3,
-        title: 'Mental models: why “small drills” beat long tutorials',
-        category: 'Python Mastery',
-        date: '2025-12-22',
-        dateLabel: 'Dec 22, 2025',
-        readTime: '~5 min',
-        subtitle: 'A pragmatic way to build correctness-first intuition in Python — without memorizing patterns.',
-        href: '/article',
-        featured: false,
-        popularity: 61,
-        keywords: ['Mental Models', 'Python', 'Mastery'],
-    },
-];
+function toDateLabel(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 const CATEGORIES = ['Deliberate Practice', 'Python Mastery'];
 const KEYWORDS = ['Deliberate Practice', 'Mastery', 'Python', 'Atomic Exercises', 'Mental Models'];
@@ -89,12 +55,39 @@ function GlowRow({ article, onMouseEnter, onMouseLeave }) {
 function Articles() {
     usePageMeta("articles");
 
+    const [articles, setArticles] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState('Newest');
     const [activeCat, setActiveCat] = useState(null);
     const [activeKey, setActiveKey] = useState(null);
     const [preview, setPreview] = useState(null);
     const featRef = useRef(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            const res = await getPublicArticles();
+            if (cancelled) return;
+            if (res?.status === 200 && Array.isArray(res?.data)) {
+                setArticles(res.data.map(a => ({
+                    id: a.slug,
+                    title: a.title,
+                    category: a.category,
+                    date: a.publishedDate,
+                    dateLabel: toDateLabel(a.publishedDate),
+                    readTime: a.readTime,
+                    subtitle: a.subtitle,
+                    href: `/articles/${a.slug}`,
+                    featured: a.isFeatured,
+                    popularity: a.popularity,
+                    keywords: a.keywords || [],
+                })));
+            }
+            setLoading(false);
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     useEffect(() => {
         const el = featRef.current;
@@ -109,7 +102,7 @@ function Articles() {
     }, []);
 
     const filtered = useMemo(() => {
-        let list = [...ARTICLES];
+        let list = [...articles];
         if (activeCat) list = list.filter(a => a.category === activeCat);
         if (activeKey) list = list.filter(a => a.keywords.includes(activeKey));
         if (search.trim()) {
@@ -120,9 +113,9 @@ function Articles() {
         else if (sort === 'Most Popular') list.sort((a, b) => b.popularity - a.popularity);
         else list.sort((a, b) => b.date.localeCompare(a.date));
         return list;
-    }, [search, sort, activeCat, activeKey]);
+    }, [articles, search, sort, activeCat, activeKey]);
 
-    const featured = ARTICLES.find(a => a.featured);
+    const featured = articles.find(a => a.featured);
 
     return (
         <>
@@ -251,7 +244,9 @@ function Articles() {
                                             <div aria-hidden="true" className="bm-spacer"></div>
                                         </div>
                                         <div className="bm-rows" id="bmRows" role="list">
-                                            {filtered.length === 0
+                                            {loading
+                                                ? <div className="bm-empty">Loading articles…</div>
+                                                : filtered.length === 0
                                                 ? <div className="bm-empty">No articles match your filters.</div>
                                                 : filtered.map(a => (
                                                     <GlowRow

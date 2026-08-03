@@ -102,6 +102,21 @@ const ADMIN_NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    section: 'admin-articles',
+    to: '/ArticleManagement',
+    tip: 'Article Management',
+    label: 'Article Management',
+    twoLine: true,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+        <path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
+          stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M15 3v5h5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M8 13h8M8 17h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ];
 
 function getActiveAdminSection(pathname) {
@@ -113,6 +128,7 @@ function getActiveAdminSection(pathname) {
   if (pathname.startsWith('/UnitTestManagement')) return 'admin-units';
   if (pathname.startsWith('/DeliberatePracticeManagement')) return 'admin-deliberate';
   if (pathname.startsWith('/FaqManagement')) return 'admin-faq';
+  if (pathname.startsWith('/ArticleManagement')) return 'admin-articles';
   return '';
 }
 
