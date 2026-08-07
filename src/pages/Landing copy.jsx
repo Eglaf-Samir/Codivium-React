@@ -91,76 +91,6 @@ const CARDS = [
     },
 ];
 
-// ─── "Try a 90-second challenge" interactive demo data ────────────────────
-const CHALLENGES = [
-    {
-        id: 'foundational', label: 'Foundational',
-        code: `matrix = [[0] * 2] * 3\nmatrix[0][0] = 1\nprint(matrix)`,
-        question: 'What does the code print?',
-        options: [
-            { value: 'a', label: '[[1, 0], [0, 0], [0, 0]]' },
-            { value: 'b', label: '[[1, 0], [1, 0], [1, 0]]' },
-            { value: 'c', label: 'Python raises an exception' },
-            { value: 'd', label: '[[1], [1], [1]]' },
-        ],
-        correctValue: 'b',
-        correctFeedback: <><strong>Correct: [[1, 0], [1, 0], [1, 0]].</strong> The outer repetition creates three references to the same inner list. Mutating one row is therefore visible through all three references. <Link to="/join?source=homepage_challenge_result">Continue with a free account →</Link></>,
-        incorrectFeedback: <><strong>Not quite. The output is [[1, 0], [1, 0], [1, 0]].</strong> <code>[[0] * 2] * 3</code> repeats references to one inner list. This is an aliasing and copy-semantics issue — the kind of mental model a focused micro-challenge can isolate. <Link to="/join?source=homepage_challenge_result">Continue with a free account →</Link></>,
-        diagnosticTitle: 'A small answer can expose a large mental-model gap.',
-        diagnosticBody: 'Correct output prediction is useful. Understanding why the behaviour occurs is what transfers to debugging and larger interview problems.',
-        rows: [
-            ['Concept tested', 'Aliasing'],
-            ['Python behaviour', 'List repetition'],
-            ['Transfer area', 'Mutation bugs'],
-            ['Why this matters', 'Shared list references, not copies'],
-        ],
-    },
-    {
-        id: 'intermediate', label: 'Intermediate',
-        code: `funcs = []\nfor i in range(3):\n    funcs.append(lambda: i)\n\nprint([f() for f in funcs])`,
-        question: 'What does this print?',
-        options: [
-            { value: 'a', label: '[0, 1, 2]' },
-            { value: 'b', label: '[2, 2, 2]' },
-            { value: 'c', label: '[0, 0, 0]' },
-            { value: 'd', label: 'Python raises an exception' },
-        ],
-        correctValue: 'b',
-        correctFeedback: <><strong>Correct: [2, 2, 2].</strong> Each lambda captures the variable <code>i</code> itself, not its value at creation time. By the time the list comprehension calls them, the loop has finished and <code>i</code> is 2 for every closure. <Link to="/join?source=homepage_challenge_result">Continue with a free account →</Link></>,
-        incorrectFeedback: <><strong>Not quite. The output is [2, 2, 2].</strong> The lambdas capture the variable <code>i</code> by reference, not its value at the time the lambda was created — a classic late-binding closure trap that also shows up in loops that build callbacks or event handlers. <Link to="/join?source=homepage_challenge_result">Continue with a free account →</Link></>,
-        diagnosticTitle: "The trap isn't the syntax. It's when Python evaluates the variable.",
-        diagnosticBody: "Getting the output right doesn't mean the mental model is right. Many developers only discover late binding once a callback misfires in production.",
-        rows: [
-            ['Concept tested', 'Closures & late binding'],
-            ['Python behaviour', 'Variables captured by reference'],
-            ['Transfer area', 'Callback & event-handler bugs'],
-            ['Why this matters', 'Late-binding bugs in callbacks'],
-        ],
-    },
-    {
-        id: 'advanced', label: 'Advanced',
-        code: `def gen():\n    x = yield 1\n    yield x + 1\n\ng = gen()\nprint(next(g), g.send(10))`,
-        question: 'What does this print?',
-        options: [
-            { value: 'a', label: '1 10' },
-            { value: 'b', label: '1 11' },
-            { value: 'c', label: 'None 11' },
-            { value: 'd', label: 'Python raises an exception' },
-        ],
-        correctValue: 'b',
-        correctFeedback: <><strong>Correct: 1 11.</strong> next(g) runs the generator up to its first yield and returns 1. g.send(10) resumes execution at that yield, assigns 10 to x, then runs to the second yield, returning x + 1 = 11. <Link to="/join?source=homepage_challenge_result">Continue with a free account →</Link></>,
-        incorrectFeedback: <><strong>Not quite. The output is 1 11.</strong> next(g) runs to the first yield and returns 1. g.send(10) then resumes the generator, delivering 10 as the value of that paused yield expression — execution continues to the next yield, returning 11. <Link to="/join?source=homepage_challenge_result">Continue with a free account →</Link></>,
-        diagnosticTitle: "next() and send() don't do the same thing.",
-        diagnosticBody: 'Most developers can write a generator. Fewer can predict exactly what happens when execution resumes mid-function — which is exactly what trips people up in code review and in interview follow-up questions.',
-        rows: [
-            ['Concept tested', 'Generators & two-way communication'],
-            ['Python behaviour', 'send() resumes at the paused yield'],
-            ['Transfer area', 'Coroutine-style generators & pipelines'],
-            ['Why this matters', 'State handling in generator pipelines'],
-        ],
-    },
-];
-
 const SNAP_THRESHOLD = 0.10;
 
 function getCardClass(idx, current, total) {
@@ -424,23 +354,6 @@ function Landing() {
     const currentIndex = useCoverflowScroll(spacerRef, stageRef, panelCount);
     useFlowArrows(s2bRef);
 
-    // ─── Interactive challenge demo state ──────────────────────────────────
-    const [activeChallenge, setActiveChallenge] = useState('foundational');
-    const [challengeAnswers, setChallengeAnswers] = useState({});
-
-    function submitChallenge(e, challenge) {
-        e.preventDefault();
-        const selected = new FormData(e.target).get('answer');
-        if (!selected) {
-            setChallengeAnswers(prev => ({ ...prev, [challenge.id]: { noAnswer: true } }));
-            return;
-        }
-        setChallengeAnswers(prev => ({
-            ...prev,
-            [challenge.id]: { selected, correct: selected === challenge.correctValue },
-        }));
-    }
-
     return (
         <>
             <style>{`.skip-link{position:absolute;top:-100px;left:0;background:#f6d58a;color:#05070c;padding:8px 16px;font-family:serif;font-size:14px;z-index:10000;border-radius:0 0 4px 0}.skip-link:focus{top:0}`}</style>
@@ -457,18 +370,14 @@ function Landing() {
                     <div className="section-inner">
                         <div className="hero-grid">
                             <div>
-                                <div className="hero-kicker">Deliberate practice for Python developers</div>
-                                <h1 className="hero-title hero-title-offset">Find the gaps<br />holding back<br />your Python.</h1>
-                                <p className="cvx-hero-support">Codivium combines focused coding exercises with <strong>immediate feedback</strong> — so you always know what's weak and what to practise next.</p>
+                                <div className="hero-kicker">Neuroscience-informed practice. Precision algorithmic coaching.<br />Structured for elite Python performance.</div>
+                                <h1 className="hero-title hero-title-offset">Achieve Elite<br />Python Mastery</h1>
                                 <div className="hero-cta-row">
-                                    <Link className="cta" to="/join?source=homepage_hero">
-                                        Start free
+                                    {/* <a className="cta" href="/join">Begin Elite Training</a> */}
+                                    <Link className="cta" to="/join">
+                                        Begin Elite Training
                                     </Link>
-                                    <a className="cvx-button cvx-button--secondary" href="#try-challenge">
-                                        Try a 90-second challenge
-                                    </a>
                                 </div>
-                                <p className="cvx-hero-reassurance">Free account available. No payment required to begin.</p>
                             </div>
                             <div>
                                 <div aria-label="Section 1 image" className="hero-image">
@@ -482,23 +391,12 @@ function Landing() {
                     </div>
                 </section>
 
-                <section aria-label="Codivium product principles" className="cvx-proof-strip">
-                    <div className="cvx-proof-grid">
-                        <div className="cvx-proof-item"><strong>Python only</strong><span>Depth rather than a broad language catalogue</span></div>
-                        <div className="cvx-proof-item"><strong>Attempt first</strong><span>Start by solving before unlocking support</span></div>
-                        <div className="cvx-proof-item"><strong>Immediate feedback</strong><span>See what failed and why</span></div>
-                        <div className="cvx-proof-item"><strong>Measured next steps</strong><span>Turn performance signals into targeted practice</span></div>
-                    </div>
-                </section>
-
                 <section id="section2">
                     <div className="section-inner">
                         <div className="section-title">
                             <h2>What Sets Us Apart?</h2>
                             <div className="section-tagline">Deliberate practice, guided by performance analytics and cognitive science.</div>
-                            <p>Whether you're preparing for a technical interview or want your day-to-day Python to hold up under real pressure — production bugs, code review, an unfamiliar codebase — Codivium builds the same underlying skill: durable mental models you can rely on when it counts.</p>
                             <p>Codivium is not a content library. It’s a performance system: you train specific skills, get measurable feedback, and refine with intent. The platform is built for <strong>attempt‑first</strong> practice — you start by doing, not by reading — with layered help that unlocks as you engage. Your dashboard then turns your data into <strong>data‑driven deliberate practice</strong>: clear diagnosis, targeted drills, and next‑step CTAs that take you straight to what you should train next.</p>
-                            <aside className="cvx-cog-note"><strong>Informed by the cognitive science of learning</strong><p>Codivium uses attempt-first retrieval, immediate corrective feedback, targeted repetition, interleaving and visible progress. These principles shape the practice loop while the product's own results remain something to validate with real user data.</p></aside>
                         </div>
                         <div className="s2-topwrap">
                             <div aria-label="Precision target icon" className="s2-sideicon s2-topicon">
@@ -592,79 +490,10 @@ function Landing() {
                     </div>
                 </section>
 
-                <section className="cvx-demo" id="try-challenge">
-                    <div className="cvx-shell">
-                        <div className="cvx-section-head">
-                            <p className="cvx-eyebrow">Experience the method</p>
-                            <h2>Try the kind of mental model Codivium trains.</h2>
-                            <p>Commit to an answer first. Then receive feedback on the Python concept — not only whether the answer is correct. Pick the level that matches you.</p>
-                        </div>
-                        <div aria-label="Choose a challenge difficulty" className="cvx-tabs" role="tablist">
-                            {CHALLENGES.map(c => (
-                                <button
-                                    key={c.id}
-                                    aria-controls={`panel-${c.id}`}
-                                    aria-selected={activeChallenge === c.id}
-                                    className={`cvx-tab${activeChallenge === c.id ? ' is-active' : ''}`}
-                                    id={`tab-${c.id}`}
-                                    role="tab"
-                                    tabIndex={activeChallenge === c.id ? 0 : -1}
-                                    type="button"
-                                    onClick={() => setActiveChallenge(c.id)}
-                                >{c.label}</button>
-                            ))}
-                        </div>
-                        {CHALLENGES.filter(c => c.id === activeChallenge).map(challenge => {
-                            const answer = challengeAnswers[challenge.id];
-                            const feedbackClass = !answer ? '' :
-                                answer.noAnswer ? ' is-visible is-incorrect' :
-                                answer.correct ? ' is-visible is-correct' : ' is-visible is-incorrect';
-                            return (
-                                <div aria-labelledby={`tab-${challenge.id}`} className="cvx-tabpanel" id={`panel-${challenge.id}`} key={challenge.id} role="tabpanel" tabIndex={0}>
-                                    <div className="cvx-demo-grid">
-                                        <div className="cvx-code-card">
-                                            <div className="cvx-windowbar"><span>Python mental-model challenge</span><span>{challenge.label}</span></div>
-                                            <pre className="cvx-code"><code>{challenge.code}</code></pre>
-                                            <form className="cvx-question" onSubmit={e => submitChallenge(e, challenge)}>
-                                                <h3>{challenge.question}</h3>
-                                                <div className="cvx-options" role="radiogroup">
-                                                    {challenge.options.map(opt => (
-                                                        <label className="cvx-option" key={opt.value}>
-                                                            <input name="answer" type="radio" value={opt.value} />
-                                                            <span>{opt.label}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                                <button className="cvx-button" type="submit">Check my reasoning</button>
-                                                <div aria-live="polite" className={`cvx-feedback${feedbackClass}`} role="status">
-                                                    {answer?.noAnswer && <><strong>Choose an answer first.</strong>Committing to a prediction before the explanation is part of attempt-first practice.</>}
-                                                    {answer && !answer.noAnswer && (answer.correct ? challenge.correctFeedback : challenge.incorrectFeedback)}
-                                                </div>
-                                            </form>
-                                        </div>
-                                        <aside aria-label="Example diagnostic" className="cvx-diagnostic-card">
-                                            <p className="cvx-eyebrow">What this reveals</p>
-                                            <h3>{challenge.diagnosticTitle}</h3>
-                                            <p>{challenge.diagnosticBody}</p>
-                                            <div className="cvx-diagnostic-list">
-                                                {challenge.rows.map(([k, v]) => (
-                                                    <div className="cvx-diagnostic-row" key={k}><span>{k}</span><span>{v}</span></div>
-                                                ))}
-                                            </div>
-                                            <Link className="cvx-button" to="/join?source=homepage_challenge">Continue with a free account</Link>
-                                        </aside>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </section>
-
                 <section id="section2b" ref={s2bRef}>
                     <div className="section-inner">
                         <div className="howitworks-title">
                             <h2>How does it work?</h2>
-                            <p className="panel-copy panel-copy-muted panel-copy-wide">The flow shows how a selected skill becomes an attempt, review, performance signal, focused support and a clearer diagnosis of what to practise next.</p>
                         </div>
                         <div aria-label="How it works flow + principle" className="flow-bodygrid">
                             <div aria-label="How it works flow chart" className="flow-premium">
@@ -827,19 +656,12 @@ function Landing() {
 
                 <section id="section3">
                     <div className="section-inner">
-                        <h2>Explore the Python Skill Map</h2>
-                        <p className="panel-copy panel-copy-muted panel-copy-wide">See the breadth and structure of Codivium's Python coverage. Topics cluster by category, and connections show how techniques support one another across deliberate practice.</p>
+                        <h2>Codivium Content Mindmap</h2>
+                        <p className="panel-copy panel-copy-muted panel-copy-wide">Explore the skill graph: topics cluster by category, and links show how techniques connect across your training — so deliberate practice stays structured, not random.</p>
                         <iframe className="constellation-frame" src="/assets/components/codivium-constellation/constellation-embed.html" title="Codivium constellation"></iframe>
                     </div>
                 </section>
 
-                <section aria-labelledby="real-product-heading" className="cvx-product-intro">
-                    <div className="cvx-shell">
-                        <p className="cvx-eyebrow">See the real product</p>
-                        <h2 id="real-product-heading">The Codivium Training Arc uses actual interface screens.</h2>
-                        <p>The deck below shows the coding workspace, post-exercise feedback, MCQ diagnosis, performance dashboard and focused tutorial support.</p>
-                    </div>
-                </section>
                 <section className="cfx-s4 cfx-s4--interactive" id="showcaseCoverflow">
                     <div className="cfx-s4-spacer" id="cfxS4Spacer" ref={spacerRef}>
                         <div className="cfx-s4-sticky">
@@ -885,39 +707,33 @@ function Landing() {
                     </div>
                 </section>
 
-                <section className="cvx-start" id="section5">
-                    <div className="cvx-shell">
-                        <div className="cvx-section-head">
-                            <p className="cvx-eyebrow">Begin with real practice</p>
-                            <h2>Start free. Let your activity reveal what deserves attention next.</h2>
-                            <p className="cvx-start-lede">The homepage should make the product clear without duplicating the detailed pricing and FAQ pages. Start with the free allowance, then use those dedicated pages when you need the full details.</p>
-                        </div>
-                        <div className="cvx-start-grid">
-                            <article className="cvx-start-card">
-                                <p className="cvx-eyebrow">Free account</p>
-                                <h3>Experience the Codivium practice loop before paying.</h3>
-                                <ul className="cvx-start-list">
-                                    <li>6 interview-style coding exercises</li>
-                                    <li>6 focused micro-challenges</li>
-                                    <li>3 MCQ quizzes, configurable from 10 to 50 questions</li>
-                                    <li>Immediate feedback and progress signals from your activity</li>
+                <section id="section5">
+                    <div className="section-inner">
+                        <h2>Ready to Begin Your Journey To Elite Mastery?</h2>
+                        <p className="q-translation q-translation-muted">Codivium is built for <strong>data‑driven deliberate practice</strong>: timed coding, micro‑drills for mental models, concept pressure tests, and feedback loops that make improvement obvious. It’s an <strong>attempt‑first</strong> system — start by doing, then use targeted tutorials and solutions to refine — and let dashboard CTAs take you directly to the next session, based on your analytics.</p>
+                        <div aria-label="High intent call to action" className="s5-window" role="region">
+                            <div className="s5-left">
+                                <h2>Start Elite Training Today</h2>
+                                <p>If you want measurable progress — not vague “learning” — this is your environment. Train the exact skills interviews expose, track the signal, and refine with precision through deliberate practice.</p>
+                                <ul className="s5-bullets">
+                                    <li><strong>Attempt‑first training</strong> with layered support (hints → mini tutorial → suggested solution).</li>
+                                    <li><strong>Data‑driven deliberate practice</strong> powered by performance signals (time, attempts, tests, hints).</li>
+                                    <li><strong>Targeted micro‑drills</strong> to build mental models and fluency.</li>
+                                    <li><strong>Dashboard CTAs</strong> that jump you straight to the next best exercise.</li>
                                 </ul>
-                                <div className="cvx-start-actions">
-                                    <Link className="cvx-button" to="/join?source=homepage_final">Create a free account</Link>
-                                    <a className="cvx-button cvx-button--secondary" href="#try-challenge">Try the challenge first</a>
+                            </div>
+                            <div className="s5-right">
+                                <div className="s5-badge">Premium Training Loop</div>
+                                <div className="s5-metric">
+                                    <div className="s5-metric-label">What you get</div>
+                                    <div className="s5-metric-value">Measurable Mastery</div>
                                 </div>
-                                <p className="cvx-small">No payment is required to create the free account.</p>
-                            </article>
-                            <aside className="cvx-start-card">
-                                <p className="cvx-eyebrow">Need more detail?</p>
-                                <h3>Use the dedicated pages.</h3>
-                                <p className="cvx-small">Full-access options, renewal terms and detailed answers remain easier to maintain — and easier to trust — on their own pages.</p>
-                                <div className="cvx-link-list">
-                                    <Link to="/pricing">Compare access options <span>→</span></Link>
-                                    <Link to="/faq">Read the full FAQ <span>→</span></Link>
-                                    <Link to="/articles">Explore the Articles <span>→</span></Link>
-                                </div>
-                            </aside>
+                                {/* <a className="s5-cta" href="/join">Join Codivium</a> */}
+                                <Link className="s5-cta" to="/join">
+                                    Join Codivium
+                                </Link>
+                                <div className="s5-sub">Early access. High signal. Built for mastery.</div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -925,7 +741,7 @@ function Landing() {
                 <section id="section6">
                     <div className="footer-inner">
                         <div className="footer-left">
-                            © Codivium <span id="footerYear">2026</span>. A product of Ars Mentis Ltd. All rights reserved.
+                            © Codivium <span id="footerYear">2026</span>. All rights reserved.
                         </div>
                         <div aria-label="Footer links" className="footer-links">
                             <Link to="/articles">Articles</Link>
