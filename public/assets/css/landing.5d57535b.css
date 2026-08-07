@@ -2837,3 +2837,305 @@ body[data-page="landing"] .hero-title{
   max-width: 12ch;
 }
 
+/* ══ MOBILE RESPONSIVE (≤ 768px) ══════════════════════════════════════════
+   Fixes for all landing page sections on small screens.
+   Overrides the v14/v15 final patches where needed for mobile.
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Hero grid: single column, no horizontal offset */
+  body[data-page="landing"] .hero-grid{
+    grid-template-columns: 1fr !important;
+    gap: 24px;
+  }
+  body[data-page="landing"] .hero-grid > div:last-child{
+    padding-left: 0 !important;
+  }
+  body[data-page="landing"] .hero-image{
+    transform: none !important;
+  }
+  body[data-page="landing"] .hero-title{
+    font-size: clamp(32px, 7vw, 52px);
+    max-width: 100%;
+  }
+  body[data-page="landing"] #section1{
+    padding-top: 80px;
+    padding-bottom: 40px;
+  }
+
+  /* Sections: reduce padding */
+  body[data-page="landing"] section{
+    padding: 56px 16px 36px;
+  }
+  body[data-page="landing"] #section2b{
+    padding-top: 28px;
+  }
+  body[data-page="landing"] #section3{
+    padding: 56px 16px 36px;
+    min-height: auto;
+  }
+  body[data-page="landing"] #section3 .section-inner{
+    min-height: auto;
+    gap: 10px;
+  }
+  body[data-page="landing"] #section6{
+    padding: 16px;
+  }
+
+  /* Section inner widths */
+  body[data-page="landing"] .section-inner{
+    width: 100%;
+  }
+
+  /* Section 2 alternating rows: single column */
+  body[data-page="landing"] #section2 .s2-row,
+  body[data-page="landing"] #section2 .s2-row.right{
+    grid-template-columns: 1fr;
+  }
+  body[data-page="landing"] #section2 .s2-sideicon{
+    order: -1;
+    min-height: auto;
+  }
+  body[data-page="landing"] #section2 .s2-bigicon{
+    width: 80px;
+    height: 80px;
+  }
+
+  /* Section 5 CTA window: single column */
+  body[data-page="landing"] .s5-window{
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  body[data-page="landing"] .s5-window h2{
+    font-size: 22px;
+  }
+  body[data-page="landing"] .s5-window p{
+    font-size: 14px;
+  }
+
+  /* Hero CTA row: stack buttons */
+  body[data-page="landing"] .hero-cta-row{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Footer */
+  body[data-page="landing"] .footer-inner{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 0 16px;
+  }
+  body[data-page="landing"] .footer-links{
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-start;
+  }
+  body[data-page="landing"] .to-top{
+    align-self: flex-end;
+  }
+
+  /* Section 4 horizontal scroll: simplify on mobile */
+  body[data-page="landing"] #section4{
+    padding: 0;
+  }
+  body[data-page="landing"] #section4 .h-sticky{
+    height: auto;
+    min-height: auto;
+  }
+  body[data-page="landing"] #section4 .panel-grid{
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  body[data-page="landing"] #section4 .scroll-hint{
+    display: none;
+  }
+
+  /* Panel images on mobile */
+  body[data-page="landing"] .panel-image{
+    height: auto !important;
+  }
+  body[data-page="landing"] #section4 .h-track > .h-panel:nth-child(5) .panel-image{
+    width: 100% !important;
+  }
+
+  /* Icons */
+  body[data-page="landing"] .icon-gold{
+    width: 44px;
+    height: 44px;
+  }
+
+  /* How-card */
+  body[data-page="landing"] .how-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Extra-small mobile (≤ 480px) ─────────────────────────────────────── */
+@media (max-width: 480px) {
+  body[data-page="landing"] .hero-title{
+    font-size: clamp(26px, 8vw, 38px);
+  }
+  body[data-page="landing"] section{
+    padding: 44px 12px 28px;
+  }
+  body[data-page="landing"] #section1{
+    padding-top: 68px;
+  }
+  body[data-page="landing"] .hero-cta-row{
+    gap: 8px;
+  }
+  body[data-page="landing"] .s5-window h2{
+    font-size: 18px;
+  }
+  body[data-page="landing"] .footer-links{
+    gap: 8px;
+  }
+  body[data-page="landing"] .footer-links a{
+    font-size: 12px;
+  }
+  body[data-page="landing"] .hero-kicker{
+    font-size: 11px;
+  }
+  body[data-page="landing"] .hero-tagline{
+    font-size: 11px;
+  }
+}
+
+
+/* ============================================================
+   NEW: hero copy/CTA redesign, proof strip, cognitive-science
+   note, interactive challenge demo, product intro, and the
+   simplified "start free" section. Ported from the updated
+   landing design (buttons/content/layout), scoped to this
+   page's existing body[data-page="landing"] convention.
+   ============================================================ */
+body[data-page="landing"]{
+  --cvx-gold: #e0b85b;
+  --cvx-gold-soft: #f3d992;
+  --cvx-line: rgba(224,184,91,.30);
+}
+
+/* Hero: clearer, restrained and non-overlapping */
+body[data-page="landing"] #section1{ min-height: auto !important; padding: clamp(5.6rem,8vw,7.6rem) 0 clamp(3.2rem,6vw,5.2rem) !important; }
+body[data-page="landing"] #section1 .hero-grid{ align-items: start !important; gap: calc(clamp(2rem,4.5vw,4.6rem) + 3px) !important; }
+body[data-page="landing"] #section1 .hero-kicker{ color: var(--cvx-gold-soft) !important; text-transform: uppercase; letter-spacing: .13em; font-size: clamp(.72rem,1vw,.88rem) !important; line-height: 1.55 !important; margin: 0 0 1.5rem !important; max-width: none !important; }
+body[data-page="landing"] #section1 .hero-title{ font-size: clamp(2.4rem,4.8vw,4.65rem) !important; line-height: 1.02 !important; margin: 0 0 1.85rem !important; max-width: none !important; }
+body[data-page="landing"] .cvx-hero-support{ max-width: 60ch; margin: 0 0 2.1rem; color: #e7e9ef; font-size: clamp(1rem,1.35vw,1.2rem); line-height: 1.75; }
+body[data-page="landing"] .cvx-hero-support strong{ color: var(--cvx-gold-soft); }
+body[data-page="landing"] #section1 .hero-cta-row{ display: flex; flex-wrap: wrap; gap: 1.15rem; align-items: center; }
+body[data-page="landing"] .cvx-button,
+body[data-page="landing"] #section1 .cta{ display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: .95rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 800; transition: transform .18s ease, background .18s ease, box-shadow .18s ease; }
+/* Base CTA fill for bare .cvx-button (outside #section1, which already has its
+   own solid .cta treatment) — matches this page's existing primary-button
+   look (same tint/border as the former .s5-cta). */
+body[data-page="landing"] .cvx-button{ background: rgba(246,213,138,.16); border: 1px solid rgba(246,213,138,.36); color: #fff8e6; }
+body[data-page="landing"] .cvx-button:hover{ background: rgba(246,213,138,.24); }
+body[data-page="landing"] .cvx-button:hover,
+body[data-page="landing"] #section1 .cta:hover{ transform: translateY(-2px); }
+body[data-page="landing"] .cvx-button--secondary{ border: 1px solid rgba(246,213,138,.55); color: #fff8e6; background: rgba(255,255,255,.035); }
+body[data-page="landing"] .cvx-button--secondary:hover{ background: rgba(246,213,138,.10); }
+body[data-page="landing"] .cvx-hero-reassurance{ margin: 1.2rem 0 0; color: #bac1d0; font-size: .92rem; }
+body[data-page="landing"] #section1 .hero-image{ border-radius: 0 !important; overflow: hidden; box-shadow: 0 22px 70px rgba(0,0,0,.28); transform: translateX(10px) !important; }
+body[data-page="landing"] #section1 .hero-grid > div:last-child{ padding-left: 0 !important; }
+body[data-page="landing"] #section1 .hero-image img{ display: block; width: 100%; height: auto; }
+
+/* Proof strip (right under the hero) */
+body[data-page="landing"] .cvx-proof-strip{ background: #080c16; border-top: 1px solid rgba(224,184,91,.16); border-bottom: 1px solid rgba(224,184,91,.16); display: flex; align-items: center; justify-content: center; padding: 0; }
+body[data-page="landing"] .cvx-proof-grid{ width: min(1180px, calc(100% - 2rem)); margin: auto; display: grid; grid-template-columns: repeat(4,1fr); gap: 0; }
+body[data-page="landing"] .cvx-proof-item{ padding: 1rem 1.1rem; border-right: 1px solid rgba(224,184,91,.14); }
+body[data-page="landing"] .cvx-proof-item:last-child{ border-right: 0; }
+body[data-page="landing"] .cvx-proof-item strong{ display: block; color: #f4d993; font-size: .92rem; margin-bottom: .2rem; }
+body[data-page="landing"] .cvx-proof-item span{ display: block; color: #b8c0cf; font-size: .8rem; line-height: 1.4; }
+
+/* Cognitive-science note within section 2 */
+body[data-page="landing"] .cvx-cog-note{ margin: 1.5rem auto 0; max-width: 940px; padding: 1rem 1.15rem; border-left: 3px solid var(--cvx-gold); background: rgba(224,184,91,.07); border-radius: 0; text-align: left; }
+body[data-page="landing"] .cvx-cog-note strong{ color: #1b2230; }
+body[data-page="landing"] .cvx-cog-note p{ margin: .25rem 0 0 !important; font-size: 1rem !important; line-height: 1.65 !important; }
+
+/* Participatory demonstration (#try-challenge) */
+body[data-page="landing"] .cvx-demo{ padding: clamp(4.5rem,8vw,7rem) 0; background: linear-gradient(180deg,#070a12,#0d1321); color: #f5f6fa; display: block; }
+body[data-page="landing"] .cvx-shell{ width: min(1180px, calc(100% - 2rem)); margin: 0 auto; }
+body[data-page="landing"] .cvx-section-head{ max-width: 850px; margin: 0 auto 2.2rem; text-align: center; }
+body[data-page="landing"] .cvx-eyebrow{ margin: 0 0 .7rem; text-transform: uppercase; letter-spacing: .15em; color: var(--cvx-gold); font-size: .78rem; font-weight: 800; }
+body[data-page="landing"] .cvx-section-head h2,
+body[data-page="landing"] .cvx-product-intro h2,
+body[data-page="landing"] .cvx-start h2{ margin: 0 0 .9rem; font-size: clamp(2rem,4.3vw,3.7rem); line-height: 1.08; text-wrap: balance; }
+body[data-page="landing"] .cvx-section-head > p:last-child,
+body[data-page="landing"] .cvx-product-intro p,
+body[data-page="landing"] .cvx-start-lede{ margin: 0 auto; max-width: 68ch; color: #c8ced9; font-size: clamp(1rem,1.25vw,1.15rem); line-height: 1.7; }
+body[data-page="landing"] .cvx-demo-grid{ display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1.25rem; align-items: stretch; max-width: 1080px; margin: 0 auto; }
+body[data-page="landing"] .cvx-code-card,
+body[data-page="landing"] .cvx-diagnostic-card{ border: 1px solid var(--cvx-line); border-radius: 0; background: linear-gradient(180deg, rgba(20,27,45,.96), rgba(8,12,22,.98)); box-shadow: 0 24px 70px rgba(0,0,0,.25); overflow: hidden; min-height: 620px; box-sizing: border-box; }
+body[data-page="landing"] .cvx-windowbar{ display: flex; justify-content: space-between; align-items: center; padding: .85rem 1rem; border-bottom: 1px solid rgba(255,255,255,.09); font-size: .84rem; color: #d7dbe4; }
+body[data-page="landing"] .cvx-code{ margin: 0; padding: 1.3rem 1.35rem; background: #050811; color: #f3d992; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: clamp(.9rem,1.25vw,1.05rem); line-height: 1.65; overflow: auto; min-height: 220px; box-sizing: border-box; white-space: pre; }
+body[data-page="landing"] .cvx-question{ padding: 1.25rem; display: flex; flex-direction: column; }
+body[data-page="landing"] .cvx-question h3{ margin: 0 0 1rem; }
+body[data-page="landing"] .cvx-options{ display: grid; gap: .65rem; margin-bottom: 1rem; }
+body[data-page="landing"] .cvx-option{ display: flex; gap: .65rem; align-items: flex-start; padding: .8rem .9rem; border: 1px solid rgba(255,255,255,.10); border-radius: 10px; background: rgba(255,255,255,.025); cursor: pointer; }
+body[data-page="landing"] .cvx-option:hover{ border-color: rgba(224,184,91,.48); }
+body[data-page="landing"] .cvx-option input{ margin-top: .22rem; }
+body[data-page="landing"] .cvx-question .cvx-button{ margin-top: auto; }
+body[data-page="landing"] .cvx-diagnostic-card > a.cvx-button{ margin-top: auto; }
+body[data-page="landing"] .cvx-feedback{ display: none; margin-top: 1rem; padding: 1rem; border-radius: 10px; line-height: 1.6; }
+body[data-page="landing"] .cvx-feedback.is-visible{ display: block; }
+body[data-page="landing"] .cvx-feedback.is-correct{ background: rgba(57,179,118,.12); border: 1px solid rgba(57,179,118,.42); }
+body[data-page="landing"] .cvx-feedback.is-incorrect{ background: rgba(224,184,91,.10); border: 1px solid rgba(224,184,91,.38); }
+body[data-page="landing"] .cvx-feedback strong{ display: block; margin-bottom: .3rem; }
+body[data-page="landing"] .cvx-feedback a{ color: #f3d992; }
+body[data-page="landing"] .cvx-diagnostic-card{ padding: 1.4rem; display: flex; flex-direction: column; }
+body[data-page="landing"] .cvx-diagnostic-card h3{ font-size: clamp(1.5rem,2.5vw,2.1rem); line-height: 1.2; margin: .25rem 0 .8rem; }
+body[data-page="landing"] .cvx-diagnostic-card > p{ color: #c6ccd7; line-height: 1.65; }
+body[data-page="landing"] .cvx-diagnostic-list{ display: grid; gap: .7rem; margin: 1.2rem 0; }
+body[data-page="landing"] .cvx-diagnostic-row{ display: flex; justify-content: space-between; gap: 1rem; padding: .7rem 0; border-bottom: 1px solid rgba(255,255,255,.09); font-size: .9rem; }
+body[data-page="landing"] .cvx-diagnostic-row span:first-child{ color: #9ea7b8; }
+body[data-page="landing"] .cvx-diagnostic-row span:last-child{ color: #f2d58f; font-weight: 700; text-align: right; }
+body[data-page="landing"] .cvx-tabs{ display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; margin: 0 0 1.8rem; }
+body[data-page="landing"] .cvx-tab{ padding: .62rem 1.15rem; border-radius: 999px; border: 1px solid rgba(224,184,91,.32); background: rgba(255,255,255,.03); color: #c9cfdb; font-weight: 700; font-size: .88rem; cursor: pointer; transition: background .18s ease, border-color .18s ease, color .18s ease; }
+body[data-page="landing"] .cvx-tab:hover{ border-color: rgba(224,184,91,.55); color: #f5f6fa; }
+body[data-page="landing"] .cvx-tab.is-active{ background: rgba(224,184,91,.16); border-color: var(--cvx-gold); color: #f8e6b0; }
+body[data-page="landing"] .cvx-tabpanel[hidden]{ display: none; }
+
+/* Separate product intro before the coverflow */
+body[data-page="landing"] .cvx-product-intro{ padding: clamp(4rem,7vw,6rem) 1rem 1.2rem; background: #040509; color: #f5f6fa; text-align: center; display: block; }
+body[data-page="landing"] .cvx-product-intro p{ color: #c7ccd7; }
+
+/* Compact conversion section */
+body[data-page="landing"] .cvx-start{ padding: clamp(4.5rem,8vw,7rem) 0; background: radial-gradient(1400px 640px at -12% 10%, rgba(120,180,255,.16), rgba(120,180,255,0) 58%), radial-gradient(1200px 700px at 112% 0%, rgba(120,180,255,.14), rgba(120,180,255,0) 62%), linear-gradient(180deg, rgba(14,16,26,1) 0%, rgba(8,9,12,1) 100%); color: #f5f6fa; display: block; }
+body[data-page="landing"] .cvx-start-grid{ display: grid; grid-template-columns: minmax(0,1.15fr) minmax(300px,.85fr); gap: 1.25rem; align-items: stretch; }
+body[data-page="landing"] .cvx-start-card{ padding: clamp(1.25rem,3vw,2rem); border: 1px solid var(--cvx-line); border-radius: 0; background: rgba(255,255,255,.035); }
+body[data-page="landing"] .cvx-start-card h3{ margin: .2rem 0 .8rem; font-size: 1.6rem; }
+body[data-page="landing"] .cvx-start-list{ margin: 1rem 0 1.4rem; padding-left: 1.2rem; }
+body[data-page="landing"] .cvx-start-list li{ margin: .55rem 0; line-height: 1.5; }
+body[data-page="landing"] .cvx-start-actions{ display: flex; flex-wrap: wrap; gap: .75rem; }
+body[data-page="landing"] .cvx-link-list{ display: grid; gap: .8rem; margin-top: 1.1rem; }
+body[data-page="landing"] .cvx-link-list a{ display: flex; justify-content: space-between; gap: 1rem; padding: .85rem 0; border-bottom: 1px solid rgba(255,255,255,.10); color: #f4d993; text-decoration: none; }
+body[data-page="landing"] .cvx-link-list a:hover{ text-decoration: underline; }
+body[data-page="landing"] .cvx-small{ color: #aeb6c5; font-size: .88rem; line-height: 1.55; }
+
+@media (max-width: 900px) {
+  body[data-page="landing"] .cvx-proof-grid{ grid-template-columns: repeat(2,1fr); }
+  body[data-page="landing"] .cvx-proof-item:nth-child(2){ border-right: 0; }
+  body[data-page="landing"] .cvx-proof-item:nth-child(-n+2){ border-bottom: 1px solid rgba(224,184,91,.14); }
+  body[data-page="landing"] .cvx-demo-grid,
+  body[data-page="landing"] .cvx-start-grid{ grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  body[data-page="landing"] #section1 .hero-title{ font-size: clamp(2.15rem,11vw,3.15rem) !important; max-width: none !important; }
+  body[data-page="landing"] #section1 .hero-cta-row,
+  body[data-page="landing"] .cvx-start-actions{ align-items: stretch; flex-direction: column; }
+  body[data-page="landing"] #section1 .cta,
+  body[data-page="landing"] .cvx-button{ width: 100%; }
+  body[data-page="landing"] .cvx-proof-grid{ grid-template-columns: 1fr; }
+  body[data-page="landing"] .cvx-proof-item{ border-right: 0; border-bottom: 1px solid rgba(224,184,91,.14) !important; }
+  body[data-page="landing"] .cvx-proof-item:last-child{ border-bottom: 0 !important; }
+  body[data-page="landing"] .cvx-diagnostic-row{ flex-direction: column; gap: .2rem; }
+  body[data-page="landing"] .cvx-diagnostic-row span:last-child{ text-align: left; }
+  body[data-page="landing"] .cvx-tabs{ gap: .45rem; }
+  body[data-page="landing"] .cvx-tab{ padding: .5rem .85rem; font-size: .82rem; }
+  body[data-page="landing"] .cvx-code-card,
+  body[data-page="landing"] .cvx-diagnostic-card{ min-height: 0; }
+}
+
+/* Anchor-jump target (hero "Try a 90-second challenge" CTA) — without this,
+   the fixed topbar covers the section heading after the scroll. */
+body[data-page="landing"] #try-challenge{ scroll-margin-top: 96px; }
