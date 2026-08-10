@@ -22,6 +22,7 @@ import { INFO_CONTENT }        from './data/infoContent.js';
 import { interpretMetric }     from './utils/interpretMetric.js';
 import { useGlowFollow } from '../shared/useGlowFollow.js';
 import { getalluserMcqdashborditem, getUserInsights } from '../api/dashbord/apiDashbord.jsx';
+import { computeGrid, getBreakpointForWidth, isForcedSummaryForWidth } from './utils/gridLayout.js';
 
 // Transform UserMCQdashboardResponse (BarChatResponse-list per difficulty)
 // into the shape metrics.js expects:
@@ -90,64 +91,6 @@ function PresetIcon({ id }) {
   else if (id==='mcq_only') inner = <>{r(MAIN_X,MAIN_Y,MAIN_W,MAIN_H)}{r(12,14,8,36)}{r(23,22,8,28)}{r(34,30,8,20)}{pane}</>;
   else /* full */ inner = <>{r(L_X,MAIN_Y,L_W,12)}{r(L_X,23,L_W,19)}{r(M_X,MAIN_Y,M_W,22)}{r(R_X,MAIN_Y,R_W,12)}{r(R_X,23,R_W,19)}{r(MAIN_X,38,MAIN_W,16)}{pane}</>;
   return <svg {...base}>{frame}{inner}</svg>;
-}
-
-// ── Grid layout computation (mirrors __cvApplyDynamicGridLayout) ──────────────
-function computeGrid(panels, breakpoint) {
-  const leftOn  = !!(panels.scores || panels.depth);
-  const heatOn  = !!panels.heatmap;
-  const rightOn = !!(panels.time  || panels.allocation);
-  const mcqOn   = !!panels.mcq;
-
-  if (!leftOn && !rightOn && !heatOn && !mcqOn) return null;
-
-  const TOP_FR = 2.73, MCQ_FR = 1.3;
-  let rows = [], colCount = 1, colTemplate = '1fr';
-
-  if (breakpoint === 'wide') {
-    const top = [];
-    if (leftOn) top.push('left');
-    if (heatOn) top.push('heat');
-    if (rightOn) top.push('right');
-    if (!top.length) { if (mcqOn) top.push('mcq'); else return null; }
-    rows.push(top);
-    colCount = top.length;
-    colTemplate = colCount===3 ? '26.7fr 23.1fr 48.4fr'
-                : colCount===2 ? 'minmax(520px,1fr) minmax(520px,1fr)'
-                : '1fr';
-    if (mcqOn && !(top.length===1 && top[0]==='mcq'))
-      rows.push(new Array(colCount).fill('mcq'));
-  } else if (breakpoint === 'medium') {
-    const top = [];
-    if (leftOn) top.push('left');
-    if (rightOn) top.push('right');
-    if (!top.length) { if (heatOn) top.push('heat'); else if (mcqOn) top.push('mcq'); else return null; }
-    rows.push(top);
-    colCount = top.length;
-    colTemplate = colCount===2 ? 'minmax(520px,1fr) minmax(520px,1fr)' : '1fr';
-    if (heatOn && !top.includes('heat')) rows.push(new Array(colCount).fill('heat'));
-    if (mcqOn && !(top.length===1 && top[0]==='mcq')) rows.push(new Array(colCount).fill('mcq'));
-  } else {
-    const stack = [];
-    if (leftOn)  stack.push('left');
-    if (heatOn)  stack.push('heat');
-    if (rightOn) stack.push('right');
-    if (mcqOn)   stack.push('mcq');
-    if (!stack.length) return null;
-    rows = stack.map(a => [a]);
-    colCount = 1; colTemplate = '1fr';
-  }
-
-  const areas = rows.map(r => `"${r.join(' ')}"`).join('\n');
-  const rowTemplate = rows.map(r => r.includes('mcq') ? `minmax(0,${MCQ_FR}fr)` : `minmax(0,${TOP_FR}fr)`).join(' ');
-  return { areas, colTemplate, rowTemplate };
-}
-
-function getBreakpoint() {
-  const w = window.innerWidth || 0;
-  if (w <= 1100) return 'narrow';
-  if (w <= 1400) return 'medium';
-  return 'wide';
 }
 
 function formatAnchorDate(raw) {
@@ -224,6 +167,22 @@ export default function InsightsDashboard() {
   }, []);
   const mountRef = useRef(null);
   const resizers = useResizers(mountRef);
+  // RESPONSIVE FIX: breakpoint/force-summary decisions must read the space
+  // actually available to this component (#ciMount), not window.innerWidth —
+  // once embedded in a host page, the container can be narrower than the
+  // viewport (host sidebar, content padding, a max-width wrapper).
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  useEffect(() => {
+    const mount = document.getElementById('ciMount');
+    if (!mount || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect?.width;
+      if (w) setMeasuredWidth(w);
+    });
+    ro.observe(mount);
+    setMeasuredWidth(mount.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
   const tour     = useDashboardTour();
   // Heatmap "Focus"/"All" is a sub-view of the combined track, independent of
   // the Micro/Interview track selection — kept as its own state so picking
@@ -261,7 +220,10 @@ export default function InsightsDashboard() {
   const anchorText  = formatAnchorDate(metrics.anchorDate || db.anchorDate);
   const uiMode      = db.uiMode;
   const panels      = db.panels;
-  const isInfoOnly  = uiMode === 'info_only';
+  // Force Summary View below AUTO_SUMMARY_MAX_W regardless of the user's
+  // chosen mode — the full multi-panel grid doesn't work at phone width.
+  // This only affects rendering; the user's saved preference is untouched.
+  const isInfoOnly  = uiMode === 'info_only' || isForcedSummaryForWidth(measuredWidth);
 
   const applyPreset = useCallback((p) => {
     db.setMode(p.ui.mode);
@@ -347,7 +309,7 @@ export default function InsightsDashboard() {
     if (!isInfoOnly) {
       const formBody = mount.querySelector('.form-body');
       if (formBody) {
-        const bp   = getBreakpoint();
+        const bp   = getBreakpointForWidth(measuredWidth);
         const grid = computeGrid(panels, bp);
         if (grid) {
           formBody.style.setProperty('grid-template-areas',   grid.areas);
@@ -356,7 +318,7 @@ export default function InsightsDashboard() {
         }
       }
     }
-  }, [panels, uiMode, isInfoOnly]);
+  }, [panels, uiMode, isInfoOnly, measuredWidth]);
 
   // ── Wire data-info-key click delegation (matches vanilla setupInfoButtons) ─
   useEffect(() => {
@@ -420,25 +382,6 @@ export default function InsightsDashboard() {
     return () => document.removeEventListener('click', onDocClick);
   }, []);
 
-  // Re-compute grid on window resize
-  useEffect(() => {
-    function onResize() {
-      const mount = document.getElementById('ciMount');
-      if (!mount) return;
-      const formBody = mount.querySelector('.form-body');
-      if (!formBody) return;
-      const bp   = getBreakpoint();
-      const grid = computeGrid(panels, bp);
-      if (grid) {
-        formBody.style.setProperty('grid-template-areas',   grid.areas);
-        formBody.style.setProperty('grid-template-columns', grid.colTemplate);
-        formBody.style.setProperty('grid-template-rows',    grid.rowTemplate);
-      }
-    }
-    window.addEventListener('resize', onResize, { passive: true });
-    return () => window.removeEventListener('resize', onResize);
-  }, [panels]);
-
   // Helper: className with optional isHidden
   const cls = (base, visible) => `${base}${visible ? '' : ' isHidden'}`;
 
@@ -476,7 +419,11 @@ export default function InsightsDashboard() {
               {(metrics?.allocByTrack?.micro?.length > 0 || metrics?.depthByTrack?.micro?.length > 0) && (
                 <div className="cvTrackSelector" role="group" aria-label="Coding track filter">
                   <span className="cvTrackLabel">Track:</span>
-                  <div className="segmented cvTrackPills" role="tablist" aria-label="Coding track">
+                  {/* ACCESSIBILITY FIX: was role="tablist" wrapping plain buttons with
+                      aria-pressed — a contradictory nav role (this is a segmented
+                      toggle-button group, not a tab pattern; role="group" matches
+                      what's actually here, consistent with the reference fix). */}
+                  <div className="segmented cvTrackPills" role="group" aria-label="Coding track">
                     {['combined','micro','interview'].map(track => {
                       const hasMicro     = !!(metrics?.allocByTrack?.micro?.length || metrics?.depthByTrack?.micro?.length);
                       const hasInterview = !!(metrics?.allocByTrack?.interview?.length || metrics?.depthByTrack?.interview?.length);

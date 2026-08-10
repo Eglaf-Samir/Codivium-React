@@ -5,6 +5,7 @@
 // window.CodiviumInsights.update(payload).
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { validateDashboardPayload } from '../utils/validatePayload.js';
 
 // ── UI storage key (matches vanilla dashboard.00b.state.js) ──────────────────
 const UI_STORAGE_KEY = 'cv.dashboard.ui';
@@ -114,6 +115,18 @@ export function useDashboardData() {
   // applyDashboardData — called by the data bridge
   const applyData = useCallback((payload) => {
     if (!payload || typeof payload !== 'object') return;
+    // DATA-INTEGRITY FIX: previously any object was accepted and rendered,
+    // including a malformed/wrong-shaped response (e.g. an error body handed
+    // to update() by mistake, or a field with the wrong type). metrics.js's
+    // optional-chaining fallbacks mean that never crashes — it silently
+    // renders as a plausible-looking low-activity dashboard instead, which
+    // is worse than an obvious failure. Reject structurally invalid
+    // payloads here rather than rendering them.
+    const check = validateDashboardPayload(payload);
+    if (!check.valid) {
+      console.error('[Insights] rejected malformed dashboard payload:', check.errors);
+      return;
+    }
     setDashData(payload);
     setHasPayload(true);
 

@@ -103,11 +103,27 @@ function mapExerciseDetail(detail, item, track) {
   };
 }
 
+// Deep-link fallback: when this page is reached via a raw redirect (e.g. the
+// dashboard's "Start session" CTA, POST /api/sessions/start) rather than an
+// in-app navigate() call, there is no location.state.item. The redirect URL
+// instead carries `guidId`/`exerciseKey` query params — build the same shape
+// useExercise already expects from location.state.item so the rest of this
+// hook (and EditorPage's submit body) needs no further changes.
+function itemFromQueryParams(search, track) {
+  const params = new URLSearchParams(search || '');
+  const guidId = params.get('guidId');
+  const exerciseKey = params.get('exerciseKey');
+  if (!guidId || !exerciseKey) return null;
+  return track === 'interview'
+    ? { csInterviewPreprationId: guidId, excerciseId: exerciseKey }
+    : { deliberatePracticeid: guidId, practiceId: exerciseKey };
+}
+
 export function useExercise() {
   const location = useLocation();
-  const item = location?.state?.item || null;
   const pathname = location?.pathname || '';
   const track = pathname.toLowerCase().includes('interview') ? 'interview' : 'micro';
+  const item = location?.state?.item || itemFromQueryParams(location?.search, track);
 
   const [exercise, setExercise] = useState(null);
   const [loading, setLoading] = useState(true);

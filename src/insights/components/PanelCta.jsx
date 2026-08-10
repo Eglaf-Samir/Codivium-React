@@ -3,9 +3,18 @@
 // Always renders. Uses action.label for text.
 // POSTs action params to the session endpoint if actionType === 'start_session'.
 import React, { useState } from 'react';
-import { apiUrl } from '../../shared/fetch.js';
+import { apiUrl, getAuthHeaders, getApiBase } from '../../shared/fetch.js';
 
-// Normalise same-origin endpoint (mirrors vanilla __cvNormalizeSameOriginEndpoint)
+// BUG FIX: this originally only allowed same-origin-as-the-page endpoints
+// (mirrors vanilla __cvNormalizeSameOriginEndpoint, which assumes frontend +
+// backend are served from one host). This app's real deployment is a
+// decoupled SPA + separate API (src/config.js baseURL, e.g.
+// https://localhost:7294 while the page itself is http://localhost:3000) —
+// every other API call in the app already targets that origin via
+// apiUrl()/getApiBase(). Under the old same-origin-only check, EVERY CTA
+// click hit this and failed with "Blocked unsafe endpoint URL." Now also
+// trusts our own configured API origin (not an arbitrary attacker-supplied
+// one) in addition to same-origin.
 function normEndpoint(raw) {
   if (!raw) return null;
   try {
@@ -13,7 +22,11 @@ function normEndpoint(raw) {
     if (s.startsWith('/') || s.startsWith('./') || s.startsWith('../')) return s;
     const u = new URL(s, window.location.href);
     if (u.origin === window.location.origin) return u.pathname + u.search;
-    return null; // block cross-origin
+    try {
+      const apiBase = getApiBase();
+      if (apiBase && u.origin === new URL(apiBase, window.location.href).origin) return u.href;
+    } catch (_) { /* ignore malformed configured base */ }
+    return null; // block cross-origin (neither the page's own nor our configured backend)
   } catch (_) { return null; }
 }
 
@@ -57,11 +70,19 @@ export default function PanelCta({ panelId, recommendedActions }) {
         source: 'dashboard',
       };
 
+      // AUTH FIX: the session-start endpoint requires the same JWT bearer
+      // token as the dashboard payload fetch (backend registers [Authorize]
+      // on both). Without this header every CTA click 401s even though the
+      // dashboard itself loaded fine — mirrors getAuthHeaders() already used
+      // by the rest of the app (src/shared/fetch.js).
+      const authHeaders = getAuthHeaders({ 'Content-Type': 'application/json' });
+      if (!authHeaders.Authorization) { alert('Please sign in to start a session.'); return; }
+
       let res;
       try {
         res = await fetch(endpoint, {
           method: 'POST', cache: 'no-store',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders,
           body: JSON.stringify(body),
         });
       } catch (_) { alert('Could not start session (network error).'); return; }
@@ -70,7 +91,10 @@ export default function PanelCta({ panelId, recommendedActions }) {
       try { data = await res.json(); } catch (_) {}
 
       if (!res.ok) {
-        alert((data?.message || data?.Message) || 'Could not start session.');
+        // Backend error responses use `{ error }` (see SessionsApiController),
+        // not `message`/`Message` — check both so the real reason surfaces
+        // instead of always falling back to the generic text.
+        alert((data?.message || data?.Message || data?.error || data?.Error) || 'Could not start session.');
         return;
       }
 
