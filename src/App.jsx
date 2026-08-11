@@ -5,6 +5,7 @@ import AdminLayout from './components/AdminLayout.jsx';
 import PublicWrapper from './components/PublicWrapper.jsx';
 import { LeaveConfirmProvider } from './context/LeaveConfirmContext.jsx';
 import { isLoggedIn, isSuperAdmin } from './utils/auth.js';
+import { setSeoMeta } from './utils/seo.js';
 
 // App pages
 import AdaptivePage  from './adaptive/AdaptivePage.jsx';
@@ -147,14 +148,21 @@ function GuestOnly({ children }) {
 }
 
 // ── Public route wrapper ─────────────────────────────────────────
-function PubRoute({ component: Component, page, title }) {
+// `description` is optional — pages that need dynamic per-item metadata
+// (e.g. Article.jsx, one title/description per slug) set their own via
+// setSeoMeta() internally instead of passing a fixed one here.
+function PubRoute({ component: Component, page, title, description }) {
   const location = useLocation();
   useEffect(() => {
-    document.title = title ? `Codivium — ${title}` : 'Codivium';
+    if (description) {
+      setSeoMeta({ title, description, path: location.pathname });
+    } else {
+      document.title = title ? `Codivium — ${title}` : 'Codivium';
+    }
     // Remove all app classes
     ['sidebar-collapsed','mcq-quiz','mcq-parent','cv-settings','drawer-collapsed','cv-app']
       .forEach(c => document.body.classList.remove(c));
-  }, [location.pathname, title]);
+  }, [location.pathname, title, description]);
 
   return (
     <PublicWrapper page={page}>
@@ -168,14 +176,20 @@ export default function App() {
     <LeaveConfirmProvider>
     <Routes>
       {/* ── PUBLIC PAGES ── */}
-      <Route path="/"                element={<PubRoute component={Landing}        page="landing"         title="Become Python Pro" />} />
+      <Route path="/"                element={<PubRoute component={Landing}        page="landing"         title="Become Python Pro"
+                                        description="Find the gaps holding back your Python. Codivium is a deliberate-practice platform that uses performance analytics and cognitive science to guide what you should practice next." />} />
       <Route path="/login"           element={<GuestOnly><PubRoute component={Login} page="login" title="Login" /></GuestOnly>} />
       <Route path="/join"            element={<GuestOnly><PubRoute component={Join}  page="join"  title="Join" /></GuestOnly>} />
-      <Route path="/legal"           element={<PubRoute component={Legal}          page="legal"           title="Terms & Privacy" />} />
-      <Route path="/faq"             element={<PubRoute component={Faq}            page="faq"             title="FAQ" />} />
-      <Route path="/pricing"         element={<PubRoute component={Pricing}        page="pricing"         title="Pricing" />} />
-      <Route path="/contact"         element={<PubRoute component={Contact}        page="contact"         title="Contact" />} />
-      <Route path="/articles"        element={<PubRoute component={Articles}       page="articles"        title="Articles" />} />
+      <Route path="/legal"           element={<PubRoute component={Legal}          page="legal"           title="Terms & Privacy"
+                                        description="Codivium's Terms of Service and Privacy Policy." />} />
+      <Route path="/faq"             element={<PubRoute component={Faq}            page="faq"             title="FAQ"
+                                        description="Answers to common questions about how Codivium's deliberate-practice platform, pricing, and features work." />} />
+      <Route path="/pricing"         element={<PubRoute component={Pricing}        page="pricing"         title="Pricing"
+                                        description="Choose your Codivium subscription. Start free and upgrade as your practice grows." />} />
+      <Route path="/contact"         element={<PubRoute component={Contact}        page="contact"         title="Contact"
+                                        description="Get in touch with the Codivium team." />} />
+      <Route path="/articles"        element={<PubRoute component={Articles}       page="articles"        title="Articles"
+                                        description="Articles on deliberate practice, Python mastery, and the science of skill-building from the Codivium team." />} />
       <Route path="/articles/:slug"  element={<PubRoute component={Article}        page="article"         title="Article" />} />
       <Route path="/password_reset"  element={<PubRoute component={ResetPassword}  page="password_reset"  title="Reset Password" />} />
       {/* Alias: forget-password emails link to /resetPassword?uniquecode=… */}

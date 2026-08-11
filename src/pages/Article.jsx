@@ -1,40 +1,33 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
-import { getPublicArticleBySlug } from "../api/articles/apiArticles";
+import { getArticleBySlug } from "./articlesData";
+import { setSeoMeta } from "../utils/seo";
 
 const FONT_MIN = 14;
 const FONT_MAX = 24;
 const FONT_STEP = 1;
 const FONT_DEFAULT = 17;
 
-function toDateLabel(iso) {
-    if (!iso) return '';
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
 function Article() {
     usePageMeta("article");
 
     const { slug } = useParams();
-    const [article, setArticle] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // Static source — no API call. See src/pages/articlesData/index.js.
+    const article = useMemo(() => getArticleBySlug(slug), [slug]);
 
+    // Per-article title/description/canonical — PubRoute's fixed "Article"
+    // title is a fallback for slugs that don't resolve to anything.
     useEffect(() => {
-        let cancelled = false;
-        setLoading(true);
-        setArticle(null);
-        (async () => {
-            const res = await getPublicArticleBySlug(slug);
-            if (cancelled) return;
-            if (res?.status === 200 && res?.data) setArticle(res.data);
-            setLoading(false);
-        })();
-        return () => { cancelled = true; };
-    }, [slug]);
+        if (!article) return;
+        setSeoMeta({
+            title: article.title,
+            description: article.subtitle,
+            path: `/articles/${article.slug}`,
+            type: 'article',
+        });
+    }, [article]);
 
     const [fontSize, setFontSize] = useState(FONT_DEFAULT);
     const [theme, setTheme] = useState("dark"); // 'dark' | 'day'
@@ -142,11 +135,7 @@ function Article() {
                                     </div>
                                 </aside>
                                 <section aria-label="Article" className="bm-main">
-                                    {loading ? (
-                                        <div className="card panel" style={{ padding: 24 }}>
-                                            <p className="title">Loading…</p>
-                                        </div>
-                                    ) : !article ? (
+                                    {!article ? (
                                         <div className="card panel" style={{ padding: 24 }}>
                                             <p className="title">Article not found</p>
                                             <p className="desc">This article may have been moved or unpublished.</p>
@@ -162,7 +151,7 @@ function Article() {
                                             <div className="ap-meta">
                                                 <span id="apCat">{article.category}</span>
                                                 <span>&bull;</span>
-                                                <span id="apDate">{toDateLabel(article.publishedDate)}</span>
+                                                <span id="apDate">{article.dateLabel}</span>
                                                 <span>&bull;</span>
                                                 <span id="apTime">{article.readTime}</span>
                                             </div>
