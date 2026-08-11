@@ -13,7 +13,7 @@
 
 import { useReducer, useEffect, useCallback, useRef, useState } from 'react';
 import { pickFromDemo, DEMO_CATEGORIES } from '../utils/demoBank.js';
-import { Getallmcqbyfilter, Createmcqtimelogs } from '../../../api/mcq/apimcq';
+import { GetallmcqbyfilterSafe, CheckMcqAnswer, Createmcqtimelogs } from '../../../api/mcq/apimcq';
 import {
   adaptBackendQuestions,
   buildResultsPayload,
@@ -100,8 +100,17 @@ function reducer(state, action) {
       const q          = state.questions[state.index];
       const selected   = action.selected;
       const isPeek     = action.isPeek;
-      const correctSet = new Set(q.correctIndices);
-      const isCorrect  = !isPeek && selected.length === q.correctIndices.length &&
+      // SECURITY FIX: the fetch no longer carries the answer key (see
+      // GetallmcqbyfilterSafe), so q.correctIndices is empty on first
+      // render. The async submit() wrapper below awaits
+      // POST /api/v1/mcq/CheckAnswer — the only place the real answer is
+      // ever compared — and passes the verified indices in as
+      // action.correctIndices. Falls back to q.correctIndices only for a
+      // question that's already been answered once this session (see the
+      // answeredQ merge below), never for an unanswered one.
+      const correctIndices = action.correctIndices || q.correctIndices || [];
+      const correctSet = new Set(correctIndices);
+      const isCorrect  = !isPeek && selected.length === correctIndices.length &&
                          selected.every(i => correctSet.has(i));
 
       // Wall-clock seconds from when the question rendered to now. Null if
@@ -112,8 +121,18 @@ function reducer(state, action) {
         ? Math.max(0, Math.round((Date.now() - state.questionRenderedAt) / 1000))
         : null;
 
+      // Attach the now-known correct answer onto the question itself so the
+      // locked-state highlight (QuizComponents) and the summary Review
+      // screen — both of which read `.correctIndices` straight off the
+      // question object — keep working exactly as before, without needing
+      // their own server round-trip.
+      const answeredQ = {
+        ...q,
+        correctIndices,
+        explanation: action.explanation || q.explanation || '',
+      };
       const answer = {
-        q, selected, isPeek, isCorrect,
+        q: answeredQ, selected, isPeek, isCorrect,
         tutorialViewed: state.tutorialViewedThisQ,
         submittedAt: new Date().toISOString(),
         responseTimeSeconds,
@@ -124,12 +143,16 @@ function reducer(state, action) {
       const newPeek        = isPeek    ? state.peekCount + 1    : state.peekCount;
       const newCorrectSet  = new Set(state.correctSet);
       if (isCorrect) {
-        q.correctIndices.forEach(i => newCorrectSet.add(q.id + '_' + i));
+        correctIndices.forEach(i => newCorrectSet.add(q.id + '_' + i));
         writeSet(CORRECT_KEY, newCorrectSet);
       }
 
+      const newQuestions = state.questions.slice();
+      newQuestions[state.index] = answeredQ;
+
       return {
         ...state,
+        questions:    newQuestions,
         locked: true, peekWarning: false,
         answers:      newAnswers,
         correctCount: newCorrect,
@@ -164,6 +187,35 @@ function reducer(state, action) {
 
     default:
       return state;
+  }
+}
+
+// Server-side answer verification for one question (SECURITY FIX — see
+// submit() below). The only place a real answer is ever revealed to the
+// client, and only once the user has committed a selection or asked to
+// peek. Never throws — a network failure just means no highlight/no score
+// for that question rather than a broken quiz.
+async function checkAnswerForQuestion(q, selectedIndices) {
+  try {
+    const opts = Array.isArray(q.optionMeta) ? q.optionMeta : [];
+    const selectedOptionIds = (selectedIndices || [])
+      .map(i => opts[i]?.optionId)
+      .filter(Boolean);
+    const res = await CheckMcqAnswer(JSON.stringify({
+      id: q.docId,
+      mcqQuestionId: q.mcqQuestionId,
+      selectedOptionIds,
+    }));
+    const correctOptionIds = Array.isArray(res?.data?.correctOptionIds) ? res.data.correctOptionIds : [];
+    const idSet = new Set(correctOptionIds.map(String));
+    const correctIndices = opts.map((o, i) => (idSet.has(String(o.optionId)) ? i : -1)).filter(i => i >= 0);
+    // The safe fetch omits Description (the review screen's "explanation"
+    // text) so it can't leak an answer-adjacent hint before submission —
+    // CheckAnswer is the only place it's returned, once answered.
+    const explanation = res?.data?.explanation ?? res?.data?.Explanation ?? '';
+    return { correctIndices, explanation };
+  } catch (_) {
+    return { correctIndices: [], explanation: '' };
   }
 }
 
@@ -204,7 +256,7 @@ async function fetchQuestionsFromAPI(settings, externalSignal = null) {
 
   try {
     const body = buildFilterBody(settings, userId);
-    const res = await Getallmcqbyfilter(JSON.stringify(body));
+    const res = await GetallmcqbyfilterSafe(JSON.stringify(body));
     if (externalSignal?.aborted) return { sessionId: null, questions: [], error: 'cancelled' };
     if (!res) throw new Error('No response');
     if (res.status === 401) return { sessionId: null, questions: [], error: 'unauthorized', status: 401 };
@@ -353,8 +405,26 @@ export function useQuiz() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
-  const submit = useCallback((selected, isPeek = false) => {
-    dispatch({ type: 'SUBMIT', selected, isPeek });
+  // SECURITY FIX: correctIndices no longer arrives with the question (see
+  // GetallmcqbyfilterSafe). The first time a question is answered — genuine
+  // submit or "View Answer" peek, both funnel through here — ask the server
+  // which options are actually correct, then dispatch with that verified
+  // answer. Already-answered questions (e.g. re-render after lock) reuse
+  // q.correctIndices attached by the SUBMIT reducer case, no extra call.
+  const submit = useCallback(async (selected, isPeek = false) => {
+    const cur = stateRef.current;
+    const q = cur.questions[cur.index];
+    if (!q || cur.locked) return;
+
+    let correctIndices = Array.isArray(q.correctIndices) && q.correctIndices.length
+      ? q.correctIndices : null;
+    let explanation = q.explanation || '';
+    if (!correctIndices) {
+      const result = await checkAnswerForQuestion(q, isPeek ? [] : selected);
+      correctIndices = result.correctIndices;
+      explanation = result.explanation || explanation;
+    }
+    dispatch({ type: 'SUBMIT', selected, isPeek, correctIndices, explanation });
   }, []);
 
   const advance = useCallback(() => {

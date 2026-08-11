@@ -14,6 +14,12 @@ export const mcqfileupload = 'api/v1/mcq/mcqfileupload';
 
 //Mcqtest
 export const getallmcqbyfilter = 'api/v1/mcq/GetAllbyfilterAsync';
+// Security fix: "safe" fetch for the live quiz — never carries the correct
+// answer (see MCQApiController.GetAllbyfilterAsyncSafe). getallmcqbyfilter
+// above is left untouched/unused by the quiz now, kept only as a fallback
+// reference and for anything else that may still call it.
+export const getallmcqbyfilterSafe = 'api/v1/mcq/GetAllbyfilterAsyncSafe';
+export const mcqCheckAnswer = 'api/v1/mcq/CheckAnswer';
 export const createmcqTimelogs = 'api/v1/mcqtimelog/CreateMCQLog';
 export const getMcqCategoryIdsWithQuestions = 'api/v1/mcq/CategoryIdsWithQuestions?difficultyLevelId=';
 export const getFreeQuestionCount = 'api/v1/mcq/GetFreeQuestionCount';

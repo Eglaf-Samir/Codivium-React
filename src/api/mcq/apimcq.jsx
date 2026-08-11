@@ -1,7 +1,7 @@
 import Axios from "axios";
 import {
     getallmcq, deletemcq, createmcq, getmcq, updatemcq, getallDifficultyLevel, getallCategory,
-    mcqfileupload, getallmcqbyfilter, createmcqTimelogs, getallmcqbyadmin, getallCategorybyParentIds,getCategoriesByMode,
+    mcqfileupload, getallmcqbyfilter, getallmcqbyfilterSafe, mcqCheckAnswer, createmcqTimelogs, getallmcqbyadmin, getallCategorybyParentIds,getCategoriesByMode,
     getMcqCategoryIdsWithQuestions, getFreeQuestionCount
 } from './constants'
 import { baseURL } from "../../config";
@@ -204,6 +204,49 @@ export const Getallmcqbyfilter = async (body) => {
         return res;
     } catch (e) {
         console.error('Create paython output error:', e);
+        throw e.response
+    }
+}
+
+// Security fix: same filter shape as Getallmcqbyfilter above, but the
+// response never carries the correct answer — see
+// MCQApiController.GetAllbyfilterAsyncSafe. This is what the live quiz
+// (useQuiz.js) fetches from now.
+export const GetallmcqbyfilterSafe = async (body) => {
+    let token = localStorage.getItem('LoginToken');
+    var url = baseURL + getallmcqbyfilterSafe;
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }
+    try {
+        const res = await Axios.post(url, body, config);
+        return res;
+    } catch (e) {
+        console.error('GetallmcqbyfilterSafe error:', e);
+        throw e.response
+    }
+}
+
+// Server-side answer verification for one question — the only place that
+// ever compares a selection against the real answer key. Used by useQuiz.js
+// on submit/peek, once per question, the first time it's answered.
+export const CheckMcqAnswer = async (body) => {
+    let token = localStorage.getItem('LoginToken');
+    var url = baseURL + mcqCheckAnswer;
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }
+    try {
+        const res = await Axios.post(url, body, config);
+        return res;
+    } catch (e) {
+        console.error('CheckMcqAnswer error:', e);
         throw e.response
     }
 }
