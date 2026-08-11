@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
 import { Link } from "react-router-dom";
-import { getPublicArticles } from "../api/articles/apiArticles";
+import { ARTICLES } from "./articlesData";
 
 function toDateLabel(iso) {
     if (!iso) return '';
@@ -55,39 +55,29 @@ function GlowRow({ article, onMouseEnter, onMouseLeave }) {
 function Articles() {
     usePageMeta("articles");
 
-    const [articles, setArticles] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // Static source — no API call. See src/pages/articlesData/index.js.
+    const articles = useMemo(() => ARTICLES.map(a => ({
+        id: a.slug,
+        title: a.title,
+        category: a.category,
+        date: a.date,
+        dateLabel: a.dateLabel || toDateLabel(a.date),
+        readTime: a.readTime,
+        subtitle: a.subtitle,
+        href: `/articles/${a.slug}`,
+        featured: a.featured,
+        popularity: a.popularity,
+        keywords: a.keywords || [],
+    })), []);
     const [search, setSearch] = useState('');
-    const [sort, setSort] = useState('Newest');
+    // Default 'Oldest' so the numbered series (01→04) reads in its natural
+    // order on first load — their dates are set ascending by design, so
+    // 'Newest' (date-desc) would show 04,03,02,01 instead of 01,02,03,04.
+    const [sort, setSort] = useState('Oldest');
     const [activeCat, setActiveCat] = useState(null);
     const [activeKey, setActiveKey] = useState(null);
     const [preview, setPreview] = useState(null);
     const featRef = useRef(null);
-
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            const res = await getPublicArticles();
-            if (cancelled) return;
-            if (res?.status === 200 && Array.isArray(res?.data)) {
-                setArticles(res.data.map(a => ({
-                    id: a.slug,
-                    title: a.title,
-                    category: a.category,
-                    date: a.publishedDate,
-                    dateLabel: toDateLabel(a.publishedDate),
-                    readTime: a.readTime,
-                    subtitle: a.subtitle,
-                    href: `/articles/${a.slug}`,
-                    featured: a.isFeatured,
-                    popularity: a.popularity,
-                    keywords: a.keywords || [],
-                })));
-            }
-            setLoading(false);
-        })();
-        return () => { cancelled = true; };
-    }, []);
 
     useEffect(() => {
         const el = featRef.current;
@@ -244,9 +234,7 @@ function Articles() {
                                             <div aria-hidden="true" className="bm-spacer"></div>
                                         </div>
                                         <div className="bm-rows" id="bmRows" role="list">
-                                            {loading
-                                                ? <div className="bm-empty">Loading articles…</div>
-                                                : filtered.length === 0
+                                            {filtered.length === 0
                                                 ? <div className="bm-empty">No articles match your filters.</div>
                                                 : filtered.map(a => (
                                                     <GlowRow
