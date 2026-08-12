@@ -187,7 +187,10 @@ export default function MenuPage() {
   const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState(() => saved.subCategoryIds || ['all']);
   const [sortOrder, setSortOrder] = useState(() => saved.sortOrder || 'ASC');
   const [sortField, setSortField] = useState(() => saved.sortField || 'title');
-  const [isFreeFirst, setIsFreeFirst] = useState(() => !!saved.freeFirst);
+  // Default ON ("Free first") when the user has no saved preference yet;
+  // once they explicitly toggle it (saved.freeFirst becomes a real
+  // true/false), that choice is respected instead.
+  const [isFreeFirst, setIsFreeFirst] = useState(() => saved.freeFirst ?? true);
   const [searchTerm, setSearchTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tourActive, setTourActive] = useState(false);
