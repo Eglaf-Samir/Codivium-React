@@ -187,7 +187,8 @@ export default function MenuPage() {
   const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState(() => saved.subCategoryIds || ['all']);
   const [sortOrder, setSortOrder] = useState(() => saved.sortOrder || 'ASC');
   const [sortField, setSortField] = useState(() => saved.sortField || 'title');
-  const [isFreeFirst, setIsFreeFirst] = useState(() => !!saved.freeFirst);
+  // const [isFreeFirst, setIsFreeFirst] = useState(() => !!saved.freeFirst);
+  const [isFreeFirst, setIsFreeFirst] = useState(() => saved.freeFirst ?? true);
   const [searchTerm, setSearchTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tourActive, setTourActive] = useState(false);
