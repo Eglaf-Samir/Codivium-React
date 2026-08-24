@@ -2209,3 +2209,177 @@ body[data-page="article"] .bm-read-plain{ text-decoration: none; }
 }
 
 .cube-symbol-small{font-size:18px;letter-spacing:0.06em;}
+
+/* ============================================================
+   Reading modes: Day / Soft / Wide toggles (ap-day, ap-soft, ap-wide)
+   Day reproduces the client-supplied article theme (Python Mastery
+   Series source files: cream page, navy/blue headings, warm accent,
+   serif body) instead of inventing a new light palette.
+   ============================================================ */
+body[data-page="article"] .ap-shell.ap-day{
+  --day-bg: #FAFAF8;
+  --day-navy: #1F3864;
+  --day-blue: #2E5090;
+  --day-blue-light: #4A72B8;
+  --day-accent: #C8883A;
+  --day-text: #1A1A1A;
+  --day-muted: #555555;
+  --day-rule: #D0D8E8;
+  --day-toc-bg: #F0F4FA;
+  --day-code-bg: #F4F0E8;
+  --day-code-border: #D8C8A8;
+  --day-header-bg: #0B1526;
+
+  background: var(--day-bg);
+  border-color: var(--day-rule);
+  color: var(--day-text);
+}
+
+body[data-page="article"] .ap-shell.ap-day .ap-head{
+  background: var(--day-header-bg);
+  border-bottom-color: rgba(255,255,255,0.10);
+  box-shadow: none;
+}
+body[data-page="article"] .ap-shell.ap-day .ap-title{
+  font-family: "Noto Serif", serif;
+  color: #FFFFFF;
+}
+body[data-page="article"] .ap-shell.ap-day .ap-meta{ color: rgba(255,255,255,0.60); }
+
+body[data-page="article"] .ap-shell.ap-day .ap-controls{
+  background: var(--day-toc-bg);
+  border-bottom-color: var(--day-rule);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-btn{
+  background: #FFFFFF;
+  border-color: var(--day-rule);
+  color: var(--day-navy);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-btn:hover{
+  background: #FFFFFF;
+  border-color: var(--day-accent);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-btn.is-on{
+  background: var(--day-accent);
+  border-color: var(--day-accent);
+  color: #FFFFFF;
+}
+
+body[data-page="article"] .ap-shell.ap-day .ap-progress{ background: rgba(31,56,100,0.12); }
+body[data-page="article"] .ap-shell.ap-day .ap-progress > div{
+  background: var(--day-accent);
+  box-shadow: none;
+}
+
+body[data-page="article"] .ap-shell.ap-day .ap-reading{
+  --article-gold: var(--day-accent);
+  background: #FFFFFF;
+  color: var(--day-text);
+  font-family: "Noto Serif", serif;
+  border-color: var(--day-rule);
+  box-shadow: 0 30px 90px rgba(15,35,70,0.12);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading h1,
+body[data-page="article"] .ap-shell.ap-day .ap-reading h2,
+body[data-page="article"] .ap-shell.ap-day .ap-reading h3{
+  font-family: "Noto Serif", serif;
+  color: var(--day-navy);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading a{ color: var(--day-blue); }
+body[data-page="article"] .ap-shell.ap-day .ap-reading pre,
+body[data-page="article"] .ap-shell.ap-day .ap-reading code{
+  background: var(--day-code-bg);
+  border-color: var(--day-code-border);
+  color: #2A2A2A;
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading pre code{ background: none; border: none; }
+body[data-page="article"] .ap-shell.ap-day .ap-reading hr{ border-top-color: var(--day-rule); }
+
+body[data-page="article"] .ap-shell.ap-day .ap-reading h2.section-title{ border-bottom-color: var(--day-rule); }
+body[data-page="article"] .ap-shell.ap-day .ap-reading .section-num{ color: var(--day-blue-light); }
+
+body[data-page="article"] .ap-shell.ap-day .ap-reading .tldr{
+  background: #FFFFFF;
+  border-color: var(--day-rule);
+  border-left-color: var(--day-accent);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading .toc{
+  background: var(--day-toc-bg);
+  border-color: var(--day-rule);
+  border-left-color: var(--day-blue);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading .tldr-label,
+body[data-page="article"] .ap-shell.ap-day .ap-reading .cta-label,
+body[data-page="article"] .ap-shell.ap-day .ap-reading .author-bio-label{
+  color: var(--day-accent);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading .toc-heading,
+body[data-page="article"] .ap-shell.ap-day .ap-reading .series-nav-label{
+  color: var(--day-blue);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading .toc ol li::before{ color: var(--day-blue-light); }
+
+body[data-page="article"] .ap-shell.ap-day .ap-reading .pull-quote{ color: var(--day-navy); }
+body[data-page="article"] .ap-shell.ap-day .ap-reading .predict-block,
+body[data-page="article"] .ap-shell.ap-day .ap-reading .aside{
+  background: #FFFFFF;
+  border-color: var(--day-rule);
+  color: var(--day-muted);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading .aside{ border-left-color: var(--day-blue-light); }
+
+body[data-page="article"] .ap-shell.ap-day .ap-reading .cta-block,
+body[data-page="article"] .ap-shell.ap-day .ap-reading .conclusion-box{
+  background: var(--day-toc-bg);
+  border-color: rgba(200,136,58,0.30);
+  border-left-color: var(--day-accent);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading .cta-link{
+  color: var(--day-navy);
+  border-bottom-color: var(--day-accent);
+}
+
+body[data-page="article"] .ap-shell.ap-day .ap-reading .author-bio,
+body[data-page="article"] .ap-shell.ap-day .ap-reading .series-nav{
+  background: #FFFFFF;
+  border-color: var(--day-rule);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading .author-bio p{ color: var(--day-muted); }
+body[data-page="article"] .ap-shell.ap-day .ap-reading .series-nav-grid a.current{ color: var(--day-accent); }
+body[data-page="article"] .ap-shell.ap-day .ap-reading .series-prev-next{ border-top-color: var(--day-rule); }
+
+body[data-page="article"] .ap-shell.ap-day .ap-reading table{ color: var(--day-text); }
+body[data-page="article"] .ap-shell.ap-day .ap-reading thead tr{
+  background: var(--day-toc-bg);
+  border-bottom-color: var(--day-rule);
+}
+body[data-page="article"] .ap-shell.ap-day .ap-reading td{ border-bottom-color: var(--day-rule); }
+body[data-page="article"] .ap-shell.ap-day .ap-reading .status-improving{ color: var(--day-accent); }
+body[data-page="article"] .ap-shell.ap-day .ap-reading .status-resolved{ color: #2E8B57; }
+
+/* Soft: lower-contrast, more relaxed reading surface (layers on dark or day) */
+body[data-page="article"] .ap-shell.ap-soft .ap-reading{
+  line-height: 1.85;
+  letter-spacing: 0.005em;
+  box-shadow: none;
+}
+body[data-page="article"] .ap-shell.ap-soft .ap-reading h2.section-title,
+body[data-page="article"] .ap-shell.ap-soft .ap-reading h3.subsection-title{
+  font-weight: 500;
+}
+body[data-page="article"] .ap-shell.ap-soft .ap-reading .tldr,
+body[data-page="article"] .ap-shell.ap-soft .ap-reading .toc,
+body[data-page="article"] .ap-shell.ap-soft .ap-reading .cta-block,
+body[data-page="article"] .ap-shell.ap-soft .ap-reading .conclusion-box,
+body[data-page="article"] .ap-shell.ap-soft .ap-reading .author-bio,
+body[data-page="article"] .ap-shell.ap-soft .ap-reading .series-nav{
+  border-left-width: 2px;
+  box-shadow: none;
+}
+body[data-page="article"] .ap-shell.ap-soft .ap-reading pre{ box-shadow: none; }
+
+/* Wide: use more of the card's width for the reading column */
+body[data-page="article"] .ap-shell.ap-wide .ap-reading{
+  --measure: min(96ch, 100%);
+  max-width: min(1180px, 100%);
+}
