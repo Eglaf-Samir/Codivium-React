@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
+import { CreateContact } from "../api/contact/apicontact";
 
 function Contact() {
   usePageMeta("contact");
@@ -9,13 +11,11 @@ function Contact() {
     email: "",
     topic: "",
     message: "",
-    phone: "5565859565",
     consent: false,
   });
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -55,87 +55,62 @@ function Contact() {
     return Object.keys(newErrors).length === 0;
   };
 
-  //   const handleSubmit = async (e) => {
-  //     console.log("dhsaidbh");
-  //     e.preventDefault();
-
-  //     if (!validate()) return;
-
-  //     try {
-  //       setLoading(true);
-  //       setSuccess("");
-
-  //       const res = await fetch("/api/contact", {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify(form),
-  //       });
-
-  //       const data = await res.json();
-
-  //       if (!res.ok) throw new Error(data.message);
-
-  //       setSuccess("Message sent successfully ✅");
-
-  //       // reset form
-  //       setForm({
-  //         name: "",
-  //         email: "",
-  //         topic: "",
-  //         message: "",
-  //         consent: false,
-  //       });
-  //     } catch (err) {
-  //       console.log(err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
-    let body = {
+    if (!validate()) {
+      // Missing consent already shows inline right under the checkbox
+      // (errors.consent below) — no separate popup needed for that case.
+      // Other missing/invalid fields also render inline per-field; only
+      // nudge with a popup when there's something beyond just the checkbox.
+      if (!form.consent) return;
+      Swal.fire({
+        title: "Check the form",
+        text: "Please fix the highlighted fields before sending.",
+        icon: "warning",
+      });
+      return;
+    }
+    const body = {
       name: form.name,
       emailAddress: form.email,
-      phoneNumber: form.phone,
       topic: form.topic,
       queryDetail: form.message,
       marketingPreference: form.consent,
     };
-    let res = await CreateContact(body);
-    if (res?.data && res?.data?.id && res?.data?.id > 0) {
-      setForm({
-        name: "",
-        email: "",
-        topic: "",
-        message: "",
-        consent: false,
+    setLoading(true);
+    try {
+      const res = await CreateContact(body);
+      if (res?.data?.id > 0) {
+        setForm({
+          name: "",
+          email: "",
+          topic: "",
+          message: "",
+          consent: false,
+        });
+        Swal.fire({
+          title: "Message sent",
+          text: "Thank you for getting in touch! We appreciate you contacting us!",
+          icon: "success",
+          timer: 3000,
+          showConfirmButton: true,
+        });
+      } else {
+        Swal.fire({
+          title: "Something went wrong",
+          text: "Could not send your message. Please try again.",
+          icon: "error",
+        });
+      }
+    } catch (err) {
+      console.error("Contact form submit failed:", err);
+      Swal.fire({
+        title: "Something went wrong",
+        text: "Could not send your message. Please try again.",
+        icon: "error",
       });
-      toast.success(
-        "Thank you for getting in touch! We appreciate you contacting us!",
-        {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        },
-      );
-    } else {
-      toast.error(res?.data, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -284,16 +259,15 @@ function Contact() {
                     <button className="ghost" id="clearBtn" type="button">
                       Clear
                     </button>
-                    <button className="btn" id="sendBtn" type="submit">
-                      Send Message
+                    <button
+                      className="btn"
+                      id="sendBtn"
+                      type="submit"
+                      disabled={loading}
+                    >
+                      {loading ? "Sending..." : "Send Message"}
                     </button>
                   </div>
-                </div>
-                <div className="success" id="success">
-                  <button disabled={loading}>
-                    {loading ? "Sending..." : "Send Message"}
-                  </button>
-                  <div id="successText"></div>
                 </div>
               </form>
             </div>

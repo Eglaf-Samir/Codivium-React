@@ -8,6 +8,19 @@
    from cascading into MCQ/editor content. */
 @import './fonts-public.css';
 @import './base.css';
+
+/* SweetAlert2 backdrop — global, applies on every page (public + app),
+   since main.css is imported once in main.jsx regardless of route.
+   Default backdrop is a plain dark overlay that's barely visible against
+   this app's own dark theme, so the page behind a popup (e.g. Forget
+   Password's form) reads as sharp and un-dimmed instead of visibly
+   knocked back. Add a real blur so the background is unmistakably
+   de-emphasized while the modal is open. */
+.swal2-container {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+@import './cross-tab-banner.css';
 @import './logo.css';
 @import './topbar.css';
 @import './pricing.css';
