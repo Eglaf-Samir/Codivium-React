@@ -239,21 +239,23 @@ function Contact() {
                   </div>
                 </div>
                 <div className="actions">
-                  <label className="policy">
-                    <input
-                      type="checkbox"
-                      name="consent"
-                      checked={form.consent}
-                      onChange={handleChange}
-                    />
+                  <div className="policy-wrap">
+                    <label className="policy">
+                      <input
+                        type="checkbox"
+                        name="consent"
+                        checked={form.consent}
+                        onChange={handleChange}
+                      />
+                      <span>
+                        I agree to be contacted back by email regarding this
+                        message.
+                      </span>
+                    </label>
                     {errors.consent && (
                       <p className="error">{errors.consent}</p>
                     )}
-                    <span>
-                      I agree to be contacted back by email regarding this
-                      message.
-                    </span>
-                  </label>
+                  </div>
                   <div className="btns">
                     <button className="ghost" id="clearBtn" type="button">
                       Clear
