@@ -238,7 +238,6 @@ function Contact() {
                     </div>
                   </div>
                 </div>
-                <div className="error" id="error"></div>
                 <div className="actions">
                   <label className="policy">
                     <input
