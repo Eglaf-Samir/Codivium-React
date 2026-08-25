@@ -305,6 +305,11 @@ export default function EditorPage() {
     } catch (err) {
       setSubmitting(false);
       setRunningTests(false);
+      if (err?.status === 401) {
+        localStorage.clear();
+        navigate('/login');
+        return;
+      }
       setSubmitStatus({
         type: 'error',
         message: `Run error: ${err?.message || 'Unknown error'} — please try again.`,
@@ -420,6 +425,11 @@ export default function EditorPage() {
       }
     } catch (err) {
       setSubmitting(false);
+      if (err?.status === 401) {
+        localStorage.clear();
+        navigate('/login');
+        return;
+      }
       setSubmitStatus({
         type: 'error',
         message: `Submission error: ${err?.message || 'Unknown error'}`,
