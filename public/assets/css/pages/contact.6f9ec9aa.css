@@ -395,12 +395,8 @@ body[data-page="contact"] .card-pad{
          here was left over from an older vanilla-JS version and made every
          validation message invisible even once React mounted it. */
       display: block;
-      padding: 12px 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 192, 90, 0.38);
-      background: rgba(38, 30, 18, 0.58);
-      color: rgba(255, 224, 160, 0.92);
-      box-shadow: 0 18px 44px rgba(0,0,0,0.38);
+      margin: 4px 0 0;
+      color: #ff4d4f;
       font-size: 12.5px;
       line-height: 1.45;
     }
@@ -644,8 +640,7 @@ body[data-page="contact"] .ghost{
 body[data-page="contact"] .ghost:hover{
   background: rgba(0,0,0,0.04) !important;
 }
-body[data-page="contact"] .success,
-body[data-page="contact"] .error{
+body[data-page="contact"] .success{
   border-radius: 14px !important;
 }
 
