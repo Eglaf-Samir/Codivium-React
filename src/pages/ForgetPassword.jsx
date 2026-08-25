@@ -35,23 +35,21 @@ function ForgetPassword() {
 
     try {
       setLoading(true);
-      const response = await ForgetPasswordApi(email);
-      if (response?.data === true) {
-        Swal.fire({
-          title: "Reset link sent",
-          text: "Password reset link sent to your email.",
-          icon: "success",
-          timer: 2000,
-          showConfirmButton: false,
-        }).then(() => navigate("/"));
-      } else {
-        Swal.fire({
-          title: "Could not send reset link",
-          text: response?.data ? response.data : "Email address not found",
-          icon: "error",
-        });
-      }
+      // Always show the same message regardless of whether the email exists —
+      // a differing response here would let an attacker enumerate registered
+      // accounts. The backend call still fires either way; we just never
+      // surface its true/false result to the user.
+      await ForgetPasswordApi(email);
+      Swal.fire({
+        title: "Check your email",
+        text: "If an account exists for this email address, a password reset link will be sent shortly.",
+        icon: "info",
+        timer: 3000,
+        showConfirmButton: true,
+      }).then(() => navigate("/login"));
     } catch (err) {
+      // A genuine transport/server failure (network down, 500, etc.) is not
+      // an information-leak risk — it's fine to report this one differently.
       Swal.fire({
         title: "Something went wrong",
         text: "Please try again.",
