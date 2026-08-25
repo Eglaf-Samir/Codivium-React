@@ -24,16 +24,10 @@ export default function Topbar({ onMenuOpen }) {
 
   return (
     <div className="topbar" role="navigation" aria-label="Primary">
-      {/* Mobile hamburger */}
-      <button
-        className="mobile-menu-btn"
-        aria-label="Open navigation menu"
-        onClick={onMenuOpen}
-      >
-        <span /><span /><span />
-      </button>
-
-      {/* Brand */}
+      {/* Brand — first in DOM order so .topbar's space-between flex (the
+          only two items left in normal flow once .navlinks is pulled out
+          via position:absolute) places the logo on the left, matching
+          standard convention, instead of pushing it to the far right. */}
       <Link
         className="brand"
         to={dashboardHome}
@@ -59,6 +53,15 @@ export default function Topbar({ onMenuOpen }) {
         </div>
       </Link>
 
+
+      {/* Mobile hamburger */}
+      <button
+        className="mobile-menu-btn"
+        aria-label="Open navigation menu"
+        onClick={onMenuOpen}
+      >
+        <span /><span /><span />
+      </button>
 
       {/* <nav role="none" aria-label="Site links" className="navlinks">
         {NAV_LINKS.map(({ label, route }) => (
