@@ -389,7 +389,12 @@ body[data-page="contact"] .card-pad{
     }
 
     body[data-page="contact"] .error{
-      display: none;
+      /* No CSS "show" toggle exists in this file — the React port
+         conditionally renders this element itself ({errors.x && <p...>}),
+         so it's only ever in the DOM when there IS an error. display:none
+         here was left over from an older vanilla-JS version and made every
+         validation message invisible even once React mounted it. */
+      display: block;
       padding: 12px 14px;
       border-radius: 16px;
       border: 1px solid rgba(255, 192, 90, 0.38);
@@ -707,6 +712,94 @@ body[data-page="contact"] .btn:not(.ghost):disabled{
     0 1px 0 rgba(255,255,255,0.55) inset,
     0 -6px 12px rgba(0,0,0,0.03) inset !important;
   filter: none !important;
+}
+
+/* ── Tablet (≤ 768px) ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  body[data-page="contact"] .page{
+    padding: 0 14px 18px;
+    align-items: flex-start;
+    padding-top: 18px;
+  }
+  body[data-page="contact"] .shell{
+    width: 100% !important;
+  }
+  body[data-page="contact"] .card-pad{
+    padding: 0 14px 18px !important;
+  }
+  body[data-page="contact"] .title{
+    font-size: 14px !important;
+    margin: 12px 12px 12px 12px !important;
+    padding: 12px 14px !important;
+  }
+  body[data-page="contact"] .subtitle{
+    font-size: 12px !important;
+    margin: 0 auto 10px auto !important;
+  }
+  body[data-page="contact"] input,
+  body[data-page="contact"] select,
+  body[data-page="contact"] textarea{
+    padding: 11px 12px;
+    font-size: 14px;
+  }
+  body[data-page="contact"] .btns{
+    width: 100%;
+    justify-content: stretch;
+  }
+  body[data-page="contact"] .btn,
+  body[data-page="contact"] .ghost{
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Mobile (≤ 480px) ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  body[data-page="contact"] .page{
+    padding: 0 10px 14px;
+    padding-top: 12px;
+  }
+  body[data-page="contact"] .card{
+    border-radius: 14px !important;
+  }
+  body[data-page="contact"] .card-pad{
+    padding: 0 12px 14px !important;
+  }
+  body[data-page="contact"] .title{
+    font-size: 13px !important;
+    margin: 10px 10px 10px 10px !important;
+    padding: 10px 12px !important;
+  }
+  body[data-page="contact"] .subtitle{
+    font-size: 11.5px !important;
+  }
+  body[data-page="contact"] .row2{
+    grid-template-columns: 1fr;
+  }
+  body[data-page="contact"] .flabel{
+    font-size: 10px !important;
+  }
+  body[data-page="contact"] input,
+  body[data-page="contact"] select,
+  body[data-page="contact"] textarea{
+    padding: 10px 11px;
+    font-size: 13px;
+    border-radius: 12px !important;
+  }
+  body[data-page="contact"] textarea{
+    min-height: 110px;
+  }
+  body[data-page="contact"] .actions{
+    grid-template-columns: 1fr;
+  }
+  body[data-page="contact"] .policy{
+    font-size: 11px;
+  }
+  body[data-page="contact"] .btn,
+  body[data-page="contact"] .ghost{
+    font-size: 11px !important;
+    padding: 10px 12px !important;
+  }
 }
 
 .cube-symbol-small{font-size:18px;letter-spacing:0.06em;}
