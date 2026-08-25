@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout    from './components/Layout.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
 import PublicWrapper from './components/PublicWrapper.jsx';
+import { useCrossTabLogoutSync } from './hooks/useCrossTabLogout.js';
 import { LeaveConfirmProvider } from './context/LeaveConfirmContext.jsx';
 import { isLoggedIn, isSuperAdmin } from './utils/auth.js';
 import { setSeoMeta } from './utils/seo.js';
@@ -88,6 +89,7 @@ function KeyedEditorPage() {
 // ── App route wrapper ────────────────────────────────────────────
 function AppRoute({ component: Component, bodyClass = '' }) {
   const location = useLocation();
+  useCrossTabLogoutSync();
 
   useEffect(() => {
     const label = PAGE_TITLES[location.pathname] || 'Codivium';
@@ -118,6 +120,7 @@ function AppRoute({ component: Component, bodyClass = '' }) {
 // ── Admin route wrapper ──────────────────────────────────────────
 function AdminRoute({ component: Component, bodyClass = '' }) {
   const location = useLocation();
+  useCrossTabLogoutSync();
 
   useEffect(() => {
     const label = PAGE_TITLES[location.pathname] || 'Admin';

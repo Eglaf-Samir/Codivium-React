@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Topbar from "../components/Topbar";
 import usePageMeta from "../hooks/usePageMeta";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Loginuser } from "../api/auth/apiauth";
 import { hydrateAppearanceSettings } from "../api/usersettings/apiusersettings";
 import { toast, ToastContainer } from "react-toastify";
@@ -12,6 +12,16 @@ import { role } from "../config";
 function Login() {
   usePageMeta("login");
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Landed here because another tab logged out and this tab's cross-tab
+  // sync (useCrossTabLogoutSync) followed it — let the user know why.
+  useEffect(() => {
+    if (location.state?.crossTabLogout) {
+      toast.info("You were logged out because another tab logged out.");
+    }
+  }, [location.state]);
+
   const [showPass, setShowPass] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
   const [loading, setLoading] = useState(false);
