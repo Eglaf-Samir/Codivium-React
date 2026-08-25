@@ -21,11 +21,17 @@ export default function AdaptivePage() {
   // is removed — it was overwriting our sidebar's correct active class.
 
   if (loading) {
+    // Same loader treatment as the Interview Preparation / exercise menu
+    // list (see ExerciseGrid.jsx) — reuses exercise-menu.css's classes,
+    // already loaded globally via assets/styles/main.css.
     return (
       <main className="main" id="main-content" role="main">
         <div className="adaptive-page">
-          <div className="ap-loading" role="status" aria-live="polite">
-            <div className="ap-loading-text">Loading your practice guidance…</div>
+          <div className="cv-menu-loading" role="status" aria-live="polite" aria-label="Loading your practice guidance">
+            <div className="cv-progress" role="progressbar" aria-label="Loading your practice guidance">
+              <div className="cv-progress-bar" />
+            </div>
+            <span className="cv-progress-label">Loading your practice guidance…</span>
           </div>
         </div>
       </main>
